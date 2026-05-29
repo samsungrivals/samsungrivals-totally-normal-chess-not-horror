@@ -2150,8 +2150,8 @@ doSpin=function(){
   M.money=(Number(M.money)||0)+100*mm;
   flashMoneyToast('+£'+mm.toFixed(2));
   const luck=getLuck();
-  // Jackpot 1/2000 (scales with luck a bit)
-  if(Math.random()<luck/2000){triggerJackpot();saveMeta();refreshUI();updateLuckChip();return}
+  // Jackpot 1/1,000,000,000,000 (1 trillion, scales with luck)
+  if(Math.random()<luck/1e12){triggerJackpot();saveMeta();refreshUI();updateLuckChip();return}
   // Skin roll table (rarest first), with luck multiplier
   const table=[['secret',1000000],['sixtyseven',1000],['admin',5000],['nothing',500],['rainbow',100],['gy',10],['poo',3]];
   let result=null;
@@ -2871,6 +2871,17 @@ async function pollAnnouncements(){
   }
 }
 setInterval(pollAnnouncements,8000);
+
+// ----- Z key toggles auto-roll -----
+document.addEventListener('keydown',e=>{
+  const t=e.target;
+  if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'))return;
+  if(e.key!=='z'&&e.key!=='Z')return;
+  if(!M||!M.autoRollOwned){if(M)showAnnouncement('Buy Auto Roll first (bottom-right)');return}
+  M.autoRollActive=!M.autoRollActive;
+  saveMeta();refreshUI();startAutoRoll();
+  showAnnouncement(M.autoRollActive?'⚡ Auto Roll: ON (press Z to stop)':'⏸ Auto Roll: OFF');
+});
 
 // ============================================================
 // BOOT
