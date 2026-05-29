@@ -408,6 +408,27 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 .accname{font-weight:bold;color:#fff;font-size:16px}
 .accmeta{font-size:11px;color:#aac;margin-top:2px}
 
+/* Mega cutscene — blue radial + chest falls + opens to reveal skin */
+.megacs{position:fixed;inset:0;z-index:96;display:flex;flex-direction:column;justify-content:center;align-items:center;background:radial-gradient(circle,rgba(64,144,255,.55),rgba(0,0,40,.99));overflow:hidden}
+.megacs.hidden{display:none}
+.megacs::before{content:'';position:absolute;inset:0;background:radial-gradient(circle,rgba(120,200,255,.7),rgba(0,80,200,.3) 40%,transparent 70%);animation:megaflash 2s ease-out infinite;pointer-events:none}
+@keyframes megaflash{0%,100%{opacity:.3}50%{opacity:1}}
+.megachest{font-size:180px;line-height:1;filter:drop-shadow(0 0 40px #6cf) drop-shadow(0 0 80px #4af);animation:chestfall 1.6s cubic-bezier(.2,.7,.2,1.3) forwards;z-index:2;position:relative}
+.megachest.opened{animation:chestopen .5s ease-in forwards}
+@keyframes chestfall{0%{transform:translateY(-120vh) rotate(-90deg) scale(.4);opacity:0}30%{opacity:1}65%{transform:translateY(0) rotate(0) scale(1.25)}82%{transform:translateY(0) rotate(0) scale(.9)}100%{transform:translateY(0) rotate(0) scale(1);opacity:1}}
+@keyframes chestopen{0%{transform:scale(1);opacity:1}50%{transform:scale(1.6);opacity:.5;filter:brightness(3) drop-shadow(0 0 100px #fff)}100%{transform:scale(0);opacity:0}}
+.megaskin{width:260px;height:260px;border-radius:24px;border:8px solid #6cf;box-shadow:0 0 80px #4af,0 0 160px rgba(64,144,255,.8),inset 0 0 30px rgba(150,220,255,.6);display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;overflow:hidden;animation:skinreveal .8s cubic-bezier(.18,.7,.2,1.4) forwards;position:absolute;z-index:3}
+.megaskin.hidden{display:none}
+.megaskin>div{width:100%;height:100%}
+@keyframes skinreveal{0%{transform:scale(0) rotate(360deg);opacity:0}60%{transform:scale(1.25);opacity:1}80%{transform:scale(.95) rotate(0)}100%{transform:scale(1) rotate(0);opacity:1}}
+.megarar{position:absolute;bottom:14%;text-align:center;z-index:4}
+.megarar.hidden{display:none}
+.meganame{font-size:48px;font-weight:bold;color:#fff;text-shadow:0 0 24px #4af,0 0 48px #4af,0 4px 8px #000;letter-spacing:2px;animation:cs-pop .6s ease-out backwards;text-align:center}
+.megaodds{font-size:18px;color:#9cf;margin-top:6px;font-weight:bold;text-shadow:0 0 8px #000;animation:cs-pop .6s ease-out .2s backwards;word-break:break-all;max-width:90vw;padding:0 20px}
+.megaprompt{font-size:14px;color:#fff;opacity:.85;margin-top:18px;animation:cs-pop .6s ease-out .4s backwards}
+.megabolt{position:absolute;width:4px;height:30px;background:linear-gradient(180deg,transparent,#cef,#fff);box-shadow:0 0 12px #6cf;animation:boltfall 1.5s linear infinite;z-index:1;pointer-events:none}
+@keyframes boltfall{0%{transform:translateY(-100vh);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(100vh);opacity:0}}
+
 /* Ultra cutscene — 1/100,000 or rarer (yellow flash + skin falls from sky) */
 .ultracs{position:fixed;inset:0;z-index:95;display:flex;flex-direction:column;justify-content:center;align-items:center;background:radial-gradient(circle,rgba(255,215,0,.45),rgba(0,0,0,.97));overflow:hidden}
 .ultracs.hidden{display:none}
@@ -747,6 +768,16 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
       <div style="font-size:14px;color:#aac;margin-top:14px">Challenge sent to <b id="chalwaitname">Player</b>.<br>They have ~60s to accept.</div>
       <button class="settingchip" style="margin-top:16px" onclick="cancelChallenge()">Cancel</button>
     </div>
+  </div>
+</div>
+
+<div class="megacs hidden" id="megacs" onclick="closeMegaCs()">
+  <div class="megachest" id="megachest">🎁</div>
+  <div class="megaskin hidden" id="megaskin"></div>
+  <div class="megarar hidden" id="megarar">
+    <div class="meganame" id="meganame">OMEGA</div>
+    <div class="megaodds" id="megaodds">1 in ∞</div>
+    <div class="megaprompt">Click anywhere to continue</div>
   </div>
 </div>
 
@@ -2902,8 +2933,8 @@ findMatchAsync=async function(){
   _qPollTimer=setInterval(async()=>{
     n++;
     const sub=document.querySelector('#mmsearching .mmsearchsub');
-    if(sub)sub.textContent='Searching… '+(n*3)+'s elapsed (will fall back to AI at 30s)';
-    if(n>=10){
+    if(sub)sub.textContent='Searching… '+(n*3)+'s elapsed (will fall back to AI at 60s)';
+    if(n>=20){
       clearInterval(_qPollTimer);_qPollTimer=null;
       const opp=makeMatchOpponent();_pmatch=opp;
       document.getElementById('mmname').textContent=opp.name+' (AI)';
@@ -3186,6 +3217,127 @@ render=function(){
     if(typeof showWinModal==='function')showWinModal(winner==='white'?1:0,0,winName+' (local)');
   }else if(G.status==='stalemate'){
     if(typeof showWinModal==='function')showWinModal(0.5,0,null);
+  }
+};
+
+// ============================================================
+// OMEGA SKIN (impossibly rare) + MEGA CUTSCENE (chest + bangs)
+// ============================================================
+// User wrote "1 in 99999999999999999999...999" (a 600+ digit number).
+// JS Number can't hold that, but we'll show the full string and use 1e15 as the actual roll threshold.
+const OMEGA_ODDS_DISPLAY='9'.repeat(630);
+SKINS.omega={name:'OMEGA',odds:1e15,displayOdds:OMEGA_ODDS_DISPLAY};
+SKIN_COLORS.omega=['linear-gradient(135deg,#0066ff,#00ffff,#ffffff)','linear-gradient(135deg,#000066,#0066ff,#00ccff)'];
+SKIN_RARITY.omega=7;
+RARITY_NAMES[7]='OMEGA';
+
+// Bang sound effect (3 thumps, used in mega cutscene)
+function playBangs(){
+  try{
+    if(!_audio)_audio=new (window.AudioContext||window.webkitAudioContext)();
+    if(_audio.state==='suspended')_audio.resume();
+  }catch(e){return}
+  const t=_audio.currentTime;
+  const vol=M&&M.musicVol!==undefined?M.musicVol:0.5;
+  for(let i=0;i<3;i++){
+    const when=t+i*0.4;
+    // Low-end thump
+    const osc=_audio.createOscillator();const env=_audio.createGain();
+    osc.type='sine';
+    osc.frequency.setValueAtTime(140,when);
+    osc.frequency.exponentialRampToValueAtTime(35,when+0.18);
+    env.gain.setValueAtTime(0.001,when);
+    env.gain.exponentialRampToValueAtTime(0.7*(0.4+vol*0.6),when+0.01);
+    env.gain.exponentialRampToValueAtTime(0.001,when+0.3);
+    osc.connect(env).connect(_audio.destination);
+    osc.start(when);osc.stop(when+0.32);
+    // Noise burst for "crack"
+    const buf=_audio.createBuffer(1,2200,_audio.sampleRate);
+    const ch=buf.getChannelData(0);for(let n=0;n<ch.length;n++)ch[n]=(Math.random()*2-1)*Math.exp(-n/600);
+    const src=_audio.createBufferSource();src.buffer=buf;
+    const ngain=_audio.createGain();ngain.gain.setValueAtTime(0.45*(0.4+vol*0.6),when);
+    ngain.gain.exponentialRampToValueAtTime(0.001,when+0.18);
+    src.connect(ngain).connect(_audio.destination);src.start(when);
+  }
+}
+
+function fmtOdds(skin){
+  const s=SKINS[skin];if(!s)return '?';
+  if(s.displayOdds)return '1 in '+s.displayOdds.slice(0,80)+(s.displayOdds.length>80?'…':'');
+  if(s.odds)return '1 in '+s.odds.toLocaleString();
+  return '???';
+}
+
+function showMegaCs(skin){
+  const cs=document.getElementById('megacs');
+  const chest=document.getElementById('megachest');
+  const skinEl=document.getElementById('megaskin');
+  const rar=document.getElementById('megarar');
+  // Reset
+  chest.classList.remove('opened');chest.style.display='';
+  skinEl.classList.add('hidden');rar.classList.add('hidden');
+  cs.classList.remove('hidden');
+  // Restart chest animation
+  chest.style.animation='none';void chest.offsetWidth;chest.style.animation='';
+  // Spawn lightning bolts in background
+  cs.querySelectorAll('.megabolt').forEach(e=>e.remove());
+  for(let i=0;i<20;i++){
+    const b=document.createElement('div');b.className='megabolt';
+    b.style.left=(Math.random()*100)+'%';
+    b.style.animationDelay=(Math.random()*1.2)+'s';
+    b.style.animationDuration=(1+Math.random()*1)+'s';
+    cs.appendChild(b);
+  }
+  // Sound: bangs start when chest is roughly halfway down
+  setTimeout(()=>playBangs(),300);
+  // After chest lands, open it & reveal skin
+  setTimeout(()=>{
+    chest.classList.add('opened');
+    applySkinPreview(skinEl,skin);
+    skinEl.classList.remove('hidden');
+    document.getElementById('meganame').textContent=(SKINS[skin]&&SKINS[skin].name)||skin.toUpperCase();
+    document.getElementById('megaodds').textContent=fmtOdds(skin);
+    rar.classList.remove('hidden');
+  },1700);
+}
+function closeMegaCs(){
+  const cs=document.getElementById('megacs');
+  cs.classList.add('hidden');
+  cs.querySelectorAll('.megabolt').forEach(e=>e.remove());
+}
+
+// Override the ultra-cutscene router: omega-tier (1e10+ odds OR explicit omega) gets mega cutscene
+const _doSpinV4=doSpin;
+doSpin=function(){
+  const before={};
+  if(SKINS){for(const k in SKINS)before[k]=M.inventory&&M.inventory[k]||0}
+  // Try the omega roll (uses real luck) FIRST before normal table
+  const luck=getLuck();
+  if(Math.random()<luck/1e15){
+    M.rolls=(Number(M.rolls)||0)+1;
+    const mm=(typeof getMoneyMult==='function')?getMoneyMult():1;
+    M.money=(Number(M.money)||0)+100*mm;
+    if(typeof flashMoneyToast==='function')flashMoneyToast('+£'+mm.toFixed(2));
+    M.inventory=M.inventory||{};
+    M.inventory.omega=(M.inventory.omega||0)+1;
+    M.lbReadyAfterRoll=true;
+    saveMeta();refreshUI();updateLuckChip();
+    showMegaCs('omega');
+    return;
+  }
+  _doSpinV4();
+  // Did we just roll a skin with odds >= 1e10? -> mega cutscene
+  // Did we just roll a skin with odds >= 100,000? -> ultra cutscene (already routed by V3)
+  // We add an additional check for any future ultra-mega skins.
+  for(const k in SKINS){
+    const odds=SKINS[k]&&SKINS[k].odds;if(!odds)continue;
+    const now=M.inventory&&M.inventory[k]||0;
+    if(now>(before[k]||0)&&odds>=1e10){
+      const std=document.getElementById('cutscene');if(std)std.classList.add('hidden');
+      const ult=document.getElementById('ultracs');if(ult)ult.classList.add('hidden');
+      showMegaCs(k);
+      break;
+    }
   }
 };
 

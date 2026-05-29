@@ -153,17 +153,15 @@ app.post('/api/queue/join', (req, res) => {
   const myElo = Number(elo) || 500;
   // Clean old (>90s)
   db.queue = db.queue.filter(q => Date.now() - q.ts < 90000);
-  // Look for a real opponent within ±250 ELO
+  // Match ANY two queued users (ELO band removed so finding a match isn't ELO-gated)
   for (let i = 0; i < db.queue.length; i++) {
     const o = db.queue[i];
     if (o.user.toLowerCase() === user.toLowerCase()) continue;
-    if (Math.abs(o.elo - myElo) <= 250) {
-      db.queue.splice(i, 1);
-      const matchId = user + '_' + o.user + '_' + Date.now();
-      db.matches[matchId] = { players: [user, o.user], ts: Date.now() };
-      saveSoon();
-      return ok(res, { matched: true, opponent: { name: o.user, elo: o.elo } });
-    }
+    db.queue.splice(i, 1);
+    const matchId = user + '_' + o.user + '_' + Date.now();
+    db.matches[matchId] = { players: [user, o.user], ts: Date.now() };
+    saveSoon();
+    return ok(res, { matched: true, opponent: { name: o.user, elo: o.elo } });
   }
   // Add me to queue
   db.queue = db.queue.filter(q => q.user.toLowerCase() !== user.toLowerCase());
