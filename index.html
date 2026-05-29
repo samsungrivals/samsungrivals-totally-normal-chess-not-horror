@@ -294,6 +294,102 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 .moneytoast{position:fixed;pointer-events:none;font-size:22px;font-weight:bold;color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.8),0 2px 4px #000;animation:money-rise 1.4s ease-out forwards;z-index:75}
 @keyframes money-rise{0%{opacity:0;transform:translateY(0) scale(.6)}20%{opacity:1;transform:translateY(-8px) scale(1.2)}100%{opacity:0;transform:translateY(-60px) scale(1)}}
 
+/* Settings */
+.settingrow{display:flex;align-items:center;justify-content:space-between;padding:12px;background:#0a1830;border:1px solid #1e3a5f;border-radius:8px;margin-bottom:8px;gap:12px}
+.settinglabel{font-weight:600;color:#e0e0e0;font-size:14px}
+.settingsub{font-size:11px;color:#888;margin-top:2px}
+.settingcontrol{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.settingchip{background:#1a3060;color:#ccc;border:1px solid #2a5080;border-radius:6px;padding:5px 11px;font-size:12px;cursor:pointer}
+.settingchip:hover{background:#2a4080;color:#fff}
+.settingchip.on{background:#2a7a2a;border-color:#7aef7a;color:#fff}
+.passinput{flex:1;background:#0a1830;border:1px solid #2a5080;border-radius:6px;padding:8px 12px;color:#fff;font-size:14px}
+.passinput:focus{outline:none;border-color:#4a80c0}
+.dangerbtn{background:#5a1a1a;color:#fff;border:1px solid #8a3a3a;border-radius:6px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:600}
+.dangerbtn:hover{background:#7a2a2a}
+
+/* Win modal */
+.winmodal .mbox{background:linear-gradient(135deg,#1a3a1a,#0d1b3e);border-color:#4ada4a}
+.winmodal.loss .mbox{background:linear-gradient(135deg,#3a1a1a,#0d1b3e);border-color:#ff5252}
+.winmodal.draw .mbox{background:linear-gradient(135deg,#3a3a1a,#0d1b3e);border-color:#ffd700}
+.winbig{font-size:48px;text-align:center;margin:18px 0;font-weight:bold;text-shadow:0 0 20px rgba(255,215,0,.6)}
+.winsub{text-align:center;color:#ccc;margin-bottom:18px;font-size:14px;line-height:1.6}
+.winsub b{color:#fff}
+.winactions{display:flex;gap:8px;justify-content:center}
+
+/* Timer */
+.clockstrip{position:fixed;left:18px;top:80px;background:#0d1b3e;border:1px solid #2a5080;border-radius:10px;padding:8px 12px;z-index:25;font-family:monospace;display:flex;flex-direction:column;gap:6px;min-width:120px}
+.clockstrip.hidden{display:none}
+.clockrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 8px;border-radius:6px;background:#1a1a2e}
+.clockrow.active{background:#2a5a2a;box-shadow:0 0 12px rgba(74,218,74,.4)}
+.clockrow.low{background:#5a1a1a;animation:tickflash .8s infinite}
+@keyframes tickflash{0%,100%{background:#5a1a1a}50%{background:#8a2a2a}}
+.clockname{font-size:11px;color:#aaa}
+.clockval{font-size:18px;color:#fff;font-weight:bold}
+
+/* Luck chip bottom left */
+.luckchip{position:fixed;bottom:18px;left:18px;background:#0d1b3e;border:1px solid #b86fff;border-radius:10px;padding:8px 14px;font-size:13px;color:#cda0ff;z-index:25;font-family:monospace}
+.luckchip b{color:#fff;font-size:15px}
+
+/* Jackpot wheel */
+.jpscene{position:fixed;inset:0;background:radial-gradient(circle,rgba(180,0,255,.3),rgba(0,0,0,.97));display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:80}
+.jpscene.hidden{display:none}
+.jptitle{font-size:36px;font-weight:bold;color:#ffd700;text-shadow:0 0 24px rgba(255,215,0,.8);margin-bottom:20px;animation:cs-pop .6s}
+.jpwheel-wrap{position:relative;width:260px;height:260px}
+.jpwheel{width:260px;height:260px;border-radius:50%;border:6px solid #ffd700;box-shadow:0 0 40px rgba(255,215,0,.6);transition:transform 5s cubic-bezier(.18,.7,.2,1);background:conic-gradient(#ff5252 0deg 90deg,#40c4ff 90deg 180deg,#69f0ae 180deg 270deg,#ffd700 270deg 360deg);position:relative}
+.jpwheel-label{position:absolute;color:#000;font-weight:bold;font-size:13px;text-shadow:0 0 4px rgba(255,255,255,.5)}
+.jppointer{position:absolute;top:-22px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:18px solid transparent;border-right:18px solid transparent;border-top:32px solid #ffd700;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
+.jpresult{font-size:24px;color:#fff;margin-top:24px;text-align:center;min-height:30px}
+
+/* Upgrades */
+.upgcard{display:flex;align-items:center;gap:14px;padding:14px;background:#0a1830;border:1px solid #1e3a5f;border-radius:10px;margin-bottom:8px}
+.upgcard.owned{border-color:#4ada4a;background:#0a2014}
+.upgicon{font-size:28px;flex-shrink:0;width:50px;height:50px;display:flex;justify-content:center;align-items:center;background:#1a3060;border-radius:10px}
+.upgcard.owned .upgicon{background:#1f5a30}
+.upginfo{flex:1;min-width:0}
+.upgname{font-weight:bold;color:#fff;font-size:15px}
+.upgdesc{font-size:12px;color:#aac;margin-top:2px}
+.upgcost{font-size:14px;color:#ffd700;font-weight:bold;margin-top:2px}
+.upgbuy{background:linear-gradient(135deg,#7c4dff,#b86fff);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:bold;cursor:pointer}
+.upgbuy:disabled{opacity:.4;cursor:not-allowed}
+.upgbuy.owned{background:#2a7a2a;cursor:default}
+
+/* Index */
+.indexgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:10px}
+.indexcard{background:#0a1830;border:1px solid #1e3a5f;border-radius:8px;padding:8px;text-align:center;cursor:pointer;transition:all .15s;position:relative}
+.indexcard.owned{border-color:#4ada4a}
+.indexcard.claimed::after{content:'✓';position:absolute;top:4px;right:4px;color:#4ada4a;font-weight:bold}
+.indexcard:hover.owned:not(.claimed){background:#1a2a4a}
+.indexcard .ixprev{width:60px;height:60px;border-radius:6px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;overflow:hidden;margin:0 auto 4px}
+.indexcard .ixprev>div{width:100%;height:100%}
+.indexcard.locked .ixprev{filter:brightness(.2);opacity:.4}
+.indexcard .ixname{font-size:10px;color:#ccc;line-height:1.2}
+.indexcard .ixrar{font-size:9px;font-weight:bold;margin-top:2px}
+
+/* Rarity colors */
+.rar-1{color:#7a5a3a}.rar-2{color:#888}.rar-3{color:#5af}.rar-4{color:#a45af0}.rar-5{color:#ff5af0}.rar-6{color:#ffd700}.rar-7{color:#ff0040;text-shadow:0 0 6px #ff0040}
+
+/* Settings toggle button */
+.topiconbtn{background:#1a3060;color:#fff;border:1px solid #2a5080;border-radius:8px;padding:8px 12px;font-size:16px;cursor:pointer;line-height:1}
+.topiconbtn:hover{background:#2a4080}
+
+/* Roll animation */
+.spinbtn.rolling{animation:rolling-spin .5s ease}
+@keyframes rolling-spin{0%{transform:scale(1) rotate(0)}50%{transform:scale(1.15) rotate(180deg)}100%{transform:scale(1) rotate(360deg)}}
+
+/* Code box */
+.codebox{background:#000;color:#7af;padding:12px;border-radius:6px;font-family:monospace;font-size:11px;word-break:break-all;max-height:120px;overflow-y:auto;border:1px solid #2a5080;margin:8px 0}
+
+/* VIP gamepass styling */
+.packcard.vip{border-color:#b86fff;background:linear-gradient(135deg,#3a1f6a,#0d1b3e)}
+.packcard.nvp{border-color:#ff5af0;background:linear-gradient(135deg,#5a1f6a,#0d1b3e)}
+.packcard.nvp-plus{border-color:#ff0040;background:linear-gradient(135deg,#6a0a4a,#0d1b3e)}
+.packcard.nvp-plus-plus{border-color:#00ffff;background:linear-gradient(135deg,#0a4a6a,#0d1b3e);animation:nvp-shimmer 3s ease-in-out infinite}
+@keyframes nvp-shimmer{0%,100%{box-shadow:0 0 12px rgba(0,255,255,.3)}50%{box-shadow:0 0 24px rgba(0,255,255,.7)}}
+
+/* Locked indicator */
+.packcard.locked-pack{opacity:.55;position:relative}
+.packcard.locked-pack::after{content:'🔒';position:absolute;top:8px;right:8px;font-size:20px}
+
 /* Mobile */
 @media (max-width:760px){
   .container{flex-direction:column;align-items:center}
@@ -328,12 +424,20 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
   <div class="rollcount" id="rollsdisp">Rolls: 0</div>
   <div class="elo" id="elodisp"><span class="lbl">ELO</span><span class="val">500</span></div>
   <div class="tbright">
+    <button class="topiconbtn" onclick="openModal('upgmodal')" title="Upgrades">⚙️</button>
+    <button class="topiconbtn" onclick="openModal('indexmodal')" title="Skin Index">📖</button>
     <button class="musicbtn" id="musicbtn" onclick="toggleMusic()" title="Toggle music">🎵</button>
     <button class="tbbtn" onclick="openModal('shopmodal')">🛒 Shop</button>
-    <button class="tbbtn" onclick="openModal('lbmodal');markLbClick()">🏆 Leaderboards</button>
+    <button class="tbbtn" onclick="openModal('lbmodal');markLbClick();markHiddenLb()">🏆 Leaderboards</button>
+    <button class="topiconbtn" onclick="openModal('settingsmodal')" title="Settings">⚙</button>
   </div>
 </div>
 <div class="thinking hidden" id="thinking">opponent is thinking…</div>
+<div class="clockstrip hidden" id="clockstrip">
+  <div class="clockrow" id="clockw"><span class="clockname">⏱ White</span><span class="clockval" id="clockwval">10:00</span></div>
+  <div class="clockrow" id="clockb"><span class="clockname">⏱ Black</span><span class="clockval" id="clockbval">10:00</span></div>
+</div>
+<div class="luckchip" id="luckchip">🍀 Luck: <b id="luckval">1x</b></div>
 
 <div class="container">
   <div class="board-area">
@@ -503,7 +607,80 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
   </div>
 </div>
 
-<div class="cutscene hidden" id="cutscene">
+<div class="modal hidden" id="settingsmodal">
+  <div class="mbox">
+    <div class="mtitle">⚙ Settings <button class="mclose" onclick="closeModal('settingsmodal')">✕</button></div>
+    <div class="settingrow">
+      <div><div class="settinglabel">Board Quality</div><div class="settingsub">Pixel size per square</div></div>
+      <div class="settingcontrol" id="qualityctrl"></div>
+    </div>
+    <div class="settingrow">
+      <div><div class="settinglabel">Game Speed</div><div class="settingsub">Animation & AI delay multiplier</div></div>
+      <div class="settingcontrol" id="speedctrl"></div>
+    </div>
+    <div class="settingrow">
+      <div><div class="settinglabel">Music Volume</div><div class="settingsub">Background music level</div></div>
+      <div class="settingcontrol" id="volctrl"></div>
+    </div>
+    <div class="settingrow" style="background:#1a1a2a;border-color:#444">
+      <div><div class="settinglabel">💾 Save Progress</div><div class="settingsub">Copy this code to back up</div></div>
+      <button class="settingchip" onclick="copySaveCode()">Show code</button>
+    </div>
+    <div id="savecodebox" class="hidden"><div class="codebox" id="savecode"></div></div>
+    <div class="settingrow" style="background:#1a1a2a;border-color:#444">
+      <div><div class="settinglabel">📥 Load Progress</div><div class="settingsub">Paste a save code</div></div>
+      <button class="settingchip" onclick="promptLoadCode()">Load code</button>
+    </div>
+    <div class="settingrow" style="background:#2a1a1a;border-color:#5a3a3a;margin-top:18px">
+      <div><div class="settinglabel">⚠ Reset Progress</div><div class="settingsub" id="resetsub">Set password first, then click again to confirm</div></div>
+      <button class="dangerbtn" id="resetbtn" onclick="resetProgressFlow()">Reset…</button>
+    </div>
+    <div id="resetinput" class="hidden" style="margin-top:8px">
+      <input type="text" class="passinput" id="resetpass" placeholder="Type your password to confirm">
+      <div style="display:flex;gap:8px;margin-top:8px"><button class="dangerbtn" onclick="confirmResetProgress()">Wipe everything</button><button class="settingchip" onclick="cancelReset()">Cancel</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="upgmodal">
+  <div class="mbox">
+    <div class="mtitle">⚙️ Upgrades <button class="mclose" onclick="closeModal('upgmodal')">✕</button></div>
+    <div style="font-size:11px;color:#aac;margin-bottom:12px">Upgrades are permanent and stack with your luck multiplier.</div>
+    <div id="upglist"></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="indexmodal">
+  <div class="mbox">
+    <div class="mtitle">📖 Skin Index — Claim £10 per skin you've found <button class="mclose" onclick="closeModal('indexmodal')">✕</button></div>
+    <div style="font-size:11px;color:#aac;margin-bottom:12px">Click any owned skin once to claim £10 cash.</div>
+    <div class="indexgrid" id="indexgrid"></div>
+  </div>
+</div>
+
+<div class="modal hidden winmodal" id="winmodal">
+  <div class="mbox">
+    <div class="mtitle" id="winhead">Game Over <button class="mclose" onclick="closeModal('winmodal')">✕</button></div>
+    <div class="winbig" id="winemoji">🏆</div>
+    <div class="winsub" id="winsub"></div>
+    <div class="winactions">
+      <button class="modebtn mode-vs" style="text-align:center" onclick="closeModal('winmodal');userNewGame()">New Game</button>
+      <button class="settingchip" onclick="closeModal('winmodal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="jpscene hidden" id="jpscene">
+  <div class="jptitle">🎰 BONUS JACKPOT! 🎰</div>
+  <div class="jpwheel-wrap">
+    <div class="jppointer"></div>
+    <div class="jpwheel" id="jpwheel"></div>
+  </div>
+  <div class="jpresult" id="jpresult">Spinning…</div>
+  <button class="csclose" id="jpcloseBtn" onclick="closeJackpot()" style="display:none;margin-top:20px">Continue</button>
+</div>
+
+<div class="cutscene hidden" id="cutscene" onclick="closeCutscene()">
   <div class="csskin" id="cscoin"></div>
   <div class="cstitle" id="cstitle">RARE!</div>
   <div class="csname" id="csname"></div>
@@ -1809,11 +1986,488 @@ function toggleMusic(){
   else{btn.classList.remove('playing');btn.textContent='🎵';_musicTimers.forEach(t=>clearTimeout(t));_musicTimers=[]}
 }
 
-// Initialize meta
+// ============================================================
+// V3: UPGRADES, JACKPOT, GAMEPASSES, SETTINGS, WIN MODAL, INDEX
+// ============================================================
+
+// Add new skin tiers
+SKINS.sixtyseven={name:'67 Skin',odds:1000};
+SKINS.secret={name:'Secret',odds:1000000};
+SKIN_COLORS.sixtyseven=['linear-gradient(135deg,#00ff80,#0080ff)','linear-gradient(135deg,#ff0080,#8000ff)'];
+SKIN_COLORS.secret=['#000','#ff0040'];
+
+// Rarity tiers (1=lowest interest, 7=secret)
+const SKIN_RARITY={poo:1,gy:2,rainbow:3,sixtyseven:4,nothing:5,admin:6,secret:7,realadmin:6};
+const RARITY_NAMES={1:'Garbage',2:'Common',3:'Rare',4:'Cosmic',5:'Cosmic',6:'Admin',7:'SECRET'};
+
+const UPGRADES=[
+  {id:'equip2',name:'Dual Equip',desc:'Mix two board skins (left/right halves)',cost:10000,icon:'🎨'},
+  {id:'luck2',name:'2x Luck',desc:'Doubles your roll luck',cost:50000,icon:'🍀',req:'equip2'},
+  {id:'luck4',name:'4x Luck',desc:'Quadruples roll luck',cost:200000,icon:'🍀🍀',req:'luck2'},
+  {id:'luck8',name:'8x Luck',desc:'8x roll luck',cost:800000,icon:'🌟',req:'luck4'},
+  {id:'stockfishMax',name:'Stockfish 3200',desc:'Unlocks max-strength bot (depth 3)',cost:1500000,icon:'🧠',req:'luck8'},
+  {id:'autoOpenPacks',name:'Auto-Open Packs',desc:'Packs open instantly when bought',cost:3000000,icon:'⚡',req:'stockfishMax'},
+  {id:'luck124',name:'124x Luck',desc:'Max luck upgrade',cost:9999900,icon:'🌈',req:'autoOpenPacks'}
+];
+
+const MONEY_PACKS=[
+  {id:'small',price:99,pounds:10000,name:'Small Pack',desc:'+£100',icon:'💵'},
+  {id:'big',price:399,pounds:50000,name:'Big Pack',desc:'+£500',icon:'💸'},
+  {id:'mega',price:799,pounds:100000,name:'Mega Pack',desc:'+£1,000',icon:'💰'},
+  {id:'ultra',price:1999,pounds:500000,name:'Gigantic Ultra Pack',desc:'+£5,000',icon:'🎰'}
+];
+
+const SERVER_LUCK=[
+  {mult:2,price:1},{mult:4,price:2},{mult:8,price:3},{mult:16,price:7},{mult:32,price:12},
+  {mult:64,price:27},{mult:128,price:43},{mult:256,price:100},{mult:512,price:170},{mult:1024,price:450},
+  {mult:2048,price:600},{mult:4096,price:1100},{mult:8192,price:2300},{mult:16384,price:6500},
+  {mult:32768,price:23200},{mult:65536,price:56700},{mult:131072,price:125300},
+  {mult:262144,price:389600},{mult:524288,price:654600},{mult:1048576,price:1500000}
+];
+
+const GAMEPASSES=[
+  {id:'money2x',name:'2x Money',desc:'Earn 2x cash on every roll',price:1000,icon:'💎'},
+  {id:'vip',name:'VIP',desc:'2x luck + unlocks NVP',price:900,icon:'⭐'},
+  {id:'nvp',name:'NVP',desc:'Magnus bot, 2x cash, 2x luck, 2x roll speed (requires VIP)',price:9900,icon:'👑',req:'vip'},
+  {id:'nvpPlus',name:'NVP+',desc:'Unlocks NVP++ (requires NVP)',price:99900,icon:'💜',req:'nvp'},
+  {id:'nvpPlusPlus',name:'NVP++',desc:'2x roll speed, 8x cash, 64x luck, VIP board+piece (requires NVP+)',price:999900,icon:'💠',req:'nvpPlus'}
+];
+
+// ----- LUCK / MULTIPLIER CALC -----
+function getLuck(){
+  let l=1;
+  const up=M.upgradesPurchased||{};
+  if(up.luck2)l*=2;if(up.luck4)l*=4;if(up.luck8)l*=8;if(up.luck124)l*=124;
+  const gp=M.gamepasses||{};
+  if(gp.vip)l*=2;if(gp.nvp)l*=2;if(gp.nvpPlusPlus)l*=64;
+  l*=(Number(M.serverLuckMult)||1);
+  return l;
+}
+function getMoneyMult(){
+  let m=1;const gp=M.gamepasses||{};
+  if(gp.money2x)m*=2;if(gp.nvp)m*=2;if(gp.nvpPlusPlus)m*=8;
+  return m;
+}
+function getRollSpeed(){
+  let s=1;const gp=M.gamepasses||{};
+  if(gp.nvp)s*=2;if(gp.nvpPlusPlus)s*=2;
+  return s;
+}
+
+// ----- OVERRIDE doSpin WITH LUCK + JACKPOT + ANIMATION -----
+const _origDoSpin=doSpin;
+doSpin=function(){
+  const sb=document.getElementById('spinbtn');
+  if(sb){sb.classList.remove('rolling');void sb.offsetWidth;sb.classList.add('rolling')}
+  M.rolls=(Number(M.rolls)||0)+1;
+  const mm=getMoneyMult();
+  M.money=(Number(M.money)||0)+100*mm;
+  flashMoneyToast('+£'+mm.toFixed(2));
+  const luck=getLuck();
+  // Jackpot 1/2000 (scales with luck a bit)
+  if(Math.random()<luck/2000){triggerJackpot();saveMeta();refreshUI();updateLuckChip();return}
+  // Skin roll table (rarest first), with luck multiplier
+  const table=[['secret',1000000],['sixtyseven',1000],['admin',5000],['nothing',500],['rainbow',100],['gy',10],['poo',3]];
+  let result=null;
+  for(const [sk,baseOdds] of table){
+    if(Math.random()<luck/baseOdds){result=sk;break}
+  }
+  M.lbReadyAfterRoll=true;
+  if(result){
+    M.inventory[result]=(M.inventory[result]||0)+1;
+    if(SKINS[result]&&SKINS[result].odds>=500)showCutscene(result);
+  }
+  // Hidden free-shop unlock progress
+  trackHiddenFreeShop('roll');
+  saveMeta();refreshUI();updateLuckChip();
+  if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
+  if(!document.getElementById('indexmodal').classList.contains('hidden'))renderIndex();
+};
+
+// ----- CUTSCENE: click anywhere already wired -----
+// Update threshold check in showCutscene already handled by SKINS[].odds>=500 above
+
+// ----- LUCK CHIP -----
+function updateLuckChip(){
+  const el=document.getElementById('luckval');if(!el)return;
+  const l=getLuck();
+  el.textContent=l>=1000?(l/1000).toFixed(1)+'kx':l+'x';
+}
+
+// ----- JACKPOT WHEEL -----
+const JP_SEGMENTS=[
+  {label:'Rainbow ×3',skin:'rainbow',count:3,deg:45},
+  {label:'Nothing ×2',skin:'nothing',count:2,deg:135},
+  {label:'Secret Admin',skin:'realadmin',count:1,deg:225},
+  {label:'Nothing ×3',skin:'nothing',count:3,deg:315}
+];
+function triggerJackpot(){
+  const sc=document.getElementById('jpscene');
+  const wheel=document.getElementById('jpwheel');
+  const res=document.getElementById('jpresult');
+  const btn=document.getElementById('jpcloseBtn');
+  res.textContent='Spinning…';btn.style.display='none';sc.classList.remove('hidden');
+  // Pick random segment
+  const idx=Math.floor(Math.random()*JP_SEGMENTS.length);
+  const seg=JP_SEGMENTS[idx];
+  // Spin: many rotations + offset so pointer lands on segment
+  const baseRot=1800+Math.random()*360;
+  const finalRot=baseRot+(360-seg.deg);
+  wheel.style.transform='rotate(0deg)';void wheel.offsetWidth;
+  wheel.style.transform='rotate('+finalRot+'deg)';
+  setTimeout(()=>{
+    // Apply rewards
+    for(let i=0;i<seg.count;i++)M.inventory[seg.skin]=(M.inventory[seg.skin]||0)+1;
+    saveMeta();refreshUI();
+    res.innerHTML='🎉 You won <b style="color:#ffd700">'+seg.label+'</b>!';
+    btn.style.display='inline-block';
+  },5100);
+}
+function closeJackpot(){document.getElementById('jpscene').classList.add('hidden')}
+
+// ----- UPGRADES -----
+function isUpgOwned(id){return M.upgradesPurchased&&M.upgradesPurchased[id]}
+function canBuyUpg(u){
+  if(isUpgOwned(u.id))return false;
+  if(u.req&&!isUpgOwned(u.req))return false;
+  return M.money>=u.cost;
+}
+function renderUpgrades(){
+  const el=document.getElementById('upglist');el.innerHTML='';
+  for(const u of UPGRADES){
+    const owned=isUpgOwned(u.id);
+    const reqMissing=u.req&&!isUpgOwned(u.req);
+    const card=document.createElement('div');
+    card.className='upgcard'+(owned?' owned':'');
+    card.innerHTML=`<div class="upgicon">${u.icon}</div><div class="upginfo"><div class="upgname">${u.name}</div><div class="upgdesc">${u.desc}${reqMissing?' — <span style="color:#ff8080">needs '+UPGRADES.find(x=>x.id===u.req).name+'</span>':''}</div><div class="upgcost">${owned?'OWNED':fmtMoney(u.cost)}</div></div>`;
+    const btn=document.createElement('button');btn.className='upgbuy'+(owned?' owned':'');
+    btn.textContent=owned?'✓':'Buy';btn.disabled=owned||!canBuyUpg(u);
+    btn.onclick=()=>buyUpg(u);
+    card.appendChild(btn);el.appendChild(card);
+  }
+}
+function buyUpg(u){
+  if(!canBuyUpg(u))return;
+  M.money-=u.cost;M.upgradesPurchased=M.upgradesPurchased||{};M.upgradesPurchased[u.id]=true;
+  saveMeta();refreshUI();renderUpgrades();updateLuckChip();
+  showAnnouncement('✨ Unlocked: '+u.name);
+}
+
+// ----- INDEX -----
+function renderIndex(){
+  const grid=document.getElementById('indexgrid');grid.innerHTML='';
+  const all=['poo','gy','rainbow','sixtyseven','nothing','admin','realadmin','secret'];
+  let claimable=0;
+  for(const sk of all){
+    const owned=(M.inventory[sk]||0)>0;
+    const claimed=M.claimedSkins&&M.claimedSkins[sk];
+    const card=document.createElement('div');
+    card.className='indexcard'+(owned?' owned':' locked')+(claimed?' claimed':'');
+    const prev=document.createElement('div');prev.className='ixprev';
+    if(owned||claimed)applySkinPreview(prev,sk);
+    else applySkinPreview(prev,sk);
+    card.appendChild(prev);
+    const nm=document.createElement('div');nm.className='ixname';
+    nm.textContent=owned?SKINS[sk].name:'???';
+    card.appendChild(nm);
+    const rar=document.createElement('div');rar.className='ixrar rar-'+(SKIN_RARITY[sk]||1);
+    rar.textContent=owned?RARITY_NAMES[SKIN_RARITY[sk]||1]:'';
+    card.appendChild(rar);
+    if(owned&&!claimed){claimable++;card.onclick=()=>claimIndex(sk)}
+    grid.appendChild(card);
+  }
+  if(claimable===0){
+    const note=document.createElement('div');note.style.cssText='grid-column:1/-1;color:#888;text-align:center;padding:10px;font-size:12px';
+    note.textContent=claimable===0?'No unclaimed skins right now.':'';
+  }
+}
+function claimIndex(sk){
+  M.claimedSkins=M.claimedSkins||{};
+  if(M.claimedSkins[sk])return;
+  M.claimedSkins[sk]=true;
+  M.money+=1000; // £10
+  saveMeta();refreshUI();renderIndex();
+  showAnnouncement('📖 Claimed +£10 for '+SKINS[sk].name);
+}
+
+// ----- SETTINGS -----
+function renderSettings(){
+  // Quality
+  const qc=document.getElementById('qualityctrl');qc.innerHTML='';
+  const qs=[100,200,300,400,500,600,700,800,900,1000];
+  const curQ=M.quality||600;
+  for(const q of qs){
+    const b=document.createElement('button');b.className='settingchip'+(curQ===q?' on':'');
+    b.textContent=q;b.onclick=()=>{M.quality=q;saveMeta();applyQuality();renderSettings()};qc.appendChild(b);
+  }
+  // Speed
+  const sc=document.getElementById('speedctrl');sc.innerHTML='';
+  const ss=[0.25,1,2,3,4,5];const curS=M.gameSpeed||1;
+  for(const s of ss){
+    const b=document.createElement('button');b.className='settingchip'+(curS===s?' on':'');
+    b.textContent=s+'x';b.onclick=()=>{M.gameSpeed=s;saveMeta();renderSettings()};sc.appendChild(b);
+  }
+  // Volume
+  const vc=document.getElementById('volctrl');vc.innerHTML='';
+  const vs=[0,0.25,0.5,0.75,1];const curV=M.musicVol===undefined?0.5:M.musicVol;
+  for(const v of vs){
+    const b=document.createElement('button');b.className='settingchip'+(curV===v?' on':'');
+    b.textContent=Math.round(v*100)+'%';b.onclick=()=>{M.musicVol=v;saveMeta();renderSettings()};vc.appendChild(b);
+  }
+}
+function applyQuality(){
+  const q=M.quality||600;
+  const px=Math.max(36,Math.min(80,Math.round(q/12.5))); // map 100-1000 to ~44-72
+  const board=document.getElementById('board');
+  if(board){
+    const sqs=board.querySelectorAll('.sq');
+    sqs.forEach(s=>{s.style.width=px+'px';s.style.height=px+'px';s.style.fontSize=Math.round(px*0.6)+'px'});
+    board.style.gridTemplateColumns='repeat(8,'+px+'px)';
+    board.style.gridTemplateRows='repeat(8,'+px+'px)';
+  }
+}
+
+// ----- SAVE / LOAD CODE -----
+function copySaveCode(){
+  const code=btoa(encodeURIComponent(JSON.stringify(M)));
+  document.getElementById('savecode').textContent=code;
+  document.getElementById('savecodebox').classList.remove('hidden');
+  try{navigator.clipboard&&navigator.clipboard.writeText(code);showAnnouncement('💾 Save code copied to clipboard')}
+  catch(e){showAnnouncement('💾 Save code shown below — copy manually')}
+}
+function promptLoadCode(){
+  const code=prompt('Paste your save code:');
+  if(!code)return;
+  try{
+    const data=JSON.parse(decodeURIComponent(atob(code.trim())));
+    if(!data||typeof data!=='object')throw new Error('Bad data');
+    M=Object.assign(loadMeta(),data);saveMeta();refreshUI();updateLuckChip();applyQuality();
+    showAnnouncement('✅ Progress restored');
+  }catch(e){alert('Invalid save code')}
+}
+
+// ----- RESET PROGRESS WITH PASSWORD -----
+function resetProgressFlow(){
+  // Step 1: no password yet -> prompt to set one
+  if(!M.resetPassword){
+    const p=prompt('First, set a password. You\'ll be asked to type it again to confirm reset.\n\nNew password:');
+    if(!p)return;
+    M.resetPassword=p;saveMeta();
+    document.getElementById('resetsub').textContent='Password set. Click "Reset…" again to confirm.';
+    return;
+  }
+  // Step 2: show input
+  document.getElementById('resetinput').classList.remove('hidden');
+}
+function confirmResetProgress(){
+  const v=document.getElementById('resetpass').value;
+  if(v!==M.resetPassword){alert('Wrong password.');return}
+  if(!confirm('Wipe ALL progress permanently?'))return;
+  localStorage.removeItem('chessmeta');localStorage.removeItem('chesslb');
+  location.reload();
+}
+function cancelReset(){document.getElementById('resetinput').classList.add('hidden')}
+
+// ----- WIN MODAL -----
+function showWinModal(result,change,oppName){
+  const m=document.getElementById('winmodal');m.classList.remove('hidden','loss','draw');
+  if(result===1){m.classList.add('winmodal');document.getElementById('winemoji').textContent='🏆 VICTORY';document.getElementById('winhead').innerHTML='You Win! <button class="mclose" onclick="closeModal(\'winmodal\')">✕</button>'}
+  else if(result===0){m.classList.add('loss');document.getElementById('winemoji').textContent='💔 DEFEAT';document.getElementById('winhead').innerHTML='You Lost <button class="mclose" onclick="closeModal(\'winmodal\')">✕</button>'}
+  else{m.classList.add('draw');document.getElementById('winemoji').textContent='🤝 DRAW';document.getElementById('winhead').innerHTML='Draw <button class="mclose" onclick="closeModal(\'winmodal\')">✕</button>'}
+  const sub=document.getElementById('winsub');
+  if(oppName)sub.innerHTML='vs <b>'+oppName+'</b><br>ELO change: <b>'+(change>=0?'+':'')+change+'</b><br>New ELO: <b>'+M.elo+'</b>';
+  else sub.innerHTML='Local game — no ELO change.';
+}
+
+// Hook into existing ELO toast to also show modal
+const _origShowEloToast=showEloToast;
+showEloToast=function(change,oppName,result,newElo){_origShowEloToast(change,oppName,result,newElo);showWinModal(result,change,oppName)};
+
+// ----- DRAW DETECTION (50-move, 3-fold repetition, insufficient material) -----
+function fenLite(b,t){
+  let s='';for(let r=0;r<8;r++){for(let c=0;c<8;c++)s+=b[r][c]||'.';s+='/'}
+  return s+'|'+t;
+}
+function checkDrawRules(){
+  if(!G||G.status!=='playing')return;
+  // 50-move
+  if((G.fiftyMove||0)>=100){G.status='draw';G.drawReason='50-move rule';showDrawNotice()}
+  // 3-fold
+  const f=fenLite(G.board,G.turn);
+  G.posHist=G.posHist||{};
+  G.posHist[f]=(G.posHist[f]||0)+1;
+  if(G.posHist[f]>=3){G.status='draw';G.drawReason='3-fold repetition';showDrawNotice()}
+  // Insufficient material
+  if(insufficientMaterial(G.board)){G.status='draw';G.drawReason='Insufficient material';showDrawNotice()}
+}
+function insufficientMaterial(b){
+  const ps=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(b[r][c]&&b[r][c].toLowerCase()!=='k')ps.push(b[r][c].toLowerCase());
+  if(ps.length===0)return true;
+  if(ps.length===1&&(ps[0]==='n'||ps[0]==='b'))return true;
+  if(ps.length===2&&ps[0]==='b'&&ps[1]==='b')return true; // approx
+  return false;
+}
+function showDrawNotice(){
+  showAnnouncement('🤝 Draw: '+G.drawReason);
+  if(G.opponent&&G.opponent.type==='ai'&&!G.opponent._eloApplied){G.opponent._eloApplied=true;showWinModal(0.5,0,G.opponent.name)}
+  else showWinModal(0.5,0,null);
+}
+
+// ----- HIDDEN: free shop unlock via specific sequence -----
+function trackHiddenFreeShop(action){
+  if(M.hiddenFreeShop)return;
+  M.hiddenSeq=M.hiddenSeq||{};
+  const s=M.hiddenSeq;
+  if(action==='move10'&&M.totalMoves>=10)s.move10=true;
+  if(action==='roll'&&s.move10)s.roll=true;
+  if(action==='items'&&s.roll)s.items=true;
+  if(action==='items_close'&&s.items)s.itemsC=true;
+  if(action==='shop'&&s.itemsC)s.shop=true;
+  if(action==='shop_close'&&s.shop)s.shopC=true;
+  if(action==='lb'&&s.shopC)s.lb=true;
+  if(action==='lb_close'&&s.lb){M.hiddenFreeShop=true;saveMeta();showAnnouncement('🎉 SECRET: Free shop unlocked!');renderShop()}
+}
+function markHiddenLb(){trackHiddenFreeShop('lb')}
+
+// ----- AUGMENT OPENMODAL FOR NEW MODALS + HIDDEN TRACKING -----
+const _origOpenModal=openModal;
+openModal=function(id){
+  _origOpenModal(id);
+  if(id==='upgmodal')renderUpgrades();
+  if(id==='indexmodal')renderIndex();
+  if(id==='settingsmodal')renderSettings();
+  if(id==='itemmodal')trackHiddenFreeShop('items');
+  if(id==='shopmodal')trackHiddenFreeShop('shop');
+  if(id==='lbmodal')trackHiddenFreeShop('lb');
+};
+const _origCloseModal=closeModal;
+closeModal=function(id){
+  _origCloseModal(id);
+  if(id==='itemmodal')trackHiddenFreeShop('items_close');
+  if(id==='shopmodal')trackHiddenFreeShop('shop_close');
+  if(id==='lbmodal')trackHiddenFreeShop('lb_close');
+};
+
+// ----- 100x NEW GAME SECRET -----
+const _origUserNewGame=userNewGame;
+userNewGame=function(){
+  _origUserNewGame();
+  if(M.newGameClicks===100&&!M.secret100){
+    M.secret100=true;
+    M.inventory.nothing=(M.inventory.nothing||0)+1;
+    M.inventory.admin=(M.inventory.admin||0)+1;
+    saveMeta();refreshUI();
+    showAnnouncement('🎉 SECRET: 100 new games — Nothing + Admin skins granted!');
+  }
+};
+
+// ----- OVERRIDE RENDER SHOP TO INCLUDE EVERYTHING -----
+const _origRenderShop=renderShop;
+renderShop=function(){
+  _origRenderShop();
+  const gp=document.getElementById('gamepassshop');
+  // Add money packs
+  const moneySec=document.createElement('div');moneySec.className='shopsection';moneySec.textContent='💵 Money Packs';
+  gp.parentElement.insertBefore(moneySec,gp.nextSibling);
+  for(const p of MONEY_PACKS){
+    const card=document.createElement('div');card.className='packcard';
+    const free=M.hiddenFreeShop;
+    card.innerHTML=`<div class="packicon">${p.icon}</div><div class="packinfo"><div class="packname">${p.name}</div><div class="packdesc">${p.desc}</div><div class="packprice">${free?'FREE':fmtMoney(p.price)}</div></div>`;
+    const b=document.createElement('button');b.className='packbuy';b.textContent='Buy';b.disabled=!free&&M.money<p.price;
+    b.onclick=()=>{const c=free?0:p.price;if(M.money<c)return;M.money-=c;M.money+=p.pounds;saveMeta();refreshUI();renderShop();showAnnouncement('+'+fmtMoney(p.pounds))};
+    card.appendChild(b);gp.parentElement.insertBefore(card,moneySec.nextSibling);
+  }
+  // Add gamepasses
+  const gpSec=document.createElement('div');gpSec.className='shopsection';gpSec.textContent='🎟 Premium Gamepasses';
+  gp.parentElement.appendChild(gpSec);
+  for(const g of GAMEPASSES){
+    const owned=M.gamepasses&&M.gamepasses[g.id];
+    const reqOk=!g.req||(M.gamepasses&&M.gamepasses[g.req]);
+    const card=document.createElement('div');
+    card.className='packcard '+(g.id==='vip'?'vip':g.id==='nvp'?'nvp':g.id==='nvpPlus'?'nvp-plus':g.id==='nvpPlusPlus'?'nvp-plus-plus':'')+(!reqOk?' locked-pack':'');
+    const free=M.hiddenFreeShop;
+    card.innerHTML=`<div class="packicon">${g.icon}</div><div class="packinfo"><div class="packname">${g.name}${owned?' ✓':''}</div><div class="packdesc">${g.desc}</div><div class="packprice">${free?'FREE':fmtMoney(g.price)}</div></div>`;
+    const b=document.createElement('button');b.className='packbuy';
+    b.textContent=owned?'Owned':!reqOk?'Locked':'Buy';
+    b.disabled=owned||!reqOk||(!free&&M.money<g.price);
+    b.onclick=()=>{const c=free?0:g.price;if(M.money<c)return;M.money-=c;M.gamepasses=M.gamepasses||{};M.gamepasses[g.id]=true;saveMeta();refreshUI();renderShop();updateLuckChip();showAnnouncement('🎉 '+g.name+' purchased!')};
+    card.appendChild(b);gp.parentElement.appendChild(card);
+  }
+  // Server luck
+  const slSec=document.createElement('div');slSec.className='shopsection';slSec.textContent='🍀 Server Luck Boost';
+  gp.parentElement.appendChild(slSec);
+  const slNote=document.createElement('div');slNote.style.cssText='font-size:11px;color:#aac;margin-bottom:8px';slNote.textContent='Each tier permanently multiplies your luck. Stacks with upgrades & gamepasses.';
+  gp.parentElement.appendChild(slNote);
+  const curSL=Number(M.serverLuckMult)||1;
+  for(const sl of SERVER_LUCK){
+    const free=M.hiddenFreeShop;
+    if(sl.mult<=curSL)continue;
+    if(sl.mult>curSL*2)continue; // only show next 1-2 tiers to avoid spam
+    const card=document.createElement('div');card.className='packcard';
+    card.innerHTML=`<div class="packicon">🍀</div><div class="packinfo"><div class="packname">${sl.mult}x Server Luck</div><div class="packdesc">Total: ${sl.mult}x luck multiplier</div><div class="packprice">${free?'FREE':fmtMoney(sl.price)}</div></div>`;
+    const b=document.createElement('button');b.className='packbuy';b.textContent='Buy';b.disabled=!free&&M.money<sl.price;
+    b.onclick=()=>{const c=free?0:sl.price;if(M.money<c)return;M.money-=c;M.serverLuckMult=sl.mult;saveMeta();refreshUI();renderShop();updateLuckChip();showAnnouncement('🍀 Server luck → '+sl.mult+'x')};
+    card.appendChild(b);gp.parentElement.appendChild(card);
+  }
+};
+
+// ----- AUTO ROLL COST CHANGE -----
+// Override toggleAutoRoll to use 1000 fake money (£10)
+const _origToggle=toggleAutoRoll;
+toggleAutoRoll=function(){
+  if(!M.autoRollOwned){
+    if(M.money<1000){showAnnouncement('Need £10 to buy Auto Roll!');return}
+    M.money-=1000;M.autoRollOwned=true;M.autoRollActive=true;
+    showAnnouncement('🎉 Auto Roll purchased!');saveMeta();refreshUI();startAutoRoll();return;
+  }
+  _origToggle();
+};
+// Update display
+const _origRefresh=refreshUI;
+refreshUI=function(){
+  _origRefresh();
+  const arb=document.getElementById('autorollbtn');
+  if(arb&&!M.autoRollOwned)arb.textContent='Buy Auto Roll £10.00';
+};
+
+// ----- AUTO ROLL SPEED RESPECTS GAMEPASSES -----
+const _origStartAutoRoll=startAutoRoll;
+startAutoRoll=function(){
+  if(autoRollTimer){clearInterval(autoRollTimer);autoRollTimer=null}
+  if(M.autoRollOwned&&M.autoRollActive){
+    const baseMs=1500/getRollSpeed()/(Number(M.gameSpeed)||1);
+    autoRollTimer=setInterval(()=>doSpin(),Math.max(150,baseMs));
+  }
+};
+
+// ----- MUSIC VOLUME -----
+const _origPlayNote=_playNote;
+_playNote=function(freq,dur,when,gain,type){
+  const vol=M&&M.musicVol!==undefined?M.musicVol:0.5;
+  _origPlayNote(freq,dur,when,gain*vol*2,type);
+};
+
+// ----- INIT FOR NEW STATE FIELDS -----
+function v3MigrateMeta(){
+  if(!M.upgradesPurchased)M.upgradesPurchased={};
+  if(!M.gamepasses)M.gamepasses={};
+  if(M.serverLuckMult===undefined)M.serverLuckMult=1;
+  if(!M.claimedSkins)M.claimedSkins={};
+  if(M.quality===undefined)M.quality=600;
+  if(M.gameSpeed===undefined)M.gameSpeed=1;
+  if(M.musicVol===undefined)M.musicVol=0.5;
+  if(!M.hiddenSeq)M.hiddenSeq={};
+  saveMeta();
+}
+
+// Boot V3
 M=loadMeta();
+v3MigrateMeta();
 newGame();
 applySkinToBoard();
 refreshUI();
+updateLuckChip();
+applyQuality();
 startAutoRoll();
 </script>
 </body>
