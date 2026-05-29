@@ -390,6 +390,24 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 .packcard.locked-pack{opacity:.55;position:relative}
 .packcard.locked-pack::after{content:'🔒';position:absolute;top:8px;right:8px;font-size:20px}
 
+/* Account */
+.accountbtn{background:linear-gradient(135deg,#1976d2,#4a80c0);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px}
+.accountbtn:hover{background:linear-gradient(135deg,#2080e2,#5a90d0)}
+.accountbtn.loggedin{background:linear-gradient(135deg,#2a7a2a,#4ada4a);color:#fff}
+.acctabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid #1e3a5f}
+.acctab{padding:8px 14px;cursor:pointer;color:#888;font-size:13px;border-bottom:2px solid transparent}
+.acctab.active{color:#fff;border-bottom-color:#4a80c0}
+.accform{display:flex;flex-direction:column;gap:10px}
+.accform input{background:#0a1830;border:1px solid #2a5080;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px}
+.accform input:focus{outline:none;border-color:#4a80c0}
+.accform label{font-size:12px;color:#aac;margin-bottom:-4px}
+.accerr{color:#ff8080;font-size:12px;min-height:16px}
+.accprofile{background:#0a1830;border:1px solid #1e3a5f;border-radius:10px;padding:14px;display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.accav{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#1976d2,#4a80c0);display:flex;justify-content:center;align-items:center;font-size:28px;font-weight:bold;color:#fff;flex-shrink:0}
+.accinfo{flex:1;min-width:0}
+.accname{font-weight:bold;color:#fff;font-size:16px}
+.accmeta{font-size:11px;color:#aac;margin-top:2px}
+
 /* Mobile */
 @media (max-width:760px){
   .container{flex-direction:column;align-items:center}
@@ -424,6 +442,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
   <div class="rollcount" id="rollsdisp">Rolls: 0</div>
   <div class="elo" id="elodisp"><span class="lbl">ELO</span><span class="val">500</span></div>
   <div class="tbright">
+    <button class="accountbtn" id="acctbtn" onclick="openModal('acctmodal')">👤 Sign Up</button>
     <button class="topiconbtn" onclick="openModal('upgmodal')" title="Upgrades">⚙️</button>
     <button class="topiconbtn" onclick="openModal('indexmodal')" title="Skin Index">📖</button>
     <button class="musicbtn" id="musicbtn" onclick="toggleMusic()" title="Toggle music">🎵</button>
@@ -604,6 +623,13 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
       </div>
       <div class="frsearchres" id="frsearchres"></div>
     </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="acctmodal">
+  <div class="mbox">
+    <div class="mtitle" id="accttitle">👤 Account <button class="mclose" onclick="closeModal('acctmodal')">✕</button></div>
+    <div id="acctview"></div>
   </div>
 </div>
 
@@ -2460,6 +2486,108 @@ function v3MigrateMeta(){
   saveMeta();
 }
 
+// ============================================================
+// ACCOUNTS (local — username + password stored in browser)
+// ============================================================
+let _acctTab='signup';
+function renderAccount(){
+  const v=document.getElementById('acctview');
+  const title=document.getElementById('accttitle');
+  if(M.account){
+    title.innerHTML='👤 Account <button class="mclose" onclick="closeModal(\'acctmodal\')">✕</button>';
+    const created=new Date(M.account.createdAt||Date.now()).toLocaleDateString();
+    v.innerHTML=`
+      <div class="accprofile">
+        <div class="accav">${M.account.username[0].toUpperCase()}</div>
+        <div class="accinfo">
+          <div class="accname">${M.account.username}</div>
+          <div class="accmeta">Joined ${created} • ELO ${M.elo} • ${M.gamesPlayed||0} games</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#aac;margin-bottom:12px">Your username shows up on the leaderboard.</div>
+      <div style="display:flex;gap:8px"><button class="dangerbtn" onclick="logoutAccount()">Log out</button></div>`;
+    return;
+  }
+  const isSignup=_acctTab==='signup';
+  v.innerHTML=`
+    <div class="acctabs">
+      <div class="acctab ${isSignup?'active':''}" onclick="switchAcctTab('signup')">Sign Up</div>
+      <div class="acctab ${!isSignup?'active':''}" onclick="switchAcctTab('login')">Log In</div>
+    </div>
+    <div class="accform">
+      <label>Username</label>
+      <input type="text" id="accusername" placeholder="pick a name" maxlength="20" autocomplete="off">
+      <label>Password</label>
+      <input type="password" id="accpassword" placeholder="${isSignup?'create a password':'your password'}" autocomplete="off">
+      ${isSignup?'<label>Confirm Password</label><input type="password" id="accconfirm" placeholder="repeat password" autocomplete="off">':''}
+      <div class="accerr" id="accerr"></div>
+      <button class="modebtn mode-vs" style="text-align:center" onclick="${isSignup?'createAccount':'loginAccount'}()">${isSignup?'Create Account':'Log In'}</button>
+    </div>`;
+}
+function switchAcctTab(t){_acctTab=t;renderAccount()}
+function createAccount(){
+  const u=document.getElementById('accusername').value.trim();
+  const p=document.getElementById('accpassword').value;
+  const c=document.getElementById('accconfirm').value;
+  const err=document.getElementById('accerr');
+  if(u.length<2){err.textContent='Username too short';return}
+  if(!/^[A-Za-z0-9_-]+$/.test(u)){err.textContent='Letters, numbers, _ and - only';return}
+  if(p.length<3){err.textContent='Password must be at least 3 chars';return}
+  if(p!==c){err.textContent='Passwords do not match';return}
+  // Check existing accounts list (multiple accounts can exist on same browser)
+  const dir=JSON.parse(localStorage.getItem('chessaccts')||'{}');
+  if(dir[u.toLowerCase()]){err.textContent='Username already taken';return}
+  dir[u.toLowerCase()]={username:u,password:btoa(p),createdAt:Date.now()};
+  localStorage.setItem('chessaccts',JSON.stringify(dir));
+  M.account={username:u,createdAt:Date.now()};
+  saveMeta();renderAccount();refreshAccountBtn();
+  // Update leaderboard with new name
+  const lb=loadLb();const me=lb.find(e=>e.name==='You'||e.name===M.account.username);
+  if(me)me.name=u;else lb.push({name:u,score:getScore()});
+  saveLb(lb);
+  showAnnouncement('🎉 Welcome, '+u+'!');
+}
+function loginAccount(){
+  const u=document.getElementById('accusername').value.trim();
+  const p=document.getElementById('accpassword').value;
+  const err=document.getElementById('accerr');
+  const dir=JSON.parse(localStorage.getItem('chessaccts')||'{}');
+  const rec=dir[u.toLowerCase()];
+  if(!rec){err.textContent='No account with that username';return}
+  if(rec.password!==btoa(p)){err.textContent='Wrong password';return}
+  M.account={username:rec.username,createdAt:rec.createdAt};
+  saveMeta();renderAccount();refreshAccountBtn();
+  showAnnouncement('👋 Welcome back, '+rec.username+'!');
+}
+function logoutAccount(){
+  if(!confirm('Log out? Your progress stays saved on this device.'))return;
+  M.account=null;saveMeta();renderAccount();refreshAccountBtn();
+}
+function refreshAccountBtn(){
+  const b=document.getElementById('acctbtn');if(!b)return;
+  if(M.account){b.textContent='👤 '+M.account.username;b.classList.add('loggedin')}
+  else{b.textContent='👤 Sign Up';b.classList.remove('loggedin')}
+}
+
+// Hook account modal into openModal
+const _origOpenModal2=openModal;
+openModal=function(id){
+  _origOpenModal2(id);
+  if(id==='acctmodal')renderAccount();
+};
+
+// Use account name in leaderboard sync
+const _origSyncLb=syncLb;
+syncLb=function(){
+  _origSyncLb();
+  if(M.account){
+    const lb=loadLb();
+    const me=lb.find(e=>e.name==='You');
+    if(me)me.name=M.account.username;
+    saveLb(lb);
+  }
+};
+
 // Boot V3
 M=loadMeta();
 v3MigrateMeta();
@@ -2468,6 +2596,7 @@ applySkinToBoard();
 refreshUI();
 updateLuckChip();
 applyQuality();
+refreshAccountBtn();
 startAutoRoll();
 </script>
 </body>
