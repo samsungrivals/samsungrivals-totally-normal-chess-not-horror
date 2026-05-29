@@ -2198,7 +2198,8 @@ const GAMEPASSES=[
   {id:'vip',name:'VIP',desc:'2x luck + unlocks NVP',price:900,icon:'⭐'},
   {id:'nvp',name:'NVP',desc:'Magnus bot, 2x cash, 2x luck, 2x roll speed (requires VIP)',price:9900,icon:'👑',req:'vip'},
   {id:'nvpPlus',name:'NVP+',desc:'Unlocks NVP++ (requires NVP)',price:99900,icon:'💜',req:'nvp'},
-  {id:'nvpPlusPlus',name:'NVP++',desc:'2x roll speed, 8x cash, 64x luck, VIP board+piece (requires NVP+)',price:999900,icon:'💠',req:'nvpPlus'}
+  {id:'nvpPlusPlus',name:'NVP++',desc:'2x roll speed, 8x cash, 64x luck, VIP board+piece (requires NVP+)',price:999900,icon:'💠',req:'nvpPlus'},
+  {id:'nvpEquals',name:'🆕 NVP=+++++=======+++++======++++++++==',desc:'10× cash, 10× luck, 10× roll speed (requires NVP++)',price:300000000,icon:'♾️',req:'nvpPlusPlus'}
 ];
 
 // ----- LUCK / MULTIPLIER CALC -----
@@ -3457,15 +3458,7 @@ function adminGiveLuck10(){
   showAnnouncement('🍀 Luck ×10 — total server luck now '+M.serverLuckMult+'x');
 }
 
-// Add the new gamepass
-GAMEPASSES.push({
-  id:'nvpEquals',
-  name:'NVP=+++++=======+++++======++++++++==',
-  desc:'10× cash, 10× luck, 10× roll speed (requires NVP++)',
-  price:300000000, // £3,000,000 in pence
-  icon:'♾️',
-  req:'nvpPlusPlus'
-});
+// (NVP=+++++ gamepass is declared up in the original GAMEPASSES array)
 
 // Wrap multipliers so the new gamepass stacks
 const _origGetLuckV2=getLuck;
