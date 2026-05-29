@@ -2649,14 +2649,241 @@ syncLb=function(){
 };
 
 // Boot V3
+// ============================================================
+// SERVER API — real multiplayer (leaderboard, friends, matchmaking, announcements)
+// ============================================================
+window.API=(()=>{
+  async function call(path,opts){
+    try{const res=await fetch(path,opts);if(!res.ok)throw new Error('HTTP '+res.status);return await res.json()}
+    catch(e){console.warn('[api]',path,'failed:',e.message);return{ok:false,err:e.message,offline:true}}
+  }
+  const j={'Content-Type':'application/json'};
+  return{
+    signup:(u,p)=>call('/api/signup',{method:'POST',headers:j,body:JSON.stringify({username:u,password:p})}),
+    login:(u,p)=>call('/api/login',{method:'POST',headers:j,body:JSON.stringify({username:u,password:p})}),
+    leaderboard:()=>call('/api/leaderboard'),
+    elo:(u,e)=>call('/api/elo',{method:'POST',headers:j,body:JSON.stringify({username:u,elo:e})}),
+    searchUsers:q=>call('/api/users/search?q='+encodeURIComponent(q)),
+    friends:u=>call('/api/friends?user='+encodeURIComponent(u)),
+    addFriend:(u,f)=>call('/api/friends/add',{method:'POST',headers:j,body:JSON.stringify({user:u,friend:f})}),
+    removeFriend:(u,f)=>call('/api/friends/remove',{method:'POST',headers:j,body:JSON.stringify({user:u,friend:f})}),
+    announce:(u,m)=>call('/api/announce',{method:'POST',headers:j,body:JSON.stringify({user:u,msg:m})}),
+    announceSince:ts=>call('/api/announce/since?ts='+ts),
+    queueJoin:(u,e)=>call('/api/queue/join',{method:'POST',headers:j,body:JSON.stringify({user:u,elo:e})}),
+    queueLeave:u=>call('/api/queue/leave',{method:'POST',headers:j,body:JSON.stringify({user:u})}),
+    stats:()=>call('/api/stats')
+  };
+})();
+
+// ----- Server-backed leaderboard -----
+async function syncServerLeaderboard(){
+  const r=await API.leaderboard();
+  if(r&&r.ok&&r.lb){
+    const myName=M.account&&M.account.username;
+    const lb=r.lb.map(e=>({name:e.name,elo:e.elo,isAI:e.isAI,self:myName===e.name}));
+    saveLb(lb);
+    renderLeaderboard();
+    console.log('[lb] server returned '+r.lb.length+' entries, '+r.totalUsers+' real users');
+  }else{
+    syncLb();renderLeaderboard();
+    console.log('[lb] server unreachable, using local seed');
+  }
+}
+
+// ----- Server signup/login override -----
+createAccount=async function(){
+  const u=document.getElementById('accusername').value.trim();
+  const p=document.getElementById('accpassword').value;
+  const c=document.getElementById('accconfirm').value;
+  const err=document.getElementById('accerr');
+  if(u.length<2){err.textContent='Username too short';return}
+  if(!/^[A-Za-z0-9_-]+$/.test(u)){err.textContent='Letters, numbers, _ and - only';return}
+  if(p.length<3){err.textContent='Password must be at least 3 chars';return}
+  if(p!==c){err.textContent='Passwords do not match';return}
+  err.textContent='Creating account…';
+  const r=await API.signup(u,p);
+  if(!r.ok){err.textContent='Failed: '+(r.err||'server unreachable');return}
+  M.account={username:r.user.username,createdAt:Date.now()};
+  saveMeta();renderAccount();refreshAccountBtn();
+  showAnnouncement('🎉 Welcome, '+r.user.username+'!');
+  syncServerLeaderboard();
+};
+
+loginAccount=async function(){
+  const u=document.getElementById('accusername').value.trim();
+  const p=document.getElementById('accpassword').value;
+  const err=document.getElementById('accerr');
+  err.textContent='Logging in…';
+  const r=await API.login(u,p);
+  if(!r.ok){err.textContent='Failed: '+(r.err||'server unreachable');return}
+  M.account={username:r.user.username,createdAt:Date.now()};
+  M.elo=r.user.elo;
+  saveMeta();renderAccount();refreshAccountBtn();refreshUI();
+  showAnnouncement('👋 Welcome back, '+r.user.username+'!');
+  syncServerLeaderboard();
+};
+
+// ----- Friend search hits server -----
+searchFriends=async function(){
+  const q=document.getElementById('frsearch').value.toLowerCase().trim();
+  const el=document.getElementById('frsearchres');
+  if(!q){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Start typing to search real players...</div>';return}
+  el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Searching…</div>';
+  const r=await API.searchUsers(q);
+  if(!r.ok||!r.users){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Search failed</div>';return}
+  if(r.users.length===0){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No players found</div>';return}
+  el.innerHTML='';
+  for(const u of r.users){
+    const isFr=(M.friends||[]).find(f=>f.name===u.name);
+    const row=document.createElement('div');row.className='frrow';
+    row.innerHTML=`<div class="frav">${u.name[0]}</div><div class="frinfo"><div class="frname">${u.name}</div><div class="frstat">ELO ${u.elo} • ${u.isAI?'🤖 AI':'👤 Player'}</div></div>`;
+    const acts=document.createElement('div');acts.className='fractions';
+    const b=document.createElement('button');b.className='skinbtn';
+    if(isFr){b.textContent='✓ Added';b.disabled=true;b.classList.add('equipped')}
+    else{b.textContent='+ Add';b.onclick=async()=>{await addLbFriend(u.name,u.elo);searchFriends()}}
+    acts.appendChild(b);row.appendChild(acts);el.appendChild(row);
+  }
+};
+
+// ----- Add friend syncs with server -----
+const _origAddLbFriend=addLbFriend;
+addLbFriend=async function(name,elo){
+  M.friends=M.friends||[];
+  if(M.friends.find(f=>f.name===name))return;
+  M.friends.push({name,elo,online:true});
+  saveMeta();
+  if(M.account){try{await API.addFriend(M.account.username,name)}catch(e){}}
+  showAnnouncement('👥 Added '+name);
+  if(!document.getElementById('lbmodal').classList.contains('hidden'))renderLeaderboard();
+  if(!document.getElementById('frmodal').classList.contains('hidden'))renderFriendsList();
+};
+
+// ----- Friends list pulls from server when logged in -----
+async function renderFriendsFromServer(){
+  if(!M.account){
+    document.getElementById('frlist').innerHTML='<div style="color:#888;text-align:center;padding:20px">👤 Sign up to use friends across the multiplayer pool.<br>Click <b>👤 Sign Up</b> in the top bar.</div>';
+    return;
+  }
+  const r=await API.friends(M.account.username);
+  if(r.ok&&r.friends){M.friends=r.friends;saveMeta()}
+  renderFriendsList();
+}
+
+const _origRemoveFriend=removeFriend;
+removeFriend=async function(name){
+  M.friends=(M.friends||[]).filter(f=>f.name!==name);saveMeta();
+  if(M.account)try{await API.removeFriend(M.account.username,name)}catch(e){}
+  renderFriendsList();
+};
+
+// ----- Matchmaking uses server queue -----
+let _qPollTimer=null;
+const _origFindMatchAsync=findMatchAsync;
+findMatchAsync=async function(){
+  if(!M.account){
+    showAnnouncement('🔒 Sign up to find real opponents (or playing AI fallback)');
+    _origFindMatchAsync();return;
+  }
+  document.getElementById('myeloshow').textContent=M.elo;
+  document.getElementById('mmsearching').classList.remove('hidden');
+  document.getElementById('mmfound').classList.add('hidden');
+  openModal('mmmodal');
+  document.querySelector('#mmsearching .mmsearchtext').textContent='Searching real players…';
+  const tryMatch=async()=>{
+    const r=await API.queueJoin(M.account.username,M.elo);
+    if(r&&r.ok&&r.matched&&r.opponent){
+      const o=r.opponent;
+      _pmatch={name:o.name,elo:o.elo,depth:o.elo<600?0:o.elo<1200?1:2,behavior:'normal'};
+      document.getElementById('mmname').textContent=o.name;
+      document.getElementById('mmelo').textContent=o.elo;
+      document.getElementById('mmmyelo').textContent=M.elo;
+      document.getElementById('mmoppav').textContent=o.name[0];
+      document.getElementById('mmsearching').classList.add('hidden');
+      document.getElementById('mmfound').classList.remove('hidden');
+      return true;
+    }
+    return false;
+  };
+  if(await tryMatch())return;
+  let n=0;
+  _qPollTimer=setInterval(async()=>{
+    n++;
+    const sub=document.querySelector('#mmsearching .mmsearchsub');
+    if(sub)sub.textContent='Searching… '+(n*3)+'s elapsed (will fall back to AI at 30s)';
+    if(n>=10){
+      clearInterval(_qPollTimer);_qPollTimer=null;
+      const opp=makeMatchOpponent();_pmatch=opp;
+      document.getElementById('mmname').textContent=opp.name+' (AI)';
+      document.getElementById('mmelo').textContent=opp.elo;
+      document.getElementById('mmmyelo').textContent=M.elo;
+      document.getElementById('mmoppav').textContent=opp.name[0];
+      document.getElementById('mmsearching').classList.add('hidden');
+      document.getElementById('mmfound').classList.remove('hidden');
+      return;
+    }
+    if(await tryMatch()){clearInterval(_qPollTimer);_qPollTimer=null}
+  },3000);
+};
+
+cancelMatch=async function(){
+  if(_qPollTimer){clearInterval(_qPollTimer);_qPollTimer=null}
+  if(M.account)try{await API.queueLeave(M.account.username)}catch(e){}
+  _pmatch=null;closeModal('mmmodal');
+};
+
+// ----- Global announcements broadcast through server -----
+adminAnnounce=async function(){
+  const msg=prompt('Global announcement (broadcasts to all players):');
+  if(!msg)return;
+  const sender=(M.account&&M.account.username)||'Admin';
+  const r=await API.announce(sender,msg);
+  if(r&&r.ok)showAnnouncement('📢 Broadcast sent to all players');
+  else showAnnouncement('Broadcast failed (server unreachable)');
+};
+
+// ----- ELO sync to server after games -----
+const _origMaybeApplyElo=maybeApplyElo;
+maybeApplyElo=function(){
+  const before=M.elo;
+  _origMaybeApplyElo();
+  if(M.account&&M.elo!==before){API.elo(M.account.username,M.elo).catch(()=>{})}
+};
+
+// ----- Override openModal for server-backed views -----
+const _origOpenModal3=openModal;
+openModal=function(id){
+  _origOpenModal3(id);
+  if(id==='lbmodal')syncServerLeaderboard();
+  if(id==='frmodal'){switchFrTab('list');renderFriendsFromServer()}
+};
+
+// ----- Poll for incoming announcements every 8 seconds -----
+let _lastAnnounceTs=Date.now();
+async function pollAnnouncements(){
+  const r=await API.announceSince(_lastAnnounceTs);
+  if(r&&r.ok&&r.announcements&&r.announcements.length){
+    for(const a of r.announcements){
+      const sender=a.user||'Admin';
+      const me=M.account&&M.account.username===sender;
+      if(!me)showAnnouncement('📢 '+sender+': '+a.msg);
+      _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+    }
+  }
+}
+setInterval(pollAnnouncements,8000);
+
+// ============================================================
+// BOOT
+// ============================================================
 M=loadMeta();
 v3MigrateMeta();
-// Clean stale leaderboard rows (old "score"-only format) and reseed AI rivals
+// Reseed local leaderboard as a safety net, then immediately hit the server
 (function v3MigrateLb(){
   let lb=loadLb().filter(e=>e&&typeof e.elo==='number'&&e.elo>0);
   saveLb(lb);
   syncLb();
 })();
+syncServerLeaderboard();
 newGame();
 applySkinToBoard();
 refreshUI();

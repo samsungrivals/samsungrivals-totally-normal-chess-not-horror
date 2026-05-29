@@ -2,12 +2,12 @@
   "name": "chess-app",
   "version": "1.0.0",
   "private": true,
-  "description": "Chess app with skins, ELO, matchmaking, shop, and AI opponents",
+  "description": "Chess app with skins, ELO, matchmaking, shop, AI opponents, and a small multiplayer backend",
   "scripts": {
-    "start": "serve -l tcp://0.0.0.0:${PORT:-3000}"
+    "start": "node server.js"
   },
   "dependencies": {
-    "serve": "^14.2.4"
+    "express": "^4.19.2"
   },
   "engines": {
     "node": ">=18"
