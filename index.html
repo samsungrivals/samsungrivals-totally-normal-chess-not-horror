@@ -520,7 +520,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 
 <div class="modal hidden" id="lbmodal">
   <div class="mbox">
-    <div class="mtitle">🏆 Leaderboards — Top 3 <button class="mclose" onclick="closeModal('lbmodal')">✕</button></div>
+    <div class="mtitle">🏆 Leaderboards — Top 10 by ELO <button class="mclose" onclick="closeModal('lbmodal')">✕</button></div>
     <div id="lblist"></div>
   </div>
 </div>
@@ -2640,6 +2640,12 @@ syncLb=function(){
 // Boot V3
 M=loadMeta();
 v3MigrateMeta();
+// Clean stale leaderboard rows (old "score"-only format) and reseed AI rivals
+(function v3MigrateLb(){
+  let lb=loadLb().filter(e=>e&&typeof e.elo==='number'&&e.elo>0);
+  saveLb(lb);
+  syncLb();
+})();
 newGame();
 applySkinToBoard();
 refreshUI();
