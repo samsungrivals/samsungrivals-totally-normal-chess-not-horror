@@ -192,6 +192,19 @@ app.post('/api/queue/join', (req, res) => {
   ok(res, { matched: false, queueSize: db.queue.length });
 });
 
+// --- Reset all real users' ELO to 500 ---
+app.post('/api/elo/reset-all', (req, res) => {
+  let count = 0;
+  for (const key in db.users) {
+    if (!db.users[key].isAI) {
+      db.users[key].elo = 500;
+      count++;
+    }
+  }
+  saveSoon();
+  ok(res, { reset: count });
+});
+
 // --- Real-time PvP match endpoints ---
 app.get('/api/match/state', (req, res) => {
   const { matchId, since } = req.query;
