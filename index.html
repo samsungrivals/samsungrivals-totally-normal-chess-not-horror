@@ -2565,7 +2565,14 @@ function renderAccount(){
         </div>
       </div>
       <div style="font-size:12px;color:#aac;margin-bottom:12px">Your username shows up on the leaderboard.</div>
-      <div style="display:flex;gap:8px"><button class="dangerbtn" onclick="logoutAccount()">Log out</button></div>`;
+      <div style="background:#1a2a40;border-left:3px solid #4a80c0;padding:10px 12px;border-radius:0 6px 6px 0;font-size:12px;color:#aaccff;margin-bottom:12px;line-height:1.5">
+        🌐 <b>Multiplayer sync:</b> if you signed up before the multiplayer server was deployed, your account exists only in this browser.
+        Click below to register it on the server so friends & matchmaking work.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="modebtn mode-vs" style="text-align:center" onclick="resyncAccountToServer()">🌐 Re-register on Server</button>
+        <button class="dangerbtn" onclick="logoutAccount()">Log out</button>
+      </div>`;
     return;
   }
   const isSignup=_acctTab==='signup';
@@ -2681,12 +2688,44 @@ async function syncServerLeaderboard(){
   if(r&&r.ok&&r.lb){
     const myName=M.account&&M.account.username;
     const lb=r.lb.map(e=>({name:e.name,elo:e.elo,isAI:e.isAI,self:myName===e.name}));
+    // Always include local user even if server doesn't know them yet
+    if(myName&&!lb.find(e=>e.name===myName)){
+      lb.push({name:myName,elo:Number(M.elo)||500,self:true,localOnly:true});
+      lb.sort((a,b)=>(Number(b.elo)||0)-(Number(a.elo)||0));
+    }
     saveLb(lb);
     renderLeaderboard();
+    // Show "no real players yet" hint if server has 0 real users
+    const lbEl=document.getElementById('lblist');
+    if(lbEl&&r.totalUsers===0){
+      const hint=document.createElement('div');
+      hint.style.cssText='margin-top:10px;padding:10px;background:#2a2a0d;border-left:3px solid #ffd700;border-radius:0 6px 6px 0;font-size:12px;color:#ffe080;line-height:1.5';
+      hint.innerHTML='⚠️ <b>No other real players on the server yet.</b><br>Share the URL with friends and ask them to sign up. If your account was made before multiplayer launched, click <b>👤</b> in the top bar → <b>Re-register on Server</b>.';
+      lbEl.appendChild(hint);
+    }
     console.log('[lb] server returned '+r.lb.length+' entries, '+r.totalUsers+' real users');
   }else{
     syncLb();renderLeaderboard();
     console.log('[lb] server unreachable, using local seed');
+  }
+}
+
+// Push local account to the multiplayer server
+async function resyncAccountToServer(){
+  if(!M.account){alert('No local account to sync. Sign up first.');return}
+  const pw=prompt('Set a password for your account on the multiplayer server:');
+  if(!pw||pw.length<3){alert('Password must be at least 3 chars');return}
+  let r=await API.signup(M.account.username,pw);
+  if(r&&r.err==='taken'){
+    r=await API.login(M.account.username,pw);
+    if(!r||!r.ok){alert('That username is already registered on the server with a different password. Pick a different username (logout and sign up fresh).');return}
+  }
+  if(r&&r.ok){
+    await API.elo(M.account.username,M.elo);
+    showAnnouncement('✅ Account synced to multiplayer server');
+    syncServerLeaderboard();
+  }else{
+    alert('Sync failed: '+((r&&r.err)||'server unreachable'));
   }
 }
 
