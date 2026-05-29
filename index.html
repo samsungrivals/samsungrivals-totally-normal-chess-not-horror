@@ -1154,14 +1154,26 @@ function loadLb(){try{return JSON.parse(localStorage.getItem('chesslb')||'[]')}c
 function saveLb(lb){localStorage.setItem('chesslb',JSON.stringify(lb))}
 function getScore(){let s=0;for(const k in M.upgrades)s+=M.upgrades[k];return s}
 
+const LB_AI=[
+  {name:'GrandmasterX',elo:2950},{name:'PawnPusher',elo:2480},{name:'CastleMaster',elo:2100},
+  {name:'KnightFork99',elo:1880},{name:'BishopPairBen',elo:1720},{name:'EndgameEric',elo:1640},
+  {name:'TacticalTom',elo:1510},{name:'BlitzKing',elo:1430},{name:'QueenBee',elo:1290},
+  {name:'OpeningOscar',elo:1150},{name:'SlowAndSteady',elo:980},{name:'PromotionPete',elo:870},
+  {name:'GambitGirl',elo:760},{name:'PinPusher',elo:670},{name:'ChessNoob42',elo:550},
+  {name:'BlunderBob',elo:410},{name:'StalemateSteve',elo:330},{name:'ZugzwangZoe',elo:270}
+];
 function syncLb(){
   const lb=loadLb();
-  const me=lb.find(e=>e.name==='You');
-  const score=getScore();
-  if(me)me.score=Math.max(me.score,score);else lb.push({name:'You',score});
-  const ais=[{name:'GrandmasterX',score:14},{name:'PawnPusher',score:7},{name:'CastleMaster',score:3}];
-  for(const ai of ais)if(!lb.find(e=>e.name===ai.name))lb.push(ai);
-  lb.sort((a,b)=>b.score-a.score);
+  const myName=(M.account&&M.account.username)||'You';
+  // Remove any old "You" entry
+  let me=lb.find(e=>e.name===myName||(!M.account&&e.name==='You'));
+  const myElo=Number(M.elo)||500;
+  if(me){me.name=myName;me.elo=myElo;me.self=true}
+  else lb.push({name:myName,elo:myElo,self:true});
+  // Seed AI players if missing
+  for(const ai of LB_AI)if(!lb.find(e=>e.name===ai.name))lb.push({name:ai.name,elo:ai.elo});
+  // Sort by ELO desc
+  lb.sort((a,b)=>(Number(b.elo)||0)-(Number(a.elo)||0));
   saveLb(lb);
 }
 
@@ -1369,15 +1381,42 @@ function showAnnouncement(text){
 }
 
 function renderLeaderboard(){
-  const lb=loadLb().slice(0,3);
+  const lbAll=loadLb();const top=lbAll.slice(0,10);
   const el=document.getElementById('lblist');el.innerHTML='';
   const trophies=['🥇','🥈','🥉'];
-  lb.forEach((entry,i)=>{
-    const row=document.createElement('div');row.className='lbrow'+(entry.name==='You'?' lbme':'');
-    row.innerHTML=`<div class="lbrank r${i+1}">${trophies[i]}</div><div class="lbname">${entry.name}</div><div class="lbscore">${entry.score} upg</div>`;
+  const myName=(M.account&&M.account.username)||'You';
+  top.forEach((entry,i)=>{
+    const isMe=entry.self||entry.name===myName;
+    const row=document.createElement('div');row.className='lbrow'+(isMe?' lbme':'');
+    const rankIcon=i<3?trophies[i]:('#'+(i+1));
+    const alreadyFr=(M.friends||[]).find(f=>f.name===entry.name);
+    let btnHtml='';
+    if(!isMe){
+      btnHtml=alreadyFr
+        ?'<button class="skinbtn equipped" disabled>✓ Friend</button>'
+        :'<button class="skinbtn" onclick="addLbFriend(\''+entry.name.replace(/'/g,"\\'")+'\','+(Number(entry.elo)||500)+')">+ Add</button>';
+    }
+    row.innerHTML=`<div class="lbrank r${i+1}">${rankIcon}</div><div class="lbname">${entry.name}</div><div class="lbscore">${Number(entry.elo)||0} ELO</div>${btnHtml?'<div style="margin-left:8px">'+btnHtml+'</div>':''}`;
     el.appendChild(row);
   });
-  if(lb.length===0)el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No scores yet — upgrade skins to climb!</div>';
+  // If user not in top 10, show their rank
+  const meIdx=lbAll.findIndex(e=>e.self||e.name===myName);
+  if(meIdx>=10){
+    const sep=document.createElement('div');sep.style.cssText='text-align:center;color:#666;padding:6px 0;font-size:12px';sep.textContent='⋯';
+    el.appendChild(sep);
+    const e=lbAll[meIdx];const row=document.createElement('div');row.className='lbrow lbme';
+    row.innerHTML=`<div class="lbrank">#${meIdx+1}</div><div class="lbname">${e.name}</div><div class="lbscore">${e.elo} ELO</div>`;
+    el.appendChild(row);
+  }
+  if(lbAll.length===0)el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No scores yet — play games to climb!</div>';
+}
+
+function addLbFriend(name,elo){
+  M.friends=M.friends||[];
+  if(M.friends.find(f=>f.name===name))return;
+  M.friends.push({name,elo,online:Math.random()<0.6});
+  saveMeta();showAnnouncement('👥 Added '+name+' as friend');
+  renderLeaderboard();
 }
 
 // Admin commands
@@ -1582,14 +1621,24 @@ const BOTS={
   pro_hikaru:{name:'Hikaru Nakamura',elo:2802,depth:2,tier:'pro',emoji:'⚡',desc:'Blitz speedster — aggressive',behavior:'aggressive'},
   pro_bobby:{name:'Bobby Fischer',elo:2785,depth:2,tier:'pro',emoji:'🧠',desc:'Precise endgame technique',behavior:'precise'},
   pro_garry:{name:'Garry Kasparov',elo:2851,depth:2,tier:'pro',emoji:'🔥',desc:'Tactical bulldozer',behavior:'tactical'},
-  pro_fabi:{name:'Fabiano Caruana',elo:2820,depth:2,tier:'pro',emoji:'♟️',desc:'Opening preparation king',behavior:'solid'}
+  pro_fabi:{name:'Fabiano Caruana',elo:2820,depth:2,tier:'pro',emoji:'♟️',desc:'Opening preparation king',behavior:'solid'},
+  stockfish:{name:'Stockfish 3200',elo:3200,depth:3,tier:'pro',emoji:'🤖',desc:'Maximum strength — depth 3 search (slow, brutal)',behavior:'positional',locked:'stockfishMax'}
 };
 
 function renderBotList(){
   const el=document.getElementById('botlist');el.innerHTML='';
-  const order=['noob','beginner','casual','skilled','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi'];
+  const order=['noob','beginner','casual','skilled','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish'];
   for(const k of order){
     const b=BOTS[k];
+    // Locked behind an upgrade?
+    if(b.locked){
+      const owned=M.upgradesPurchased&&M.upgradesPurchased[b.locked];
+      if(!owned){
+        const row=document.createElement('div');row.className='botrow';row.style.opacity='.5';row.style.cursor='not-allowed';
+        row.innerHTML=`<div class="botav pro">🔒</div><div class="botinfo"><div class="botname">${b.name}</div><div class="botelo">ELO ${b.elo}</div><div class="botdesc">Locked — buy the matching upgrade in ⚙️</div></div><div class="bottier t-pro">LOCKED</div>`;
+        el.appendChild(row);continue;
+      }
+    }
     const tierLabel=b.tier==='noob'?'NOOB':b.tier==='cas'?'CASUAL':'PRO';
     const row=document.createElement('div');row.className='botrow';
     row.innerHTML=`<div class="botav ${b.tier==='noob'?'noob':b.tier==='cas'?'casual':'pro'}">${b.emoji}</div><div class="botinfo"><div class="botname">${b.name}</div><div class="botelo">ELO ${b.elo}</div><div class="botdesc">${b.desc}</div></div><div class="bottier t-${b.tier}">${tierLabel}</div>`;
