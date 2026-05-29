@@ -179,6 +179,48 @@ app.post('/api/queue/leave', (req, res) => {
   ok(res, {});
 });
 
+// --- Play challenges (send / accept / decline) ---
+db.challenges = db.challenges || [];
+
+function cleanChallenges() {
+  const now = Date.now();
+  db.challenges = db.challenges.filter(c => now - c.ts < 90000);
+}
+
+app.post('/api/challenge/send', (req, res) => {
+  const { from, to } = req.body || {};
+  if (!from || !to) return bad(res, 400, 'missing');
+  cleanChallenges();
+  db.challenges = db.challenges.filter(c => !(c.from === from && c.to === to && c.status === 'pending'));
+  db.challenges.push({ from, to, status: 'pending', ts: Date.now() });
+  saveSoon();
+  ok(res, {});
+});
+
+app.get('/api/challenge/incoming', (req, res) => {
+  cleanChallenges();
+  const user = (req.query.user || '').toLowerCase();
+  const incoming = db.challenges.filter(c => c.to.toLowerCase() === user && c.status === 'pending');
+  ok(res, { challenges: incoming });
+});
+
+app.get('/api/challenge/status', (req, res) => {
+  cleanChallenges();
+  const from = req.query.from || '', to = req.query.to || '';
+  const ch = db.challenges.find(c => c.from === from && c.to === to);
+  ok(res, { challenge: ch || null });
+});
+
+app.post('/api/challenge/respond', (req, res) => {
+  const { from, to, accept } = req.body || {};
+  if (!from || !to) return bad(res, 400, 'missing');
+  const ch = db.challenges.find(c => c.from === from && c.to === to && c.status === 'pending');
+  if (!ch) return bad(res, 404, 'not found');
+  ch.status = accept ? 'accepted' : 'declined';
+  saveSoon();
+  ok(res, { challenge: ch });
+});
+
 app.get('/api/stats', (req, res) => {
   ok(res, {
     users: Object.values(db.users).filter(u => !u.isAI).length,
