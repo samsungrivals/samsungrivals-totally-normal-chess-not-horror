@@ -572,6 +572,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
     <div class="adminitem" onclick="adminAddElo(100)"><b>⬆️ +100 ELO</b></div>
     <div class="adminitem" onclick="adminAddElo(1000)"><b>⏫ +1,000 ELO</b></div>
     <div class="adminitem" onclick="adminAddElo(100000)"><b>🚀 +100,000 ELO</b></div>
+    <div class="adminitem" onclick="adminGiveLuck10()"><b>🍀 +10x Server Luck (multiplier)</b></div>
     <div class="adminitem" onclick="adminGiveLuck1000()"><b>🍀 +1000x Server Luck (multiplier)</b></div>
     <div class="adminitem" onclick="adminGiveMoney(100)"><b>💷 +£100</b></div>
     <div class="adminitem" onclick="adminGiveMoney(10000)"><b>💰 +£10,000</b></div>
@@ -2763,6 +2764,9 @@ window.API=(()=>{
     challengeIncoming:user=>call('/api/challenge/incoming?user='+encodeURIComponent(user)),
     challengeStatus:(from,to)=>call('/api/challenge/status?from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to)),
     challengeRespond:(from,to,accept)=>call('/api/challenge/respond',{method:'POST',headers:j,body:JSON.stringify({from,to,accept})}),
+    matchState:(matchId,since)=>call('/api/match/state?matchId='+encodeURIComponent(matchId)+'&since='+(since||0)),
+    matchMove:(matchId,user,from,to,promo)=>call('/api/match/move',{method:'POST',headers:j,body:JSON.stringify({matchId,user,from,to,promo})}),
+    matchEnd:(matchId,status,winner)=>call('/api/match/end',{method:'POST',headers:j,body:JSON.stringify({matchId,status,winner})}),
     stats:()=>call('/api/stats')
   };
 })();
@@ -2917,7 +2921,7 @@ findMatchAsync=async function(){
     const r=await API.queueJoin(M.account.username,M.elo);
     if(r&&r.ok&&r.matched&&r.opponent){
       const o=r.opponent;
-      _pmatch={name:o.name,elo:o.elo,depth:o.elo<600?0:o.elo<1200?1:2,behavior:'normal'};
+      _pmatch={name:o.name,elo:o.elo,depth:o.elo<600?0:o.elo<1200?1:2,behavior:'normal',fromQueue:true,matchId:r.matchId,mySide:r.mySide};
       document.getElementById('mmname').textContent=o.name;
       document.getElementById('mmelo').textContent=o.elo;
       document.getElementById('mmmyelo').textContent=M.elo;
@@ -3339,6 +3343,148 @@ doSpin=function(){
       break;
     }
   }
+};
+
+// ============================================================
+// REAL-TIME PvP — moves sync between two real players via server
+// ============================================================
+let _matchPollTimer=null;
+
+// Override acceptMatch to use human-match flow when both players are real
+const _origAcceptMatchRT=acceptMatch;
+acceptMatch=async function(){
+  if(!_pmatch)return;
+  const opp=_pmatch;
+  if(M.account&&opp.fromQueue&&opp.matchId){
+    closeModal('mmmodal');
+    newGame();
+    G.opponent={
+      type:'human',
+      name:opp.name,
+      elo:Number(opp.elo)||500,
+      side:opp.mySide==='white'?'black':'white',
+      mySide:opp.mySide,
+      matchId:opp.matchId,
+      movesProcessed:0,
+      _eloApplied:false
+    };
+    render();
+    startMatchPoll();
+    showAnnouncement('🎮 Live match started vs '+opp.name+' (you are '+opp.mySide+')');
+    _pmatch=null;
+    return;
+  }
+  // Fallback to AI match
+  _origAcceptMatchRT();
+};
+
+function startMatchPoll(){
+  if(_matchPollTimer){clearInterval(_matchPollTimer);_matchPollTimer=null}
+  _matchPollTimer=setInterval(pollMatchMoves,1500);
+  pollMatchMoves();
+}
+
+async function pollMatchMoves(){
+  if(!G||!G.opponent||G.opponent.type!=='human'){
+    if(_matchPollTimer){clearInterval(_matchPollTimer);_matchPollTimer=null}
+    return;
+  }
+  const r=await API.matchState(G.opponent.matchId,G.opponent.movesProcessed||0);
+  if(!r||!r.ok)return;
+  const myName=(M.account&&M.account.username||'').toLowerCase();
+  for(const mv of (r.newMoves||[])){
+    if((mv.user||'').toLowerCase()===myName)continue;
+    G._applyingRemote=true;
+    try{doMove(mv.from,mv.to,mv.promo)}catch(e){console.warn('apply remote move failed',e)}
+    G._applyingRemote=false;
+  }
+  G.opponent.movesProcessed=r.moveCount||0;
+}
+
+// Wrap doMove: when local user makes a move in a human match, send it to server
+const _humanDoMove=doMove;
+doMove=function(from,to,promo){
+  const isHuman=G&&G.opponent&&G.opponent.type==='human';
+  const isRemote=G&&G._applyingRemote;
+  _humanDoMove(from,to,promo);
+  if(isHuman&&!isRemote&&G&&M&&M.account){
+    API.matchMove(G.opponent.matchId,M.account.username,from,to,promo||null).catch(()=>{});
+  }
+};
+
+// Wrap click to block input on opponent's turn in human matches
+const _humanClick=click;
+click=function(r,c){
+  if(G&&G.opponent&&G.opponent.type==='human'){
+    if(G.turn!==G.opponent.mySide)return;
+  }
+  _humanClick(r,c);
+};
+
+// Wrap maybeApplyElo to also handle 'human' matches (parallel with 'ai')
+const _humanMaybeApplyElo=maybeApplyElo;
+maybeApplyElo=function(){
+  if(G&&G.opponent&&G.opponent.type==='human'&&!G.opponent._eloApplied){
+    if(G.status!=='checkmate'&&G.status!=='stalemate'&&G.status!=='draw')return;
+    let result;
+    if(G.status!=='checkmate')result=0.5;
+    else{
+      const winner=flip(G.turn);
+      result=winner===G.opponent.mySide?1:0;
+    }
+    const change=eloChange(M.elo,G.opponent.elo,result);
+    M.elo=Math.max(100,(Number(M.elo)||500)+change);
+    M.gamesPlayed=(Number(M.gamesPlayed)||0)+1;
+    if(result===1)M.gamesWon=(Number(M.gamesWon)||0)+1;
+    G.opponent._eloApplied=true;
+    saveMeta();
+    if(typeof showEloToast==='function')showEloToast(change,G.opponent.name,result,M.elo);
+    refreshUI();
+    if(_matchPollTimer){clearInterval(_matchPollTimer);_matchPollTimer=null}
+    if(M.account)API.elo(M.account.username,M.elo).catch(()=>{});
+    if(G.opponent.matchId)API.matchEnd(G.opponent.matchId,'finished',result===1?M.account.username:result===0?G.opponent.name:null).catch(()=>{});
+    return;
+  }
+  _humanMaybeApplyElo();
+};
+
+// ============================================================
+// +10x LUCK + NVP=+++++ GAMEPASS
+// ============================================================
+function adminGiveLuck10(){
+  M.serverLuckMult=(Number(M.serverLuckMult)||1)*10;
+  saveMeta();refreshUI();updateLuckChip();
+  showAnnouncement('🍀 Luck ×10 — total server luck now '+M.serverLuckMult+'x');
+}
+
+// Add the new gamepass
+GAMEPASSES.push({
+  id:'nvpEquals',
+  name:'NVP=+++++=======+++++======++++++++==',
+  desc:'10× cash, 10× luck, 10× roll speed (requires NVP++)',
+  price:300000000, // £3,000,000 in pence
+  icon:'♾️',
+  req:'nvpPlusPlus'
+});
+
+// Wrap multipliers so the new gamepass stacks
+const _origGetLuckV2=getLuck;
+getLuck=function(){
+  let l=_origGetLuckV2();
+  if(M.gamepasses&&M.gamepasses.nvpEquals)l*=10;
+  return l;
+};
+const _origGetMoneyMultV2=getMoneyMult;
+getMoneyMult=function(){
+  let m=_origGetMoneyMultV2();
+  if(M.gamepasses&&M.gamepasses.nvpEquals)m*=10;
+  return m;
+};
+const _origGetRollSpeedV2=getRollSpeed;
+getRollSpeed=function(){
+  let s=_origGetRollSpeedV2();
+  if(M.gamepasses&&M.gamepasses.nvpEquals)s*=10;
+  return s;
 };
 
 // ----- Z key toggles auto-roll -----

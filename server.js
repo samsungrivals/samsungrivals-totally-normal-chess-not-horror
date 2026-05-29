@@ -147,27 +147,83 @@ app.get('/api/announce/since', (req, res) => {
 });
 
 // --- Matchmaking queue ---
+db.activeMatches = db.activeMatches || {};
+
+function findActiveMatch(user) {
+  const u = user.toLowerCase();
+  return Object.values(db.activeMatches).find(
+    m => m.status === 'playing' && (m.p1.toLowerCase() === u || m.p2.toLowerCase() === u)
+  );
+}
+
 app.post('/api/queue/join', (req, res) => {
   const { user, elo } = req.body || {};
   if (!user) return bad(res, 400, 'missing');
   const myElo = Number(elo) || 500;
-  // Clean old (>90s)
+  // First: if there's already an active match for this user (someone else matched them), return it
+  const existing = findActiveMatch(user);
+  if (existing) {
+    const opponent = existing.p1.toLowerCase() === user.toLowerCase() ? existing.p2 : existing.p1;
+    const mySide = existing.white.toLowerCase() === user.toLowerCase() ? 'white' : 'black';
+    return ok(res, { matched: true, opponent: { name: opponent, elo: 500 }, matchId: existing.id, mySide });
+  }
   db.queue = db.queue.filter(q => Date.now() - q.ts < 90000);
-  // Match ANY two queued users (ELO band removed so finding a match isn't ELO-gated)
+  // Match ANY two queued users
   for (let i = 0; i < db.queue.length; i++) {
     const o = db.queue[i];
     if (o.user.toLowerCase() === user.toLowerCase()) continue;
     db.queue.splice(i, 1);
-    const matchId = user + '_' + o.user + '_' + Date.now();
-    db.matches[matchId] = { players: [user, o.user], ts: Date.now() };
+    const matchId = [user, o.user].sort().join('_') + '_' + Date.now();
+    const whitePlayer = Math.random() < 0.5 ? user : o.user;
+    const blackPlayer = whitePlayer === user ? o.user : user;
+    db.activeMatches[matchId] = {
+      id: matchId, p1: user, p2: o.user,
+      white: whitePlayer, black: blackPlayer,
+      moves: [], status: 'playing',
+      ts: Date.now(), lastMove: Date.now()
+    };
     saveSoon();
-    return ok(res, { matched: true, opponent: { name: o.user, elo: o.elo } });
+    const mySide = whitePlayer === user ? 'white' : 'black';
+    return ok(res, { matched: true, opponent: { name: o.user, elo: o.elo }, matchId, mySide });
   }
-  // Add me to queue
   db.queue = db.queue.filter(q => q.user.toLowerCase() !== user.toLowerCase());
   db.queue.push({ user, elo: myElo, ts: Date.now() });
   saveSoon();
   ok(res, { matched: false, queueSize: db.queue.length });
+});
+
+// --- Real-time PvP match endpoints ---
+app.get('/api/match/state', (req, res) => {
+  const { matchId, since } = req.query;
+  const m = db.activeMatches[matchId];
+  if (!m) return bad(res, 404, 'no match');
+  const fromIdx = Number(since) || 0;
+  ok(res, {
+    match: { id: m.id, status: m.status, white: m.white, black: m.black, p1: m.p1, p2: m.p2 },
+    newMoves: m.moves.slice(fromIdx),
+    moveCount: m.moves.length
+  });
+});
+
+app.post('/api/match/move', (req, res) => {
+  const { matchId, user, from, to, promo } = req.body || {};
+  const m = db.activeMatches[matchId];
+  if (!m) return bad(res, 404, 'no match');
+  m.moves.push({ user, from, to, promo: promo || null, ts: Date.now() });
+  m.lastMove = Date.now();
+  saveSoon();
+  ok(res, { moveCount: m.moves.length });
+});
+
+app.post('/api/match/end', (req, res) => {
+  const { matchId, status, winner } = req.body || {};
+  const m = db.activeMatches[matchId];
+  if (m) {
+    m.status = status || 'ended';
+    if (winner) m.winner = winner;
+    saveSoon();
+  }
+  ok(res, {});
 });
 
 app.post('/api/queue/leave', (req, res) => {
