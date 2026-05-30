@@ -484,6 +484,17 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 #board.skin-admin .dark{background:#1a1a1a;background-image:repeating-linear-gradient(45deg,#000,#000 6px,#222 6px,#222 12px)}
 #board.skin-realadmin .light{background:linear-gradient(135deg,#42a5f5,#1976d2)}
 #board.skin-realadmin .dark{background:linear-gradient(135deg,#ef5350,#c62828)}
+#board.skin-sixtyseven .light{background:linear-gradient(135deg,#00ff80,#0080ff)}
+#board.skin-sixtyseven .dark{background:linear-gradient(135deg,#ff0080,#8000ff)}
+#board.skin-secret .light{background:#0a0a0a}
+#board.skin-secret .dark{background:linear-gradient(135deg,#ff0040,#8b0000)}
+#board.skin-omega .light{background:linear-gradient(135deg,#0066ff,#00ffff,#ffffff)}
+#board.skin-omega .dark{background:linear-gradient(135deg,#000066,#0066ff,#00ccff)}
+#board.skin-infinity .light{background:linear-gradient(135deg,#ff00ff,#00ffff,#ffff00,#ff8800);background-size:200% 200%;animation:infinitybg 8s ease infinite}
+#board.skin-infinity .dark{background:linear-gradient(135deg,#000033,#660099,#0033cc,#000033);background-size:200% 200%;animation:infinitybg 8s ease infinite}
+@keyframes infinitybg{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+#board.skin-royal .light{background:linear-gradient(135deg,#ffd700,#ffeb3b,#ff8800)}
+#board.skin-royal .dark{background:linear-gradient(135deg,#8b0000,#b71c1c,#ffd700)}
 </style>
 </head>
 <body>
@@ -1299,7 +1310,7 @@ function resetLeaderboard(){
 
 function applySkinToBoard(){
   const b=document.getElementById('board');if(!b)return;
-  ['classic','poo','gy','rainbow','nothing','admin','realadmin'].forEach(s=>b.classList.remove('skin-'+s));
+  ['classic','poo','gy','rainbow','nothing','admin','realadmin','sixtyseven','secret','omega','infinity','royal'].forEach(s=>b.classList.remove('skin-'+s));
   b.classList.add('skin-'+(M.equipped||'classic'));
 }
 
@@ -3626,6 +3637,55 @@ pollMatchMoves=async function(){
     console.log('[pvp poll]',{matchId:G.opponent.matchId,since:G.opponent.movesProcessed,newMoves:r&&r.newMoves&&r.newMoves.length||0,total:r&&r.moveCount});
   }
   await _debugPoll();
+};
+
+// ============================================================
+// ROYAL SKIN (buyable for £1M) + TRIPLE ROLL UPGRADE
+// ============================================================
+
+// ROYAL skin: purchase-only, not in roll table
+SKINS.royal={name:'ROYAL',odds:null};
+SKIN_COLORS.royal=['linear-gradient(135deg,#ffd700,#ffeb3b,#ff8800)','linear-gradient(135deg,#8b0000,#b71c1c,#ffd700)'];
+SKIN_RARITY.royal=6;
+if(!SKIN_ORDER.includes('royal'))SKIN_ORDER.push('royal');
+
+const ROYAL_PRICE=100000000; // £1,000,000.00 in pence
+
+// Add to the shop via a wrapper
+const _origRenderShopRoyal=renderShop;
+renderShop=function(){
+  _origRenderShopRoyal();
+  const gp=document.getElementById('gamepassshop');if(!gp)return;
+  // Avoid double-render: skip if already added in this open
+  if(document.getElementById('royalshopcard'))return;
+  const sec=document.createElement('div');sec.className='shopsection';sec.textContent='👑 Premium Board Skins';
+  gp.parentElement.appendChild(sec);
+  const free=M.hiddenFreeShop;
+  const owned=(M.inventory&&M.inventory.royal)||0;
+  const card=document.createElement('div');card.className='packcard';card.id='royalshopcard';
+  card.style.borderColor='#ffd700';card.style.background='linear-gradient(135deg,#3a2400,#1a1a4a)';
+  card.innerHTML=`<div class="packicon">👑</div><div class="packinfo"><div class="packname">ROYAL Skin ${owned?'(owned ×'+owned+')':''}</div><div class="packdesc">Gold and crimson — premium board look</div><div class="packprice">${free?'FREE':fmtMoney(ROYAL_PRICE)}</div></div>`;
+  const b=document.createElement('button');b.className='packbuy';b.textContent='Buy';b.disabled=!free&&M.money<ROYAL_PRICE;
+  b.onclick=()=>{
+    const c=free?0:ROYAL_PRICE;
+    if(M.money<c)return;
+    M.money-=c;
+    M.inventory=M.inventory||{};M.inventory.royal=(M.inventory.royal||0)+1;
+    saveMeta();refreshUI();renderShop();
+    if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
+    showAnnouncement('👑 ROYAL skin added to inventory!');
+  };
+  card.appendChild(b);gp.parentElement.appendChild(card);
+};
+
+// Triple Roll upgrade
+UPGRADES.push({id:'tripleRoll',name:'Triple Roll',desc:'Every spin rolls 3 times in a row',cost:50000000,icon:'🎲🎲🎲',req:'luck8'});
+
+const _spinNoTriple=doSpin;
+doSpin=function(){
+  const triple=M.upgradesPurchased&&M.upgradesPurchased.tripleRoll;
+  const count=triple?3:1;
+  for(let i=0;i<count;i++)_spinNoTriple();
 };
 
 // ----- Z key toggles auto-roll -----
