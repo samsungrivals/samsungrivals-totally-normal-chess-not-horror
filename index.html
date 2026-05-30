@@ -484,8 +484,8 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 #board.skin-admin .dark{background:#1a1a1a;background-image:repeating-linear-gradient(45deg,#000,#000 6px,#222 6px,#222 12px)}
 #board.skin-realadmin .light{background:linear-gradient(135deg,#42a5f5,#1976d2)}
 #board.skin-realadmin .dark{background:linear-gradient(135deg,#ef5350,#c62828)}
-#board.skin-sixtyseven .light{background:linear-gradient(135deg,#00ff80,#0080ff)}
-#board.skin-sixtyseven .dark{background:linear-gradient(135deg,#ff0080,#8000ff)}
+#board.skin-sixtyseven .light{background:#00e5ff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%2300e5ff'/%3E%3Ctext x='32' y='46' font-size='34' font-weight='bold' text-anchor='middle' fill='%23ff00aa' font-family='Arial Black,Arial' transform='rotate(-8 32 32)'%3E67%3C/text%3E%3C/svg%3E") center/cover}
+#board.skin-sixtyseven .dark{background:#7b1fa2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%237b1fa2'/%3E%3Ctext x='32' y='46' font-size='34' font-weight='bold' text-anchor='middle' fill='%23ffea00' font-family='Arial Black,Arial' transform='rotate(8 32 32)'%3E67%3C/text%3E%3C/svg%3E") center/cover}
 #board.skin-secret .light{background:#0a0a0a}
 #board.skin-secret .dark{background:linear-gradient(135deg,#ff0040,#8b0000)}
 #board.skin-omega .light{background:linear-gradient(135deg,#0066ff,#00ffff,#ffffff)}
@@ -716,6 +716,21 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
       <div><div class="settinglabel">Music Volume</div><div class="settingsub">Background music level</div></div>
       <div class="settingcontrol" id="volctrl"></div>
     </div>
+    <div class="settingrow">
+      <div><div class="settinglabel">🎵 Music Track</div><div class="settingsub">Choose from 5 built-in songs</div></div>
+      <div class="settingcontrol" id="trackctrl"></div>
+    </div>
+    <div class="settingrow" style="background:#1a1a2a;border-color:#444">
+      <div><div class="settinglabel">📤 Upload Your Music</div><div class="settingsub">Play your own audio file & request to feature it</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <input type="file" id="musicupload" accept="audio/*" style="display:none" onchange="onMusicUpload(event)">
+        <button class="settingchip" onclick="document.getElementById('musicupload').click()">Choose file</button>
+        <button class="settingchip" id="upmusicplay" onclick="toggleUploadedMusic()" disabled>▶ Play</button>
+        <button class="settingchip" id="upmusicreq" onclick="requestFeatureMusic()" disabled>✉ Request to feature</button>
+      </div>
+    </div>
+    <div id="upmusicname" style="font-size:11px;color:#9af;text-align:right;margin:-4px 0 8px;padding-right:4px"></div>
+    <audio id="upmusicaudio" loop style="display:none"></audio>
     <div class="settingrow" style="background:#1a1a2a;border-color:#444">
       <div><div class="settinglabel">💾 Save Progress</div><div class="settingsub">Copy this code to back up</div></div>
       <button class="settingchip" onclick="copySaveCode()">Show code</button>
@@ -2158,27 +2173,43 @@ function _playNote(freq,dur,when,gain,type){
   osc.start(when);osc.stop(when+dur+0.05);
 }
 
+// 5 selectable music tracks: {name, lead:[[note,dur]...], bass:[...], wave}
+const MUSIC_TRACKS=[
+  {name:'Classic',wave:'triangle',
+    lead:[['E4',.5],['G4',.5],['C5',.5],['B4',.5],['G4',.5],['E4',.5],['G4',.5],['A4',.5],['F4',.5],['A4',.5],['C5',.5],['D5',.5],['C5',.5],['A4',.5],['F4',.5],['E4',.5],['D4',.5],['F4',.5],['A4',.5],['G4',.5],['F4',.5],['D4',.5],['E4',.5],['F4',.5],['E4',.5],['D4',.5],['C4',.5],['E4',.5],['G4',.5],['C5',.5],['G4',1.5]],
+    bass:[['C3',2],['F3',2],['G3',2],['C3',2],['F3',2],['G3',2],['C3',2],['G3',2]]},
+  {name:'Chill Lofi',wave:'sine',
+    lead:[['A4',1],['C5',1],['E4',1],['G4',1],['F4',1],['A4',1],['C5',1],['E4',1],['D4',1],['F4',1],['A4',1],['C5',1],['E4',1],['G4',1],['C5',2]],
+    bass:[['A3',2],['F3',2],['D3',2],['E3',2],['A3',2],['F3',2],['D3',2],['E3',2]]},
+  {name:'Epic March',wave:'sawtooth',
+    lead:[['C4',.5],['C4',.5],['G4',.5],['G4',.5],['A4',.5],['A4',.5],['G4',1],['F4',.5],['F4',.5],['E4',.5],['E4',.5],['D4',.5],['D4',.5],['C4',1]],
+    bass:[['C3',1],['G3',1],['C3',1],['G3',1],['F3',1],['C3',1],['G3',1],['C3',1]]},
+  {name:'Fast Arcade',wave:'square',
+    lead:[['C5',.25],['E5',.25],['G5',.25],['E5',.25],['C5',.25],['E5',.25],['G5',.25],['C5',.25],['D5',.25],['F5',.25],['A4',.25],['F5',.25],['B4',.25],['D5',.25],['G4',.25],['B4',.25]],
+    bass:[['C3',.5],['C3',.5],['G3',.5],['G3',.5],['F3',.5],['F3',.5],['G3',.5],['G3',.5]]},
+  {name:'Dreamy',wave:'triangle',
+    lead:[['G4',1.5],['B4',.5],['D5',1.5],['C5',.5],['B4',1],['A4',1],['G4',1.5],['E4',.5],['F4',1.5],['A4',.5],['G4',2]],
+    bass:[['G3',2],['E3',2],['C3',2],['D3',2],['G3',2],['E3',2],['C3',2],['D3',2]]}
+];
+
 function _playLoop(){
   if(!_musicOn)return;
   const t=_audio.currentTime;
-  // Lead melody (8 bars, ~16s)
-  const lead=[
-    ['E4',.5],['G4',.5],['C5',.5],['B4',.5],['G4',.5],['E4',.5],['G4',.5],['A4',.5],
-    ['F4',.5],['A4',.5],['C5',.5],['D5',.5],['C5',.5],['A4',.5],['F4',.5],['E4',.5],
-    ['D4',.5],['F4',.5],['A4',.5],['G4',.5],['F4',.5],['D4',.5],['E4',.5],['F4',.5],
-    ['E4',.5],['D4',.5],['C4',.5],['E4',.5],['G4',.5],['C5',.5],['G4',1.5]
-  ];
-  // Bass (slower)
-  const bass=[
-    ['C3',2],['F3',2],['G3',2],['C3',2],['F3',2],['G3',2],['C3',2],['G3',2]
-  ];
+  const idx=(M&&M.musicTrack)||0;
+  const track=MUSIC_TRACKS[idx]||MUSIC_TRACKS[0];
   let off=0;
-  for(const [n,d] of lead){_playNote(_NOTES[n],d*0.85,t+off,0.06,'triangle');off+=d}
+  for(const [n,d] of track.lead){_playNote(_NOTES[n]||440,d*0.85,t+off,0.06,track.wave);off+=d}
   let boff=0;
-  for(const [n,d] of bass){_playNote(_NOTES[n],d*0.9,t+boff,0.04,'sine');boff+=d}
+  for(const [n,d] of track.bass){_playNote(_NOTES[n]||130,d*0.9,t+boff,0.04,'sine');boff+=d}
   const total=off;
   const tm=setTimeout(()=>{if(_musicOn)_playLoop()},total*1000);
   _musicTimers.push(tm);
+}
+
+function setMusicTrack(idx){
+  M.musicTrack=idx;saveMeta();
+  if(_musicOn){_musicTimers.forEach(t=>clearTimeout(t));_musicTimers=[];_playLoop()}
+  if(typeof renderSettings==='function')renderSettings();
 }
 
 function toggleMusic(){
@@ -2420,6 +2451,22 @@ function renderSettings(){
   for(const v of vs){
     const b=document.createElement('button');b.className='settingchip'+(curV===v?' on':'');
     b.textContent=Math.round(v*100)+'%';b.onclick=()=>{M.musicVol=v;saveMeta();renderSettings()};vc.appendChild(b);
+  }
+  // Music track
+  const tc=document.getElementById('trackctrl');
+  if(tc&&typeof MUSIC_TRACKS!=='undefined'){
+    tc.innerHTML='';const curT=(M.musicTrack)||0;
+    MUSIC_TRACKS.forEach((tr,i)=>{
+      const b=document.createElement('button');b.className='settingchip'+(curT===i?' on':'');
+      b.textContent=tr.name;b.onclick=()=>setMusicTrack(i);tc.appendChild(b);
+    });
+  }
+  // Uploaded music state
+  const nameEl=document.getElementById('upmusicname');
+  if(nameEl&&window._uploadedMusicName){
+    nameEl.textContent='Loaded: '+window._uploadedMusicName;
+    document.getElementById('upmusicplay').disabled=false;
+    document.getElementById('upmusicreq').disabled=false;
   }
 }
 function applyQuality(){
@@ -2809,6 +2856,7 @@ window.API=(()=>{
     eloResetAll:()=>call('/api/elo/reset-all',{method:'POST',headers:j,body:'{}'}),
     globalLuck:()=>call('/api/globalluck'),
     globalLuckMultiply:factor=>call('/api/globalluck/multiply',{method:'POST',headers:j,body:JSON.stringify({factor})}),
+    musicRequest:(user,filename)=>call('/api/music/request',{method:'POST',headers:j,body:JSON.stringify({user,filename})}),
     stats:()=>call('/api/stats')
   };
 })();
@@ -3753,6 +3801,59 @@ adminGiveLuck1000=async function(){
     showAnnouncement('🍀 Luck ×1000 (local — server unreachable)');
   }
 };
+
+// ============================================================
+// UPLOAD YOUR OWN MUSIC + REQUEST DEV TO FEATURE IT (via Gmail)
+// ============================================================
+const DEV_EMAIL='samsungrivals@gmail.com'; // change to your real address
+window._uploadedMusicName=null;
+window._uploadedMusicPlaying=false;
+
+function onMusicUpload(ev){
+  const file=ev.target.files&&ev.target.files[0];
+  if(!file)return;
+  const audio=document.getElementById('upmusicaudio');
+  const url=URL.createObjectURL(file);
+  audio.src=url;
+  window._uploadedMusicName=file.name;
+  document.getElementById('upmusicname').textContent='Loaded: '+file.name;
+  document.getElementById('upmusicplay').disabled=false;
+  document.getElementById('upmusicreq').disabled=false;
+  showAnnouncement('🎵 Loaded "'+file.name+'" — press ▶ Play');
+}
+
+function toggleUploadedMusic(){
+  const audio=document.getElementById('upmusicaudio');
+  if(!audio.src){showAnnouncement('Choose a file first');return}
+  const vol=M&&M.musicVol!==undefined?M.musicVol:0.5;
+  audio.volume=vol;
+  const btn=document.getElementById('upmusicplay');
+  if(window._uploadedMusicPlaying){
+    audio.pause();window._uploadedMusicPlaying=false;btn.textContent='▶ Play';
+  }else{
+    // stop the synth music if it's playing so they don't overlap
+    if(_musicOn)toggleMusic();
+    audio.play().catch(()=>showAnnouncement('Playback blocked — click again'));
+    window._uploadedMusicPlaying=true;btn.textContent='⏸ Pause';
+  }
+}
+
+async function requestFeatureMusic(){
+  if(!window._uploadedMusicName){showAnnouncement('Load a music file first');return}
+  const who=(M.account&&M.account.username)||'a player';
+  const fname=window._uploadedMusicName;
+  // Log on the server so the dev can see pending requests
+  try{await API.musicRequest(who,fname)}catch(e){}
+  // Open a pre-filled Gmail compose addressed to the developer
+  const subject=encodeURIComponent('Request to feature my music on the chess website');
+  const body=encodeURIComponent(
+    'Hi,\n\nI\'m '+who+' and I\'d like to request permission to use my music track "'+fname+'" on the website.\n\n'+
+    'Please reply to let me know if that\'s okay.\n\nThanks!'
+  );
+  const gmailUrl='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(DEV_EMAIL)+'&su='+subject+'&body='+body;
+  window.open(gmailUrl,'_blank');
+  showAnnouncement('✉ Opening Gmail to message the developer…');
+}
 
 // ----- Z key toggles auto-roll -----
 document.addEventListener('keydown',e=>{

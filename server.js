@@ -192,6 +192,19 @@ app.post('/api/queue/join', (req, res) => {
   ok(res, { matched: false, queueSize: db.queue.length });
 });
 
+// --- Music feature requests (users asking the dev to use their music) ---
+db.musicRequests = db.musicRequests || [];
+app.post('/api/music/request', (req, res) => {
+  const { user, filename } = req.body || {};
+  db.musicRequests.push({ user: user || 'anon', filename: filename || 'unknown', ts: Date.now() });
+  while (db.musicRequests.length > 200) db.musicRequests.shift();
+  saveSoon();
+  ok(res, { received: true, total: db.musicRequests.length });
+});
+app.get('/api/music/requests', (req, res) => {
+  ok(res, { requests: db.musicRequests });
+});
+
 // --- Global luck multiplier (set by admins, applied to every player) ---
 if (db.globalLuck === undefined) db.globalLuck = 1;
 
