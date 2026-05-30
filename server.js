@@ -192,6 +192,26 @@ app.post('/api/queue/join', (req, res) => {
   ok(res, { matched: false, queueSize: db.queue.length });
 });
 
+// --- Global luck multiplier (set by admins, applied to every player) ---
+if (db.globalLuck === undefined) db.globalLuck = 1;
+
+app.get('/api/globalluck', (req, res) => {
+  ok(res, { globalLuck: db.globalLuck || 1 });
+});
+
+app.post('/api/globalluck/multiply', (req, res) => {
+  const factor = Number((req.body || {}).factor) || 1;
+  db.globalLuck = (Number(db.globalLuck) || 1) * factor;
+  saveSoon();
+  ok(res, { globalLuck: db.globalLuck });
+});
+
+app.post('/api/globalluck/set', (req, res) => {
+  db.globalLuck = Math.max(1, Number((req.body || {}).value) || 1);
+  saveSoon();
+  ok(res, { globalLuck: db.globalLuck });
+});
+
 // --- Reset all real users' ELO to 500 ---
 app.post('/api/elo/reset-all', (req, res) => {
   let count = 0;
