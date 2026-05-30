@@ -592,7 +592,6 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 <div class="modal hidden" id="adminmodal">
   <div class="mbox">
     <div class="mtitle">⚡ Admin Commands <button class="mclose" onclick="closeModal('adminmodal')">✕</button></div>
-    <div class="adminitem" onclick="adminGrantAdmin()" style="background:#3a1f5f;border-color:#7c4dff"><b>👮 Give Admin to a Player</b> — choose a username to grant admin commands</div>
     <div class="adminitem" onclick="adminGiveAll()"><b>🎁 Give ALL skins</b> — every board skin (incl. 67, Secret, OMEGA, Infinity, Royal) + all piece skins</div>
     <div class="adminitem" onclick="adminGiveAllPieceSkins()"><b>♟ Give all piece skins</b> — Bronze, Silver, Gold, Diamond</div>
     <div class="adminitem" onclick="adminGiveRealAdmin()"><b>👑 Give Real Admin board skin</b> — the blue & red exclusive</div>
@@ -748,10 +747,6 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
     <div class="settingrow" style="background:#1a2a2a;border-color:#3a5a5a;margin-top:18px">
       <div><div class="settinglabel">⚖ Reset My ELO</div><div class="settingsub">Set your ELO back to 500</div></div>
       <button class="settingchip" onclick="resetMyElo()">Reset ELO</button>
-    </div>
-    <div class="settingrow" style="background:#1a2a1a;border-color:#3a5a3a">
-      <div><div class="settinglabel">🚀 +10,000,000 ELO</div><div class="settingsub">Instantly add 10 million ELO</div></div>
-      <button class="settingchip" onclick="ownerAddElo10M()">+10M ELO</button>
     </div>
     <div class="settingrow" style="background:#2a1a1a;border-color:#5a3a3a;margin-top:18px">
       <div><div class="settinglabel">⚠ Reset Progress</div><div class="settingsub" id="resetsub">Set password first, then click again to confirm</div></div>
@@ -1113,6 +1108,7 @@ function renderBoard(){
   for(let r=0;r<8;r++)for(let c=0;c<8;c++){
     const sq=document.createElement('div');
     sq.className=`sq ${(r+c)%2===0?'light':'dark'}`;
+    sq.dataset.r=r;sq.dataset.c=c;
     const isSel=s.sel&&s.sel[0]===r&&s.sel[1]===c;
     const isLF=s.last&&s.last.from[0]===r&&s.last.from[1]===c;
     const isLT=s.last&&s.last.to[0]===r&&s.last.to[1]===c;
@@ -1131,6 +1127,7 @@ function renderBoard(){
     if(!over)sq.addEventListener('click',()=>click(r,c));
     el.appendChild(sq);
   }
+  if(typeof applyInfiniteEquip==='function')applyInfiniteEquip();
 }
 
 function click(r,c){
@@ -3812,15 +3809,43 @@ renderShop=function(){
 // Triple Roll upgrade
 UPGRADES.push({id:'tripleRoll',name:'Triple Roll',desc:'Every spin rolls 3 times in a row',cost:50000000,icon:'🎲🎲🎲',req:'luck8'});
 
-// Cash God: costs 1,000,000 ROLLS, gives a 9.9e43x cash multiplier
-const CASHGOD_MULT=99999999999999999999999999999999999999999999;
-UPGRADES.push({id:'cashGod',name:'CASH GOD',desc:'×'+CASHGOD_MULT.toExponential(2)+' cash on every roll (costs 62,978 rolls)',rollCost:62978,icon:'🤑'});
+// Cash God: costs 62,978 ROLLS, gives a 1,000,000,000x cash multiplier
+const CASHGOD_MULT=1000000000;
+UPGRADES.push({id:'cashGod',name:'CASH GOD',desc:'×1,000,000,000 cash on every roll (costs 62,978 rolls)',rollCost:62978,icon:'🤑'});
 const _origGetMoneyMultCashGod=getMoneyMult;
 getMoneyMult=function(){
   let m=_origGetMoneyMultCashGod();
   if(M.upgradesPurchased&&M.upgradesPurchased.cashGod)m*=CASHGOD_MULT;
   return m;
 };
+
+// Infinite Equip: huge cash cost; paints each board rank with a DIFFERENT owned skin, cycling forever
+const INFINITE_EQUIP_COST=2.0083199999999643e+50;
+UPGRADES.push({id:'infiniteEquip',name:'INFINITE EQUIP',desc:'Wear every skin at once — each side of the board shows a different owned skin, forever',cost:INFINITE_EQUIP_COST,icon:'♾️🎨'});
+
+function ownedBoardSkins(){
+  const list=['classic'];
+  for(const k in SKINS){if(k==='classic')continue;if((M.inventory&&M.inventory[k])>0)list.push(k)}
+  return list;
+}
+function applyInfiniteEquip(){
+  const on=M.upgradesPurchased&&M.upgradesPurchased.infiniteEquip;
+  const board=document.getElementById('board');if(!board)return;
+  const sqs=board.querySelectorAll('.sq');
+  if(!on){sqs.forEach(s=>{s.style.background=''});return}
+  const skins=ownedBoardSkins();
+  if(skins.length<2){sqs.forEach(s=>{s.style.background=''});return}
+  sqs.forEach(sq=>{
+    const r=Number(sq.dataset.r),c=Number(sq.dataset.c);
+    const skin=skins[r%skins.length]; // each rank = next owned skin, cycling forever
+    const col=SKIN_COLORS[skin]||SKIN_COLORS.classic;
+    const isLight=(r+c)%2===0;
+    sq.style.background=isLight?col[0]:col[1];
+  });
+}
+
+const _buyUpgInfinite=buyUpg;
+buyUpg=function(u){_buyUpgInfinite(u);if(u&&u.id==='infiniteEquip')applyInfiniteEquip()};
 
 const _spinNoTriple=doSpin;
 doSpin=function(){
@@ -3958,11 +3983,17 @@ function ownerAddElo10M(){
 // Admin status is now decided ONLY by the server admin list (no unlock progression)
 async function refreshAdminStatus(){
   if(!M.account){M.adminUnlocked=false;saveMeta();if(typeof refreshUI==='function')refreshUI();return}
+  // Owner-only: if you're not an owner, you never have admin (enforced even offline)
+  const isOwner=OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+  if(!isOwner){M.adminUnlocked=false;saveMeta();if(typeof refreshUI==='function')refreshUI();return}
   const r=await API.isAdmin(M.account.username);
   if(r&&r.ok){
     M.adminUnlocked=!!r.isAdmin;
     saveMeta();
     if(typeof refreshUI==='function')refreshUI();
+  }else{
+    // server unreachable but we know we're an owner
+    M.adminUnlocked=true;saveMeta();if(typeof refreshUI==='function')refreshUI();
   }
 }
 // Re-check whenever the account changes / on boot / periodically
