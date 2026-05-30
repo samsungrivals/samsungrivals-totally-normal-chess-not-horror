@@ -1555,7 +1555,7 @@ function adminGiveAll(){for(const s of [...SKIN_ORDER,'realadmin'])M.inventory[s
 function adminGiveRealAdmin(){M.inventory.realadmin=(M.inventory.realadmin||0)+1;saveMeta();showAnnouncement('👑 Real Admin skin granted!');renderItems()}
 function adminGiveMoney(pounds){const amt=(pounds||10000)*100;M.money=(Number(M.money)||0)+amt;saveMeta();showAnnouncement('💰 +'+fmtMoney(amt));refreshUI()}
 function adminGiveAllPieceSkins(){M.unlockedPieceSkins=M.unlockedPieceSkins||{};for(const k of ['bronze','silver','gold','diamond'])M.unlockedPieceSkins[k]=true;saveMeta();showAnnouncement('♟ All piece skins unlocked!');if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems()}
-function adminAddElo(amt){M.elo=(Number(M.elo)||500)+amt;saveMeta();showAnnouncement('⬆️ +'+amt+' ELO  →  '+M.elo);refreshUI();checkEloRewards();const e=document.getElementById('elodisp');if(e){e.classList.add('changed');setTimeout(()=>e.classList.remove('changed'),1000)}}
+function adminAddElo(amt){M.elo=(Number(M.elo)||500)+amt;saveMeta();showAnnouncement('⬆️ +'+amt+' ELO  →  '+M.elo);refreshUI();checkEloRewards();const e=document.getElementById('elodisp');if(e){e.classList.add('changed');setTimeout(()=>e.classList.remove('changed'),1000)}if(M.account&&typeof API!=='undefined')API.elo(M.account.username,M.elo).catch(()=>{});}
 function adminGiveGodly(n){M.godlyPacks=(Number(M.godlyPacks)||0)+n;saveMeta();showAnnouncement('✨ +'+n+' Godly Packs');if(!document.getElementById('shopmodal').classList.contains('hidden'))renderShop()}
 function adminAnnounce(){const msg=prompt('Global announcement text:');if(msg)showAnnouncement('📢 '+msg)}
 
