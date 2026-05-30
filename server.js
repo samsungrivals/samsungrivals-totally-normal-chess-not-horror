@@ -192,6 +192,30 @@ app.post('/api/queue/join', (req, res) => {
   ok(res, { matched: false, queueSize: db.queue.length });
 });
 
+// --- Admin grants (cross-device): list of usernames that have admin commands ---
+db.admins = db.admins || [];
+// Founding admins always have it
+for (const founder of ['samsungrivals_owner_', 'vampr']) {
+  if (!db.admins.map(a => a.toLowerCase()).includes(founder.toLowerCase())) db.admins.push(founder);
+}
+
+app.get('/api/admins/is', (req, res) => {
+  const u = (req.query.user || '').toLowerCase();
+  const isAdmin = db.admins.some(a => a.toLowerCase() === u);
+  ok(res, { isAdmin });
+});
+
+app.post('/api/admins/grant', (req, res) => {
+  const { granter, target } = req.body || {};
+  if (!granter || !target) return bad(res, 400, 'missing');
+  // Only an existing admin can grant admin
+  const granterIsAdmin = db.admins.some(a => a.toLowerCase() === granter.toLowerCase());
+  if (!granterIsAdmin) return bad(res, 403, 'not admin');
+  if (!db.admins.some(a => a.toLowerCase() === target.toLowerCase())) db.admins.push(target);
+  saveSoon();
+  ok(res, { admins: db.admins });
+});
+
 // --- Music feature requests (users asking the dev to use their music) ---
 db.musicRequests = db.musicRequests || [];
 app.post('/api/music/request', (req, res) => {

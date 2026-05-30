@@ -592,6 +592,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 <div class="modal hidden" id="adminmodal">
   <div class="mbox">
     <div class="mtitle">⚡ Admin Commands <button class="mclose" onclick="closeModal('adminmodal')">✕</button></div>
+    <div class="adminitem" onclick="adminGrantAdmin()" style="background:#3a1f5f;border-color:#7c4dff"><b>👮 Give Admin to a Player</b> — choose a username to grant admin commands</div>
     <div class="adminitem" onclick="adminGiveAll()"><b>🎁 Give ALL skins</b> — every board skin (incl. 67, Secret, OMEGA, Infinity, Royal) + all piece skins</div>
     <div class="adminitem" onclick="adminGiveAllPieceSkins()"><b>♟ Give all piece skins</b> — Bronze, Silver, Gold, Diamond</div>
     <div class="adminitem" onclick="adminGiveRealAdmin()"><b>👑 Give Real Admin board skin</b> — the blue & red exclusive</div>
@@ -746,7 +747,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
     </div>
     <div class="settingrow" style="background:#1a2a1a;border-color:#3a5a3a">
       <div><div class="settinglabel">🚀 +10,000,000 ELO</div><div class="settingsub">Instantly add 10 million ELO</div></div>
-      <button class="settingchip" onclick="adminAddElo(10000000)">+10M ELO</button>
+      <button class="settingchip" onclick="ownerAddElo10M()">+10M ELO</button>
     </div>
     <div class="settingrow" style="background:#2a1a1a;border-color:#5a3a3a;margin-top:18px">
       <div><div class="settinglabel">⚠ Reset Progress</div><div class="settingsub" id="resetsub">Set password first, then click again to confirm</div></div>
@@ -2816,7 +2817,8 @@ function loginAccount(){
 }
 function logoutAccount(){
   if(!confirm('Log out? Your progress stays saved on this device.'))return;
-  M.account=null;saveMeta();renderAccount();refreshAccountBtn();
+  M.account=null;M.adminUnlocked=false;saveMeta();renderAccount();refreshAccountBtn();
+  if(typeof refreshUI==='function')refreshUI();
 }
 function refreshAccountBtn(){
   const b=document.getElementById('acctbtn');if(!b)return;
@@ -2874,6 +2876,8 @@ window.API=(()=>{
     matchMove:(matchId,user,from,to,promo)=>call('/api/match/move',{method:'POST',headers:j,body:JSON.stringify({matchId,user,from,to,promo})}),
     matchEnd:(matchId,status,winner)=>call('/api/match/end',{method:'POST',headers:j,body:JSON.stringify({matchId,status,winner})}),
     eloResetAll:()=>call('/api/elo/reset-all',{method:'POST',headers:j,body:'{}'}),
+    isAdmin:user=>call('/api/admins/is?user='+encodeURIComponent(user)),
+    grantAdmin:(granter,target)=>call('/api/admins/grant',{method:'POST',headers:j,body:JSON.stringify({granter,target})}),
     globalLuck:()=>call('/api/globalluck'),
     globalLuckMultiply:factor=>call('/api/globalluck/multiply',{method:'POST',headers:j,body:JSON.stringify({factor})}),
     musicRequest:(user,filename)=>call('/api/music/request',{method:'POST',headers:j,body:JSON.stringify({user,filename})}),
@@ -2945,6 +2949,7 @@ createAccount=async function(){
   saveMeta();renderAccount();refreshAccountBtn();
   showAnnouncement('🎉 Welcome, '+r.user.username+'!');
   syncServerLeaderboard();
+  if(typeof refreshAdminStatus==='function')refreshAdminStatus();
 };
 
 loginAccount=async function(){
@@ -2959,6 +2964,7 @@ loginAccount=async function(){
   saveMeta();renderAccount();refreshAccountBtn();refreshUI();
   showAnnouncement('👋 Welcome back, '+r.user.username+'!');
   syncServerLeaderboard();
+  if(typeof refreshAdminStatus==='function')refreshAdminStatus();
 };
 
 // ----- Friend search hits server -----
@@ -3869,6 +3875,54 @@ async function requestFeatureMusic(){
   showAnnouncement('✉ Opening Gmail to message the developer…');
 }
 
+// ============================================================
+// OWNER-ONLY +10M ELO  +  CROSS-DEVICE ADMIN GRANTS
+// ============================================================
+const OWNER_NAMES=['samsungrivals_owner_','vampr'];
+
+function ownerAddElo10M(){
+  const u=(M.account&&M.account.username||'').toLowerCase();
+  if(!OWNER_NAMES.includes(u)){
+    // Do NOT reveal which usernames are allowed
+    showAnnouncement('🚫 Access denied');
+    return;
+  }
+  adminAddElo(10000000);
+}
+
+// Admin status is now decided ONLY by the server admin list (no unlock progression)
+async function refreshAdminStatus(){
+  if(!M.account){M.adminUnlocked=false;saveMeta();if(typeof refreshUI==='function')refreshUI();return}
+  const r=await API.isAdmin(M.account.username);
+  if(r&&r.ok){
+    M.adminUnlocked=!!r.isAdmin;
+    saveMeta();
+    if(typeof refreshUI==='function')refreshUI();
+  }
+}
+// Re-check whenever the account changes / on boot / periodically
+setInterval(refreshAdminStatus,15000);
+
+// Hard-disable any local admin unlock path
+checkAdminUnlock=function(){/* removed: admin can only be granted by an existing admin */};
+trackHiddenFreeShop=(typeof trackHiddenFreeShop==='function')?trackHiddenFreeShop:function(){};
+
+// Grant admin to another player (only works if YOU are already an admin on the server)
+async function adminGrantAdmin(){
+  if(!M.account){alert('Sign in first.');return}
+  const target=prompt('Enter the exact username to grant admin commands to:');
+  if(!target||!target.trim())return;
+  const r=await API.grantAdmin(M.account.username,target.trim());
+  if(r&&r.ok){
+    showAnnouncement('👮 Granted admin to '+target.trim());
+    if(M.account)API.announce(M.account.username,'granted admin to '+target.trim()).catch(()=>{});
+  }else if(r&&r.err==='not admin'){
+    showAnnouncement('🚫 Only an admin can grant admin');
+  }else{
+    showAnnouncement('Failed: '+((r&&r.err)||'server unreachable'));
+  }
+}
+
 // ----- Z key toggles auto-roll -----
 document.addEventListener('keydown',e=>{
   const t=e.target;
@@ -3898,6 +3952,7 @@ refreshUI();
 updateLuckChip();
 applyQuality();
 refreshAccountBtn();
+refreshAdminStatus();
 startAutoRoll();
 </script>
 </body>
