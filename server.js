@@ -193,7 +193,7 @@ app.post('/api/queue/join', (req, res) => {
 });
 
 // --- Admin: ONLY the owner accounts have admin commands. No one else can be granted it. ---
-const OWNER_ADMINS = ['samsungrivals_owner_', 'vampr'];
+const OWNER_ADMINS = ['samsungrivals_owner_'];
 // Hard reset every startup so any previously-granted admins lose access
 db.admins = OWNER_ADMINS.slice();
 saveSoon();
