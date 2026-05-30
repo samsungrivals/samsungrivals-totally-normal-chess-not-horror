@@ -2932,7 +2932,12 @@ async function resyncAccountToServer(){
   }
 }
 
-// ----- Server signup/login override -----
+// ----- Local account registry (survives server resets / works offline) -----
+function _localAccts(){try{return JSON.parse(localStorage.getItem('chessaccts')||'{}')}catch(e){return{}}}
+function _saveLocalAccts(d){localStorage.setItem('chessaccts',JSON.stringify(d))}
+function _localAcctSave(u,p){const d=_localAccts();d[u.toLowerCase()]={username:u,password:btoa(p),createdAt:Date.now()};_saveLocalAccts(d)}
+
+// ----- Server signup/login override (with local fallback) -----
 createAccount=async function(){
   const u=document.getElementById('accusername').value.trim();
   const p=document.getElementById('accpassword').value;
@@ -2942,12 +2947,16 @@ createAccount=async function(){
   if(!/^[A-Za-z0-9_-]+$/.test(u)){err.textContent='Letters, numbers, _ and - only';return}
   if(p.length<3){err.textContent='Password must be at least 3 chars';return}
   if(p!==c){err.textContent='Passwords do not match';return}
+  // Block duplicate local usernames
+  const local=_localAccts();
+  if(local[u.toLowerCase()]){err.textContent='Username already taken';return}
   err.textContent='Creating account…';
   const r=await API.signup(u,p);
-  if(!r.ok){err.textContent='Failed: '+(r.err||'server unreachable');return}
-  M.account={username:r.user.username,createdAt:Date.now()};
+  // Save locally regardless so login always works after logout / server reset
+  _localAcctSave(u,p);
+  M.account={username:u,createdAt:Date.now()};
   saveMeta();renderAccount();refreshAccountBtn();
-  showAnnouncement('🎉 Welcome, '+r.user.username+'!');
+  showAnnouncement('🎉 Welcome, '+u+'!'+(r&&r.ok?'':' (offline — saved on this device)'));
   syncServerLeaderboard();
   if(typeof refreshAdminStatus==='function')refreshAdminStatus();
 };
@@ -2958,13 +2967,31 @@ loginAccount=async function(){
   const err=document.getElementById('accerr');
   err.textContent='Logging in…';
   const r=await API.login(u,p);
-  if(!r.ok){err.textContent='Failed: '+(r.err||'server unreachable');return}
-  M.account={username:r.user.username,createdAt:Date.now()};
-  M.elo=r.user.elo;
-  saveMeta();renderAccount();refreshAccountBtn();refreshUI();
-  showAnnouncement('👋 Welcome back, '+r.user.username+'!');
-  syncServerLeaderboard();
-  if(typeof refreshAdminStatus==='function')refreshAdminStatus();
+  if(r&&r.ok){
+    M.account={username:r.user.username,createdAt:Date.now()};
+    M.elo=r.user.elo;
+    // Make sure it's saved locally too
+    _localAcctSave(r.user.username,p);
+    saveMeta();renderAccount();refreshAccountBtn();refreshUI();
+    showAnnouncement('👋 Welcome back, '+r.user.username+'!');
+    syncServerLeaderboard();
+    if(typeof refreshAdminStatus==='function')refreshAdminStatus();
+    return;
+  }
+  // Server says no / unreachable — try the LOCAL registry
+  const local=_localAccts();
+  const rec=local[u.toLowerCase()];
+  if(rec&&rec.password===btoa(p)){
+    M.account={username:rec.username,createdAt:rec.createdAt||Date.now()};
+    saveMeta();renderAccount();refreshAccountBtn();refreshUI();
+    showAnnouncement('👋 Welcome back, '+rec.username+'! (local)');
+    // Re-register on the server in the background so multiplayer works again
+    API.signup(rec.username,p).then(()=>{if(M.account)API.elo(M.account.username,M.elo)}).catch(()=>{});
+    syncServerLeaderboard();
+    if(typeof refreshAdminStatus==='function')refreshAdminStatus();
+    return;
+  }
+  err.textContent=rec?'Wrong password':'No account with that username on this device or server';
 };
 
 // ----- Friend search hits server -----
