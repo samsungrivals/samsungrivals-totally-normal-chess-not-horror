@@ -592,7 +592,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 <div class="modal hidden" id="adminmodal">
   <div class="mbox">
     <div class="mtitle">⚡ Admin Commands <button class="mclose" onclick="closeModal('adminmodal')">✕</button></div>
-    <div class="adminitem" onclick="adminGiveAll()"><b>🎁 Give all board skins</b> — every board skin including Real Admin</div>
+    <div class="adminitem" onclick="adminGiveAll()"><b>🎁 Give ALL skins</b> — every board skin (incl. 67, Secret, OMEGA, Infinity, Royal) + all piece skins</div>
     <div class="adminitem" onclick="adminGiveAllPieceSkins()"><b>♟ Give all piece skins</b> — Bronze, Silver, Gold, Diamond</div>
     <div class="adminitem" onclick="adminGiveRealAdmin()"><b>👑 Give Real Admin board skin</b> — the blue & red exclusive</div>
     <div class="adminitem" onclick="adminAddElo(100)"><b>⬆️ +100 ELO</b></div>
@@ -3686,6 +3686,19 @@ doSpin=function(){
   const triple=M.upgradesPurchased&&M.upgradesPurchased.tripleRoll;
   const count=triple?3:1;
   for(let i=0;i<count;i++)_spinNoTriple();
+};
+
+// Give-all-skins now grants EVERY skin in the game (board + piece)
+adminGiveAll=function(){
+  M.inventory=M.inventory||{};
+  let n=0;
+  for(const k in SKINS){if(k==='classic')continue;M.inventory[k]=(M.inventory[k]||0)+1;n++}
+  // also unlock all piece skins
+  M.unlockedPieceSkins=M.unlockedPieceSkins||{};
+  for(const k of ['bronze','silver','gold','diamond'])M.unlockedPieceSkins[k]=true;
+  saveMeta();refreshUI();
+  if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
+  showAnnouncement('🎁 Granted ALL '+n+' board skins + all piece skins!');
 };
 
 // ----- Z key toggles auto-roll -----
