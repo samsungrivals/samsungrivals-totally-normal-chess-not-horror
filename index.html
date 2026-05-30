@@ -1293,7 +1293,18 @@ function loadMeta(){
   if(d.moneyVersion===undefined){d.money=Math.round((Number(d.money)||0)*100);d.moneyVersion=2}
   return d;
 }
-function saveMeta(){localStorage.setItem('chessmeta',JSON.stringify(M))}
+// Debounced save: keep M live in memory, but write to localStorage at most ~once/sec.
+// JSON.stringify + localStorage write is synchronous and was firing on every roll (huge lag).
+let _saveTimer=null,_saveDirty=false;
+function _saveNow(){_saveDirty=false;try{localStorage.setItem('chessmeta',JSON.stringify(M))}catch(e){}}
+function saveMeta(){
+  _saveDirty=true;
+  if(_saveTimer)return;
+  _saveTimer=setTimeout(()=>{_saveTimer=null;if(_saveDirty)_saveNow()},900);
+}
+// Flush on tab hide / close so nothing is lost
+window.addEventListener('visibilitychange',()=>{if(document.hidden&&_saveDirty)_saveNow()});
+window.addEventListener('beforeunload',()=>{if(_saveDirty)_saveNow()});
 
 function loadLb(){try{return JSON.parse(localStorage.getItem('chesslb')||'[]')}catch(e){return[]}}
 function saveLb(lb){localStorage.setItem('chesslb',JSON.stringify(lb))}
@@ -4123,6 +4134,43 @@ cancelMatch=function(){
 
 // Connect on load
 wsConnect();
+
+// ============================================================
+// PERFORMANCE: throttle UI refreshes during rapid auto-rolling
+// ============================================================
+(function(){
+  const realRefresh=refreshUI;
+  let lastRun=0,pending=null;
+  refreshUI=function(){
+    const now=Date.now();
+    // If called rapidly, coalesce into a single trailing update
+    if(now-lastRun<100){
+      if(pending)return;
+      pending=setTimeout(()=>{pending=null;lastRun=Date.now();realRefresh()},100);
+      return;
+    }
+    lastRun=now;realRefresh();
+  };
+  const realLuck=updateLuckChip;
+  let lastLuck=0,pendLuck=null;
+  updateLuckChip=function(){
+    const now=Date.now();
+    if(now-lastLuck<200){
+      if(pendLuck)return;
+      pendLuck=setTimeout(()=>{pendLuck=null;lastLuck=Date.now();realLuck()},200);
+      return;
+    }
+    lastLuck=now;realLuck();
+  };
+})();
+
+// Throttle the floating money toast — at most ~6/sec, otherwise it spawns
+// dozens of DOM nodes per second during fast auto-roll.
+(function(){
+  const realToast=flashMoneyToast;
+  let last=0;
+  flashMoneyToast=function(t){const now=Date.now();if(now-last<160)return;last=now;realToast(t)};
+})();
 
 // ----- Z key toggles auto-roll -----
 document.addEventListener('keydown',e=>{
