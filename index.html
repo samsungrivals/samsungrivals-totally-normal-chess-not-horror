@@ -3985,6 +3985,145 @@ async function adminGrantAdmin(){
   }
 });
 
+// ============================================================
+// REAL-TIME WEBSOCKET MULTIPLAYER (instant move sync)
+// ============================================================
+let _ws=null,_wsReady=false,_wsReconnectT=null;
+
+function wsConnect(){
+  try{
+    const proto=location.protocol==='https:'?'wss:':'ws:';
+    _ws=new WebSocket(proto+'//'+location.host+'/ws');
+  }catch(e){console.warn('[ws] connect failed',e);return}
+  _ws.onopen=()=>{
+    _wsReady=true;
+    console.log('[ws] connected');
+    const name=(M.account&&M.account.username)||('guest_'+Math.floor(Math.random()*100000));
+    wsSend({type:'hello',user:name,elo:M.elo||500});
+  };
+  _ws.onmessage=ev=>{
+    let msg;try{msg=JSON.parse(ev.data)}catch(e){return}
+    handleWsMessage(msg);
+  };
+  _ws.onclose=()=>{
+    _wsReady=false;console.log('[ws] disconnected, retrying in 3s');
+    if(_wsReconnectT)clearTimeout(_wsReconnectT);
+    _wsReconnectT=setTimeout(wsConnect,3000);
+  };
+  _ws.onerror=()=>{try{_ws.close()}catch(e){}};
+}
+function wsSend(obj){if(_ws&&_ws.readyState===WebSocket.OPEN)_ws.send(JSON.stringify(obj))}
+
+function handleWsMessage(msg){
+  if(msg.type==='queued'){
+    const sub=document.querySelector('#mmsearching .mmsearchsub');
+    if(sub)sub.textContent='In queue — waiting for another real player…';
+  }else if(msg.type==='matched'){
+    onWsMatched(msg);
+  }else if(msg.type==='move'){
+    onWsOpponentMove(msg);
+  }else if(msg.type==='gameover'){
+    showAnnouncement('🏁 Opponent reported game over');
+  }else if(msg.type==='opponentLeft'){
+    if(G&&G.opponent&&G.opponent.type==='wspvp'){
+      showAnnouncement('🚪 Opponent left the game');
+      if(typeof showWinModal==='function')showWinModal(1,0,G.opponent.name+' (left)');
+    }
+  }
+}
+
+function onWsMatched(msg){
+  if(_qPollTimer){clearInterval(_qPollTimer);_qPollTimer=null}
+  closeModal('mmmodal');
+  newGame();
+  G.opponent={
+    type:'wspvp',
+    name:msg.opponent.name,
+    elo:Number(msg.opponent.elo)||500,
+    side:msg.side==='white'?'black':'white', // opponent's color
+    mySide:msg.side,
+    matchId:msg.matchId,
+    _eloApplied:false
+  };
+  render();
+  showAnnouncement('🎮 LIVE match vs '+msg.opponent.name+' — you are '+msg.side+'!');
+}
+
+function onWsOpponentMove(msg){
+  if(!G||!G.opponent||G.opponent.matchId!==msg.matchId)return;
+  G._applyingRemote=true;
+  try{doMove(msg.from,msg.to,msg.promo)}catch(e){console.warn('apply ws move failed',e)}
+  G._applyingRemote=false;
+}
+
+// Hook doMove: send local moves over WebSocket for wspvp games
+const _wsDoMove=doMove;
+doMove=function(from,to,promo){
+  const isWs=G&&G.opponent&&G.opponent.type==='wspvp';
+  const isRemote=G&&G._applyingRemote;
+  _wsDoMove(from,to,promo);
+  if(isWs&&!isRemote){
+    wsSend({type:'move',matchId:G.opponent.matchId,from,to,promo:promo||null});
+  }
+};
+
+// Hook click: block input on opponent's turn in ws games
+const _wsClick=click;
+click=function(r,c){
+  if(G&&G.opponent&&G.opponent.type==='wspvp'&&G.turn!==G.opponent.mySide)return;
+  _wsClick(r,c);
+};
+
+// ELO for ws matches
+const _wsMaybeApplyElo=maybeApplyElo;
+maybeApplyElo=function(){
+  if(G&&G.opponent&&G.opponent.type==='wspvp'&&!G.opponent._eloApplied){
+    if(G.status!=='checkmate'&&G.status!=='stalemate'&&G.status!=='draw')return;
+    let result;
+    if(G.status!=='checkmate')result=0.5;
+    else{const winner=flip(G.turn);result=winner===G.opponent.mySide?1:0}
+    const change=eloChange(M.elo,G.opponent.elo,result);
+    M.elo=Math.max(100,(Number(M.elo)||500)+change);
+    M.gamesPlayed=(Number(M.gamesPlayed)||0)+1;
+    if(result===1)M.gamesWon=(Number(M.gamesWon)||0)+1;
+    G.opponent._eloApplied=true;saveMeta();
+    if(typeof showEloToast==='function')showEloToast(change,G.opponent.name,result,M.elo);
+    refreshUI();
+    wsSend({type:'gameover',matchId:G.opponent.matchId,status:G.status,winner:result===1?(M.account&&M.account.username):null});
+    if(M.account)API.elo(M.account.username,M.elo).catch(()=>{});
+    return;
+  }
+  _wsMaybeApplyElo();
+};
+
+// Rewire Find Match to use WebSocket (falls back to old HTTP flow if ws down)
+findMatchAsync=function(){
+  document.getElementById('myeloshow').textContent=M.elo;
+  document.getElementById('mmsearching').classList.remove('hidden');
+  document.getElementById('mmfound').classList.add('hidden');
+  openModal('mmmodal');
+  const sub=document.querySelector('#mmsearching .mmsearchsub');
+  if(_wsReady){
+    if(sub)sub.textContent='Connecting to a real player…';
+    // refresh identity (in case they logged in after connecting)
+    wsSend({type:'hello',user:(M.account&&M.account.username)||('guest_'+Math.floor(Math.random()*100000)),elo:M.elo||500});
+    wsSend({type:'queue',elo:M.elo||500});
+  }else{
+    if(sub)sub.textContent='Connecting… (retrying)';
+    wsConnect();
+    setTimeout(()=>{if(_wsReady){wsSend({type:'hello',user:(M.account&&M.account.username)||'guest',elo:M.elo||500});wsSend({type:'queue',elo:M.elo||500})}},1200);
+  }
+};
+
+cancelMatch=function(){
+  wsSend({type:'leaveQueue'});
+  if(_qPollTimer){clearInterval(_qPollTimer);_qPollTimer=null}
+  _pmatch=null;closeModal('mmmodal');
+};
+
+// Connect on load
+wsConnect();
+
 // ----- Z key toggles auto-roll -----
 document.addEventListener('keydown',e=>{
   const t=e.target;

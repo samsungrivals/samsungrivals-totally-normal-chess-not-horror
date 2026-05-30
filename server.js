@@ -354,8 +354,116 @@ app.get('/api/stats', (req, res) => {
   });
 });
 
+// ============================================================
+// REAL-TIME WEBSOCKET MULTIPLAYER
+// ============================================================
+const http = require('http');
+const WebSocket = require('ws');
+
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server, path: '/ws' });
+
+// user(lowercase) -> ws socket
+const sockets = new Map();
+// matchId -> { white, black, moves: [] }
+const liveMatches = new Map();
+// waiting socket info: { user, elo, ws }
+let waiting = null;
+
+function wsSend(ws, obj) {
+  try { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj)); } catch (e) {}
+}
+
+wss.on('connection', (ws) => {
+  ws.userKey = null;
+
+  ws.on('message', (raw) => {
+    let msg;
+    try { msg = JSON.parse(raw); } catch (e) { return; }
+
+    if (msg.type === 'hello') {
+      ws.userKey = (msg.user || ('guest_' + Math.random().toString(36).slice(2, 8))).toLowerCase();
+      ws.displayName = msg.user || ws.userKey;
+      ws.elo = Number(msg.elo) || 500;
+      sockets.set(ws.userKey, ws);
+      wsSend(ws, { type: 'hello_ok', user: ws.displayName });
+      return;
+    }
+
+    if (msg.type === 'queue') {
+      ws.elo = Number(msg.elo) || ws.elo || 500;
+      // Already someone waiting and it's not us? Make a match.
+      if (waiting && waiting.ws !== ws && waiting.ws.readyState === WebSocket.OPEN) {
+        const opp = waiting; waiting = null;
+        const matchId = 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+        const whiteIsMe = Math.random() < 0.5;
+        const meName = ws.displayName, oppName = opp.ws.displayName;
+        const white = whiteIsMe ? meName : oppName;
+        const black = whiteIsMe ? oppName : meName;
+        liveMatches.set(matchId, { white, black, moves: [], a: ws.userKey, b: opp.ws.userKey });
+        ws.matchId = matchId; opp.ws.matchId = matchId;
+        wsSend(ws, { type: 'matched', matchId, opponent: { name: oppName, elo: opp.elo }, side: white === meName ? 'white' : 'black' });
+        wsSend(opp.ws, { type: 'matched', matchId, opponent: { name: meName, elo: ws.elo }, side: white === oppName ? 'white' : 'black' });
+        console.log('[ws] matched ' + meName + ' vs ' + oppName + ' (' + matchId + ')');
+      } else {
+        waiting = { user: ws.displayName, elo: ws.elo, ws };
+        wsSend(ws, { type: 'queued' });
+      }
+      return;
+    }
+
+    if (msg.type === 'leaveQueue') {
+      if (waiting && waiting.ws === ws) waiting = null;
+      wsSend(ws, { type: 'queueLeft' });
+      return;
+    }
+
+    if (msg.type === 'move') {
+      const m = liveMatches.get(msg.matchId);
+      if (!m) return;
+      m.moves.push({ from: msg.from, to: msg.to, promo: msg.promo || null, by: ws.userKey });
+      // Relay to the OTHER player
+      const otherKey = m.a === ws.userKey ? m.b : m.a;
+      const otherWs = sockets.get(otherKey);
+      wsSend(otherWs, { type: 'move', matchId: msg.matchId, from: msg.from, to: msg.to, promo: msg.promo || null });
+      return;
+    }
+
+    if (msg.type === 'gameover') {
+      const m = liveMatches.get(msg.matchId);
+      if (m) {
+        const otherKey = m.a === ws.userKey ? m.b : m.a;
+        wsSend(sockets.get(otherKey), { type: 'gameover', matchId: msg.matchId, status: msg.status, winner: msg.winner });
+        liveMatches.delete(msg.matchId);
+      }
+      return;
+    }
+
+    if (msg.type === 'chat') {
+      const m = liveMatches.get(msg.matchId);
+      if (!m) return;
+      const otherKey = m.a === ws.userKey ? m.b : m.a;
+      wsSend(sockets.get(otherKey), { type: 'chat', from: ws.displayName, text: String(msg.text || '').slice(0, 200) });
+      return;
+    }
+  });
+
+  ws.on('close', () => {
+    if (waiting && waiting.ws === ws) waiting = null;
+    if (ws.userKey) sockets.delete(ws.userKey);
+    // Notify opponent if in a live match
+    if (ws.matchId) {
+      const m = liveMatches.get(ws.matchId);
+      if (m) {
+        const otherKey = m.a === ws.userKey ? m.b : m.a;
+        wsSend(sockets.get(otherKey), { type: 'opponentLeft', matchId: ws.matchId });
+      }
+    }
+  });
+});
+
 const port = process.env.PORT || 3000;
-app.listen(port, '0.0.0.0', () => {
-  console.log('chess server listening on ' + port);
+server.listen(port, '0.0.0.0', () => {
+  console.log('chess server listening on ' + port + ' (HTTP + WebSocket /ws)');
   console.log('users: ' + Object.keys(db.users).length + ' (' + SEED_AI.length + ' AI seeded)');
 });
