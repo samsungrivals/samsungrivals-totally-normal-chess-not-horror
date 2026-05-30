@@ -231,21 +231,41 @@ app.post('/api/queue/join', (req, res) => {
   ok(res, { matched: false, queueSize: db.queue.length });
 });
 
-// --- Admin: ONLY the owner accounts have admin commands. No one else can be granted it. ---
+// --- Admin: the owner always has it and can grant admin to other players ---
 const OWNER_ADMINS = ['samsungrivals_owner_'];
-// Hard reset every startup so any previously-granted admins lose access
-db.admins = OWNER_ADMINS.slice();
+db.admins = db.admins || [];
+// Ensure owners are always present (without wiping previously-granted admins)
+for (const o of OWNER_ADMINS) {
+  if (!db.admins.some(a => a.toLowerCase() === o.toLowerCase())) db.admins.push(o);
+}
 saveSoon();
+
+function isOwner(name) { return OWNER_ADMINS.some(a => a.toLowerCase() === (name || '').toLowerCase()); }
 
 app.get('/api/admins/is', (req, res) => {
   const u = (req.query.user || '').toLowerCase();
-  const isAdmin = OWNER_ADMINS.some(a => a.toLowerCase() === u);
+  const isAdmin = db.admins.some(a => a.toLowerCase() === u);
   ok(res, { isAdmin });
 });
 
-// Granting admin is disabled — only the owners are admins.
+// Only the OWNER can grant admin to other players.
 app.post('/api/admins/grant', (req, res) => {
-  bad(res, 403, 'granting disabled');
+  const { granter, target } = req.body || {};
+  if (!granter || !target) return bad(res, 400, 'missing');
+  if (!isOwner(granter)) return bad(res, 403, 'only owner can grant');
+  if (!db.admins.some(a => a.toLowerCase() === target.toLowerCase())) db.admins.push(target);
+  saveSoon();
+  ok(res, { admins: db.admins });
+});
+
+// Owner can revoke a granted admin (can't revoke the owner)
+app.post('/api/admins/revoke', (req, res) => {
+  const { granter, target } = req.body || {};
+  if (!isOwner(granter)) return bad(res, 403, 'only owner can revoke');
+  if (isOwner(target)) return bad(res, 400, 'cannot revoke owner');
+  db.admins = db.admins.filter(a => a.toLowerCase() !== (target || '').toLowerCase());
+  saveSoon();
+  ok(res, { admins: db.admins });
 });
 
 // --- Music feature requests (users asking the dev to use their music) ---

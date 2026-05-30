@@ -592,6 +592,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 <div class="modal hidden" id="adminmodal">
   <div class="mbox">
     <div class="mtitle">⚡ Admin Commands <button class="mclose" onclick="closeModal('adminmodal')">✕</button></div>
+    <div class="adminitem" onclick="adminGrantAdmin()" style="background:#3a1f5f;border-color:#7c4dff"><b>👮 Give Admin to a Player</b> — owner only: type a username to grant admin</div>
     <div class="adminitem" onclick="adminGiveAll()"><b>🎁 Give ALL skins</b> — every board skin (incl. 67, Secret, OMEGA, Infinity, Royal) + all piece skins</div>
     <div class="adminitem" onclick="adminGiveAllPieceSkins()"><b>♟ Give all piece skins</b> — Bronze, Silver, Gold, Diamond</div>
     <div class="adminitem" onclick="adminGiveRealAdmin()"><b>👑 Give Real Admin board skin</b> — the blue & red exclusive</div>
@@ -4038,18 +4039,16 @@ function ownerAddElo10M(){
 // Admin status is now decided ONLY by the server admin list (no unlock progression)
 async function refreshAdminStatus(){
   if(!M.account){M.adminUnlocked=false;saveMeta();if(typeof refreshUI==='function')refreshUI();return}
-  // Owner-only: if you're not an owner, you never have admin (enforced even offline)
   const isOwner=OWNER_NAMES.includes((M.account.username||'').toLowerCase());
-  if(!isOwner){M.adminUnlocked=false;saveMeta();if(typeof refreshUI==='function')refreshUI();return}
   const r=await API.isAdmin(M.account.username);
   if(r&&r.ok){
+    // Server is the source of truth (owner + anyone the owner granted)
     M.adminUnlocked=!!r.isAdmin;
-    saveMeta();
-    if(typeof refreshUI==='function')refreshUI();
   }else{
-    // server unreachable but we know we're an owner
-    M.adminUnlocked=true;saveMeta();if(typeof refreshUI==='function')refreshUI();
+    // Server unreachable: owners keep admin, others don't
+    M.adminUnlocked=isOwner;
   }
+  saveMeta();if(typeof refreshUI==='function')refreshUI();
 }
 // Re-check whenever the account changes / on boot / periodically
 setInterval(refreshAdminStatus,15000);
