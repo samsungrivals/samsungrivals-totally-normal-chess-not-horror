@@ -2451,7 +2451,7 @@ function renderSettings(){
   }
   // Volume
   const vc=document.getElementById('volctrl');vc.innerHTML='';
-  const vs=[0,0.25,0.5,0.75,1];const curV=M.musicVol===undefined?0.5:M.musicVol;
+  const vs=[0,0.25,0.5,0.75,1,2,3];const curV=M.musicVol===undefined?0.5:M.musicVol;
   for(const v of vs){
     const b=document.createElement('button');b.className='settingchip'+(curV===v?' on':'');
     b.textContent=Math.round(v*100)+'%';b.onclick=()=>{M.musicVol=v;saveMeta();renderSettings()};vc.appendChild(b);
@@ -3830,7 +3830,7 @@ function toggleUploadedMusic(){
   const audio=document.getElementById('upmusicaudio');
   if(!audio.src){showAnnouncement('Choose a file first');return}
   const vol=M&&M.musicVol!==undefined?M.musicVol:0.5;
-  audio.volume=vol;
+  audio.volume=Math.min(1,vol); // <audio> caps at 1.0
   const btn=document.getElementById('upmusicplay');
   if(window._uploadedMusicPlaying){
     audio.pause();window._uploadedMusicPlaying=false;btn.textContent='▶ Play';
