@@ -355,26 +355,30 @@ app.get('/api/stats', (req, res) => {
 });
 
 // ============================================================
-// REAL-TIME WEBSOCKET MULTIPLAYER
+// REAL-TIME WEBSOCKET MULTIPLAYER  (optional — site still works without it)
 // ============================================================
 const http = require('http');
-const WebSocket = require('ws');
-
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server, path: '/ws' });
 
 // user(lowercase) -> ws socket
 const sockets = new Map();
-// matchId -> { white, black, moves: [] }
 const liveMatches = new Map();
-// waiting socket info: { user, elo, ws }
 let waiting = null;
+let WebSocket = null;
 
 function wsSend(ws, obj) {
-  try { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj)); } catch (e) {}
+  try { if (ws && WebSocket && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj)); } catch (e) {}
 }
 
-wss.on('connection', (ws) => {
+function setupWebSockets() {
+  try {
+    WebSocket = require('ws');
+  } catch (e) {
+    console.warn('[ws] WebSocket library not available — real-time multiplayer disabled, site still runs. ' + e.message);
+    return;
+  }
+  const wss = new WebSocket.Server({ server, path: '/ws' });
+  wss.on('connection', (ws) => {
   ws.userKey = null;
 
   ws.on('message', (raw) => {
@@ -459,11 +463,20 @@ wss.on('connection', (ws) => {
         wsSend(sockets.get(otherKey), { type: 'opponentLeft', matchId: ws.matchId });
       }
     }
+    });
   });
-});
+  console.log('[ws] real-time multiplayer enabled at /ws');
+}
+
+// Set up WebSockets if possible, but NEVER let it stop the HTTP server from starting
+try { setupWebSockets(); } catch (e) { console.warn('[ws] setup failed, continuing without it: ' + e.message); }
 
 const port = process.env.PORT || 3000;
 server.listen(port, '0.0.0.0', () => {
-  console.log('chess server listening on ' + port + ' (HTTP + WebSocket /ws)');
+  console.log('chess server listening on ' + port + (WebSocket ? ' (HTTP + WebSocket /ws)' : ' (HTTP only)'));
   console.log('users: ' + Object.keys(db.users).length + ' (' + SEED_AI.length + ' AI seeded)');
 });
+
+// Last-resort guard: don't let an unexpected error crash the whole process/site
+process.on('uncaughtException', (e) => console.error('[uncaught]', e));
+process.on('unhandledRejection', (e) => console.error('[unhandledRejection]', e));
