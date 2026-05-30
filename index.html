@@ -686,6 +686,22 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
       <div id="frlist"></div>
     </div>
     <div id="fraddview" class="hidden">
+      <div style="background:#0a1830;border:1px solid #2a5080;border-radius:8px;padding:12px;margin-bottom:12px">
+        <div style="font-size:11px;color:#7ad3ff;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Your Friend Code</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <code id="myfriendcode" style="flex:1;background:#000;color:#7af;padding:8px 12px;border-radius:6px;font-size:15px;letter-spacing:1px;font-weight:bold">—</code>
+          <button class="skinbtn" onclick="copyFriendCode()">📋 Copy</button>
+        </div>
+        <div style="font-size:11px;color:#888;margin-top:6px">Share this code so friends can add you.</div>
+      </div>
+      <div style="background:#0a1830;border:1px solid #2a5080;border-radius:8px;padding:12px;margin-bottom:12px">
+        <div style="font-size:11px;color:#7ad3ff;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Add by Friend Code</div>
+        <div class="frsearchbar" style="margin-bottom:0">
+          <input type="text" id="frcodeinput" placeholder="Paste your friend's code…">
+          <button class="skinbtn" onclick="addByFriendCode()">＋ Add</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#7ad3ff;text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px">Or search players</div>
       <div class="frsearchbar">
         <input type="text" id="frsearch" placeholder="Search players…" oninput="searchFriends()">
       </div>
@@ -1944,7 +1960,44 @@ function switchFrTab(tab){
   document.getElementById('frlistview').classList.toggle('hidden',tab!=='list');
   document.getElementById('fraddview').classList.toggle('hidden',tab!=='add');
   if(tab==='list')renderFriendsList();
-  if(tab==='add'){document.getElementById('frsearch').value='';searchFriends()}
+  if(tab==='add'){document.getElementById('frsearch').value='';searchFriends();showMyFriendCode()}
+}
+
+// Friend code: same djb2-xor algorithm as the server, so codes match offline too
+function codeForName(name){
+  let h=5381;const s=(name||'').toLowerCase();
+  for(let i=0;i<s.length;i++)h=((h*33)^s.charCodeAt(i))>>>0;
+  return 'CHESS-'+h.toString(36).toUpperCase().padStart(6,'0').slice(0,6);
+}
+function showMyFriendCode(){
+  const el=document.getElementById('myfriendcode');if(!el)return;
+  if(!M.account){el.textContent='(sign up to get a code)';return}
+  el.textContent=codeForName(M.account.username);
+}
+function copyFriendCode(){
+  if(!M.account){showAnnouncement('Sign up first to get a friend code');return}
+  const code=codeForName(M.account.username);
+  try{navigator.clipboard&&navigator.clipboard.writeText(code)}catch(e){}
+  showAnnouncement('📋 Copied your code: '+code);
+}
+async function addByFriendCode(){
+  if(!M.account){showAnnouncement('Sign up first to add friends');return}
+  const code=(document.getElementById('frcodeinput').value||'').trim();
+  if(!code){showAnnouncement('Paste a friend code first');return}
+  if(code.toUpperCase()===codeForName(M.account.username)){showAnnouncement("That's your own code!");return}
+  const r=await API.addByCode(M.account.username,code);
+  if(r&&r.ok&&r.added){
+    M.friends=M.friends||[];
+    if(!M.friends.find(f=>f.name===r.added))M.friends.push({name:r.added,elo:r.elo||500,online:true});
+    saveMeta();
+    document.getElementById('frcodeinput').value='';
+    showAnnouncement('👥 Added '+r.added+' as friend!');
+    renderFriendsList();
+  }else if(r&&r.err==='no such code'){
+    showAnnouncement('❌ No player found with that code (they must have signed up on the server)');
+  }else{
+    showAnnouncement('Failed: '+((r&&r.err)||'server unreachable'));
+  }
 }
 
 function searchFriends(){
@@ -2888,6 +2941,8 @@ window.API=(()=>{
     searchUsers:q=>call('/api/users/search?q='+encodeURIComponent(q)),
     friends:u=>call('/api/friends?user='+encodeURIComponent(u)),
     addFriend:(u,f)=>call('/api/friends/add',{method:'POST',headers:j,body:JSON.stringify({user:u,friend:f})}),
+    myFriendCode:u=>call('/api/friends/mycode?user='+encodeURIComponent(u)),
+    addByCode:(u,code)=>call('/api/friends/addByCode',{method:'POST',headers:j,body:JSON.stringify({user:u,code})}),
     removeFriend:(u,f)=>call('/api/friends/remove',{method:'POST',headers:j,body:JSON.stringify({user:u,friend:f})}),
     announce:(u,m)=>call('/api/announce',{method:'POST',headers:j,body:JSON.stringify({user:u,msg:m})}),
     announceSince:ts=>call('/api/announce/since?ts='+ts),

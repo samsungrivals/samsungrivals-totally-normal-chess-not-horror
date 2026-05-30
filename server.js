@@ -112,6 +112,45 @@ app.get('/api/friends', (req, res) => {
   ok(res, { friends: list });
 });
 
+// Friend code = a short stable code derived from the username (case-insensitive)
+function codeForName(name) {
+  let h = 5381;
+  const s = (name || '').toLowerCase();
+  for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+  return 'CHESS-' + h.toString(36).toUpperCase().padStart(6, '0').slice(0, 6);
+}
+function nameForCode(code) {
+  const c = (code || '').trim().toUpperCase();
+  for (const key in db.users) {
+    if (codeForName(db.users[key].username) === c) return db.users[key].username;
+  }
+  return null;
+}
+
+app.get('/api/friends/mycode', (req, res) => {
+  const u = req.query.user || '';
+  ok(res, { code: codeForName(u) });
+});
+
+app.post('/api/friends/addByCode', (req, res) => {
+  const { user, code } = req.body || {};
+  if (!user || !code) return bad(res, 400, 'missing');
+  const target = nameForCode(code);
+  if (!target) return bad(res, 404, 'no such code');
+  if (target.toLowerCase() === user.toLowerCase()) return bad(res, 400, 'thats you');
+  const key = user.toLowerCase();
+  db.friends[key] = db.friends[key] || [];
+  if (!db.friends[key].includes(target)) db.friends[key].push(target);
+  // make it mutual so both see each other
+  const tkey = target.toLowerCase();
+  db.friends[tkey] = db.friends[tkey] || [];
+  if (!db.friends[tkey].includes(db.users[key] ? db.users[key].username : user)) {
+    db.friends[tkey].push(db.users[key] ? db.users[key].username : user);
+  }
+  saveSoon();
+  ok(res, { added: target, elo: db.users[tkey] ? db.users[tkey].elo : 500 });
+});
+
 app.post('/api/friends/add', (req, res) => {
   const { user, friend } = req.body || {};
   if (!user || !friend) return bad(res, 400, 'missing');
