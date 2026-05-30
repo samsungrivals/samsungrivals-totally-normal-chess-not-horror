@@ -2193,14 +2193,30 @@ const MUSIC_TRACKS=[
     bass:[['C3',.5],['C3',.5],['G3',.5],['G3',.5],['F3',.5],['F3',.5],['G3',.5],['G3',.5]]},
   {name:'Dreamy',wave:'triangle',
     lead:[['G4',1.5],['B4',.5],['D5',1.5],['C5',.5],['B4',1],['A4',1],['G4',1.5],['E4',.5],['F4',1.5],['A4',.5],['G4',2]],
-    bass:[['G3',2],['E3',2],['C3',2],['D3',2],['G3',2],['E3',2],['C3',2],['D3',2]]}
+    bass:[['G3',2],['E3',2],['C3',2],['D3',2],['G3',2],['E3',2],['C3',2],['D3',2]]},
+  {name:'Custom 1',file:'music/track1.ogg'},
+  {name:'Custom 2',file:'music/track2.ogg'}
 ];
+
+// Dedicated <audio> element for file-based tracks
+let _fileAudio=null;
+function _stopFileAudio(){if(_fileAudio){_fileAudio.pause();_fileAudio.currentTime=0}}
+function _playFileTrack(track){
+  if(!_fileAudio){_fileAudio=new Audio();_fileAudio.loop=true}
+  if(!_fileAudio.src.endsWith(track.file))_fileAudio.src=track.file;
+  const vol=M&&M.musicVol!==undefined?M.musicVol:0.5;
+  _fileAudio.volume=Math.min(1,vol);
+  _fileAudio.play().catch(()=>{});
+}
 
 function _playLoop(){
   if(!_musicOn)return;
-  const t=_audio.currentTime;
   const idx=(M&&M.musicTrack)||0;
   const track=MUSIC_TRACKS[idx]||MUSIC_TRACKS[0];
+  // File-based track: play through <audio>, skip synth
+  if(track.file){_playFileTrack(track);return}
+  _stopFileAudio();
+  const t=_audio.currentTime;
   let off=0;
   for(const [n,d] of track.lead){_playNote(_NOTES[n]||440,d*0.85,t+off,0.06,track.wave);off+=d}
   let boff=0;
@@ -2212,7 +2228,7 @@ function _playLoop(){
 
 function setMusicTrack(idx){
   M.musicTrack=idx;saveMeta();
-  if(_musicOn){_musicTimers.forEach(t=>clearTimeout(t));_musicTimers=[];_playLoop()}
+  if(_musicOn){_musicTimers.forEach(t=>clearTimeout(t));_musicTimers=[];_stopFileAudio();_playLoop()}
   if(typeof renderSettings==='function')renderSettings();
 }
 
@@ -2224,7 +2240,7 @@ function toggleMusic(){
   _musicOn=!_musicOn;
   const btn=document.getElementById('musicbtn');
   if(_musicOn){btn.classList.add('playing');btn.textContent='🎶';_playLoop()}
-  else{btn.classList.remove('playing');btn.textContent='🎵';_musicTimers.forEach(t=>clearTimeout(t));_musicTimers=[]}
+  else{btn.classList.remove('playing');btn.textContent='🎵';_musicTimers.forEach(t=>clearTimeout(t));_musicTimers=[];_stopFileAudio()}
 }
 
 // ============================================================
