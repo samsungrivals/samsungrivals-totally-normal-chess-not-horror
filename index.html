@@ -3814,7 +3814,7 @@ UPGRADES.push({id:'tripleRoll',name:'Triple Roll',desc:'Every spin rolls 3 times
 
 // Cash God: costs 1,000,000 ROLLS, gives a 9.9e43x cash multiplier
 const CASHGOD_MULT=99999999999999999999999999999999999999999999;
-UPGRADES.push({id:'cashGod',name:'CASH GOD',desc:'×'+CASHGOD_MULT.toExponential(2)+' cash on every roll (costs 1,000,000 rolls)',rollCost:1000000,icon:'🤑'});
+UPGRADES.push({id:'cashGod',name:'CASH GOD',desc:'×'+CASHGOD_MULT.toExponential(2)+' cash on every roll (costs 43,018 rolls)',rollCost:43018,icon:'🤑'});
 const _origGetMoneyMultCashGod=getMoneyMult;
 getMoneyMult=function(){
   let m=_origGetMoneyMultCashGod();
