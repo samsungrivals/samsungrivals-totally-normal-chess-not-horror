@@ -2389,6 +2389,7 @@ function isUpgOwned(id){return M.upgradesPurchased&&M.upgradesPurchased[id]}
 function canBuyUpg(u){
   if(isUpgOwned(u.id))return false;
   if(u.req&&!isUpgOwned(u.req))return false;
+  if(u.rollCost)return (Number(M.rolls)||0)>=u.rollCost;
   return M.money>=u.cost;
 }
 function renderUpgrades(){
@@ -2398,7 +2399,8 @@ function renderUpgrades(){
     const reqMissing=u.req&&!isUpgOwned(u.req);
     const card=document.createElement('div');
     card.className='upgcard'+(owned?' owned':'');
-    card.innerHTML=`<div class="upgicon">${u.icon}</div><div class="upginfo"><div class="upgname">${u.name}</div><div class="upgdesc">${u.desc}${reqMissing?' — <span style="color:#ff8080">needs '+UPGRADES.find(x=>x.id===u.req).name+'</span>':''}</div><div class="upgcost">${owned?'OWNED':fmtMoney(u.cost)}</div></div>`;
+    const costTxt=owned?'OWNED':(u.rollCost?(u.rollCost.toLocaleString()+' rolls'):fmtMoney(u.cost));
+    card.innerHTML=`<div class="upgicon">${u.icon}</div><div class="upginfo"><div class="upgname">${u.name}</div><div class="upgdesc">${u.desc}${reqMissing?' — <span style="color:#ff8080">needs '+UPGRADES.find(x=>x.id===u.req).name+'</span>':''}</div><div class="upgcost">${costTxt}${u.rollCost&&!owned?' (you have '+(Number(M.rolls)||0).toLocaleString()+')':''}</div></div>`;
     const btn=document.createElement('button');btn.className='upgbuy'+(owned?' owned':'');
     btn.textContent=owned?'✓':'Buy';btn.disabled=owned||!canBuyUpg(u);
     btn.onclick=()=>buyUpg(u);
@@ -2407,7 +2409,9 @@ function renderUpgrades(){
 }
 function buyUpg(u){
   if(!canBuyUpg(u))return;
-  M.money-=u.cost;M.upgradesPurchased=M.upgradesPurchased||{};M.upgradesPurchased[u.id]=true;
+  if(u.rollCost)M.rolls=(Number(M.rolls)||0)-u.rollCost;
+  else M.money-=u.cost;
+  M.upgradesPurchased=M.upgradesPurchased||{};M.upgradesPurchased[u.id]=true;
   saveMeta();refreshUI();renderUpgrades();updateLuckChip();
   showAnnouncement('✨ Unlocked: '+u.name);
 }
@@ -3783,6 +3787,16 @@ renderShop=function(){
 
 // Triple Roll upgrade
 UPGRADES.push({id:'tripleRoll',name:'Triple Roll',desc:'Every spin rolls 3 times in a row',cost:50000000,icon:'🎲🎲🎲',req:'luck8'});
+
+// Cash God: costs 1,000,000 ROLLS, gives a 9.9e43x cash multiplier
+const CASHGOD_MULT=99999999999999999999999999999999999999999999;
+UPGRADES.push({id:'cashGod',name:'CASH GOD',desc:'×'+CASHGOD_MULT.toExponential(2)+' cash on every roll (costs 1,000,000 rolls)',rollCost:1000000,icon:'🤑'});
+const _origGetMoneyMultCashGod=getMoneyMult;
+getMoneyMult=function(){
+  let m=_origGetMoneyMultCashGod();
+  if(M.upgradesPurchased&&M.upgradesPurchased.cashGod)m*=CASHGOD_MULT;
+  return m;
+};
 
 const _spinNoTriple=doSpin;
 doSpin=function(){
