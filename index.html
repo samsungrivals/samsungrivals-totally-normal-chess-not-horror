@@ -721,6 +721,10 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
       <div><div class="settinglabel">🎵 Music Track</div><div class="settingsub">Choose from 5 built-in songs</div></div>
       <div class="settingcontrol" id="trackctrl"></div>
     </div>
+    <div class="settingrow">
+      <div><div class="settinglabel">⏭ Skip Cutscenes</div><div class="settingsub">Rare-skin animations won't play</div></div>
+      <div class="settingcontrol" id="skipcsctrl"></div>
+    </div>
     <div class="settingrow" style="background:#1a1a2a;border-color:#444">
       <div><div class="settinglabel">📤 Upload Your Music</div><div class="settingsub">Play your own audio file & request to feature it</div></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
@@ -2486,6 +2490,15 @@ function renderSettings(){
       b.textContent=tr.name;b.onclick=()=>setMusicTrack(i);tc.appendChild(b);
     });
   }
+  // Skip cutscenes toggle
+  const skc=document.getElementById('skipcsctrl');
+  if(skc){
+    skc.innerHTML='';
+    [['On',true],['Off',false]].forEach(([lbl,val])=>{
+      const b=document.createElement('button');b.className='settingchip'+((!!M.skipCutscenes)===val?' on':'');
+      b.textContent=lbl;b.onclick=()=>{M.skipCutscenes=val;saveMeta();renderSettings()};skc.appendChild(b);
+    });
+  }
   // Uploaded music state
   const nameEl=document.getElementById('upmusicname');
   if(nameEl&&window._uploadedMusicName){
@@ -3963,6 +3976,14 @@ async function adminGrantAdmin(){
     showAnnouncement('Failed: '+((r&&r.err)||'server unreachable'));
   }
 }
+
+// ----- Skip Cutscenes setting: short-circuit every cutscene when enabled -----
+['showCutscene','showUltraCs','showMegaCs','showInfinityCs'].forEach(fn=>{
+  if(typeof window[fn]==='function'){
+    const orig=window[fn];
+    window[fn]=function(){if(M&&M.skipCutscenes)return;return orig.apply(this,arguments)};
+  }
+});
 
 // ----- Z key toggles auto-roll -----
 document.addEventListener('keydown',e=>{
