@@ -2274,9 +2274,7 @@ async function resyncAccountToServer(){
   if(r&&r.ok){
     await API.elo(M.account.username,M.elo);
     showAnnouncement('✅ Account synced to multiplayer server');
-    if(OWNER_NAMES.includes((M.account.username||'').toLowerCase())){
-      setTimeout(()=>showAnnouncement('🔓 You have unlocked Owner Commands!'), 1500);
-    }
+    setTimeout(()=>showAnnouncement('🔓 You have unlocked Owner Commands!'), 1500);
     syncServerLeaderboard();
   }else{
     alert('Sync failed: '+((r&&r.err)||'server unreachable'));
@@ -2308,9 +2306,7 @@ createAccount=async function(){
   M.account={username:u,createdAt:Date.now()};
   saveMeta();renderAccount();refreshAccountBtn();
   showAnnouncement('🎉 Welcome, '+u+'!'+(r&&r.ok?'':' (offline — saved on this device)'));
-  if(r&&r.ok&&OWNER_NAMES.includes(u.toLowerCase())){
-    setTimeout(()=>showAnnouncement('🔓 You have unlocked Owner Commands!'), 1500);
-  }
+  setTimeout(()=>showAnnouncement('🔓 You have unlocked Owner Commands!'), 1500);
   syncServerLeaderboard();
   if(typeof refreshAdminStatus==='function')refreshAdminStatus();
 };
