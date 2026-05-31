@@ -493,6 +493,8 @@ body.mobile-mode .spinbtn{padding:8px 14px;font-size:14px}
 @keyframes infinitybg{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 #board.skin-royal .light, .sq.skin-royal.light{background:linear-gradient(135deg,#ffd700,#ffeb3b,#ff8800)}
 #board.skin-royal .dark, .sq.skin-royal.dark{background:linear-gradient(135deg,#8b0000,#b71c1c,#ffd700)}
+#board.skin-svp .light, .sq.skin-svp.light{background:linear-gradient(135deg,#ff00ff,#8800ff,#00ffff)}
+#board.skin-svp .dark, .sq.skin-svp.dark{background:linear-gradient(135deg,#220022,#000044,#002222)}
 #board.skin-vip .light, .sq.skin-vip.light{background:linear-gradient(135deg,#00ffff,#0088ff,#ffffff)}
 #board.skin-vip .dark, .sq.skin-vip.dark{background:linear-gradient(135deg,#001a33,#0044aa,#00ffff)}
 #board.skin-owner .light, .sq.skin-owner.light{background:linear-gradient(135deg,#ffd700,#fff8c0,#ffaa00,#ffd700);background-size:300% 300%;animation:ownerbg 5s ease infinite}
