@@ -2546,10 +2546,7 @@ function buyUpg(u){
   showAnnouncement('✨ Unlocked: '+u.name);
 }
 function stopUpg(u){
-  if(!isUpgOwned(u.id))return;
-  // Block stopping if another OWNED upgrade still requires this one
-  const dependent=UPGRADES.find(x=>x.req===u.id&&isUpgOwned(x.id));
-  if(dependent){showAnnouncement('❌ Stop "'+dependent.name+'" first (it needs '+u.name+')');return}
+  if(!M.upgradesPurchased||!M.upgradesPurchased[u.id])return;
   delete M.upgradesPurchased[u.id];
   // Refund: rolls for roll-cost upgrades, money otherwise
   if(u.rollCost){M.rolls=(Number(M.rolls)||0)+u.rollCost;showAnnouncement('✖ Stopped '+u.name+' — refunded '+u.rollCost.toLocaleString()+' rolls')}
