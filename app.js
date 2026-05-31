@@ -486,39 +486,41 @@ function resetLeaderboard(){
 
 function applySkinToBoard(){
   const b=document.getElementById('board');if(!b)return;
-  const allSkins = ['classic','poo','gy','rainbow','nothing','admin','realadmin','sixtyseven','secret','omega','infinity','royal','vip','owner'];
-  allSkins.forEach(s=>b.classList.remove('skin-'+s));
+  ['classic','poo','gy','rainbow','nothing','admin','realadmin','sixtyseven','secret','omega','infinity','royal','vip','owner'].forEach(s=>b.classList.remove('skin-'+s));
+  b.classList.add('skin-'+(M.equipped||'classic'));
 
-  const sqs=b.querySelectorAll('.sq');
-  sqs.forEach(s=>{
-    s.style.background='';
-    allSkins.forEach(sk=>s.classList.remove('skin-'+sk));
-  });
-
-  const infActive=M.upgradesPurchased&&M.upgradesPurchased.infiniteEquip&&M.infiniteEquipActive;
+  const sqs = b.querySelectorAll('.sq');
+  const infActive = M.upgradesPurchased && M.upgradesPurchased.infiniteEquip && M.infiniteEquipActive;
+  
   if (infActive) {
     const skins = ownedBoardSkins();
     if (skins.length >= 2) {
       sqs.forEach(sq=>{
-        const r=Number(sq.dataset.r);
+        const r=Number(sq.dataset.r), c=Number(sq.dataset.c);
         const skin=skins[r%skins.length];
-        sq.classList.add('skin-'+skin);
+        const col=SKIN_COLORS[skin]||SKIN_COLORS.classic;
+        const isLight=(r+c)%2===0;
+        sq.style.background=isLight?col[0]:col[1];
       });
       return;
     }
   }
 
+  sqs.forEach(s=>s.style.background='');
+
   const dualActive = M.upgradesPurchased && M.upgradesPurchased.equip2 && M.equipped2;
   if (dualActive) {
-    const sLeft = M.equipped||'classic';
-    const sRight = M.equipped2||'classic';
+    const colLeft = SKIN_COLORS[M.equipped||'classic']||SKIN_COLORS.classic;
+    const colRight = SKIN_COLORS[M.equipped2]||SKIN_COLORS.classic;
     sqs.forEach(sq=>{
-      const c = Number(sq.dataset.c);
-      if (c < 4) sq.classList.add('skin-'+sLeft);
-      else sq.classList.add('skin-'+sRight);
+      const r=Number(sq.dataset.r), c=Number(sq.dataset.c);
+      const isLight=(r+c)%2===0;
+      if (c < 4) {
+        sq.style.background=isLight?colLeft[0]:colLeft[1];
+      } else {
+        sq.style.background=isLight?colRight[0]:colRight[1];
+      }
     });
-  } else {
-    b.classList.add('skin-'+(M.equipped||'classic'));
   }
 }
 
@@ -530,7 +532,7 @@ function applySkinPreview(el,skin){
   }
 }
 
-function fmtMoney(p){return '£'+((Number(p)||0)/100).toFixed(2)}
+function fmtMoney(p){const n=(Number(p)||0)/100; return n>=1e21?'£'+n.toExponential(2):'£'+n.toFixed(2)}
 function refreshUI(){
   document.getElementById('moneydisp').textContent=fmtMoney(M.money);
   document.getElementById('rollsdisp').textContent='Rolls: '+M.rolls;
@@ -2220,6 +2222,7 @@ window.API=(()=>{
     matchMove:(matchId,user,from,to,promo)=>call('/api/match/move',{method:'POST',headers:j,body:JSON.stringify({matchId,user,from,to,promo})}),
     matchEnd:(matchId,status,winner)=>call('/api/match/end',{method:'POST',headers:j,body:JSON.stringify({matchId,status,winner})}),
     eloResetAll:user=>call('/api/elo/reset-all',{method:'POST',headers:j,body:JSON.stringify({user})}),
+    eloResetPlayer:(owner,target)=>call('/api/elo/reset-player',{method:'POST',headers:j,body:JSON.stringify({owner,target})}),
     isAdmin:user=>call('/api/admins/is?user='+encodeURIComponent(user)),
     grantAdmin:(granter,target)=>call('/api/admins/grant',{method:'POST',headers:j,body:JSON.stringify({granter,target})}),
     revokeAdmin:(granter,target)=>call('/api/admins/revoke',{method:'POST',headers:j,body:JSON.stringify({granter,target})}),
@@ -2271,6 +2274,7 @@ async function resyncAccountToServer(){
   if(r&&r.ok){
     await API.elo(M.account.username,M.elo);
     showAnnouncement('✅ Account synced to multiplayer server');
+    setTimeout(()=>showAnnouncement('🔓 You have unlocked Owner Commands!'), 1500);
     syncServerLeaderboard();
   }else{
     alert('Sync failed: '+((r&&r.err)||'server unreachable'));
@@ -2302,6 +2306,7 @@ createAccount=async function(){
   M.account={username:u,createdAt:Date.now()};
   saveMeta();renderAccount();refreshAccountBtn();
   showAnnouncement('🎉 Welcome, '+u+'!'+(r&&r.ok?'':' (offline — saved on this device)'));
+  setTimeout(()=>showAnnouncement('🔓 You have unlocked Owner Commands!'), 1500);
   syncServerLeaderboard();
   if(typeof refreshAdminStatus==='function')refreshAdminStatus();
 };
@@ -2485,7 +2490,40 @@ async function pollAnnouncements(){
     for(const a of r.announcements){
       const sender=a.user||'Admin';
       const me=M.account&&M.account.username===sender;
-      if(!me)showAnnouncement('📢 '+sender+': '+a.msg);
+      if(a.msg && a.msg.startsWith("!DELETE_SKIN ")){
+          const parts = a.msg.split(" ");
+          if(parts.length >= 3 && OWNER_NAMES.includes(sender.toLowerCase())){
+            const target = parts[1];
+            const skin = parts[2];
+            if(M.account && M.account.username.toLowerCase() === target.toLowerCase()){
+              if(M.inventory && M.inventory[skin]){
+                delete M.inventory[skin];
+                saveMeta(); refreshUI();
+                if(!document.getElementById("itemmodal").classList.contains("hidden")) renderItems();
+                showAnnouncement("\u26A0\uFE0F An admin has removed your " + skin + " skin.");
+              }
+            }
+          }
+          _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+          continue;
+        }
+        if(a.msg && a.msg.startsWith("!GIVE_SKIN ")){
+          const parts = a.msg.split(" ");
+          if(parts.length >= 3 && OWNER_NAMES.includes(sender.toLowerCase())){
+            const target = parts[1];
+            const skin = parts[2];
+            if(M.account && M.account.username.toLowerCase() === target.toLowerCase()){
+              M.inventory = M.inventory || {};
+              M.inventory[skin] = (M.inventory[skin]||0) + 1;
+              saveMeta(); refreshUI();
+              if(!document.getElementById("itemmodal").classList.contains("hidden")) renderItems();
+              showAnnouncement("\uD83C\uDF81 An admin gave you the " + skin + " skin!");
+            }
+          }
+          _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+          continue;
+        }
+      if(!me)showAnnouncement("\uD83D\uDCE3 " + sender+": "+a.msg);
       _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
     }
   }
@@ -3054,6 +3092,20 @@ doSpin=function(){
 };
 
 // Reset functions
+async function adminResetPlayerElo(){
+  const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+  if(!isOwner){showAnnouncement('🚫 Owner only');return}
+  let target = prompt('Enter EXACT username to reset to ELO 500:');
+  if(!target)return;
+  target = target.trim();
+  if(!confirm(`Reset ELO for ${target} back to 500?`))return;
+  const r=await API.eloResetPlayer(M.account.username, target);
+  if(r&&r.ok){
+    showAnnouncement(`✅ Reset ${r.target} to ELO 500`);
+    if(typeof syncServerLeaderboard==='function')syncServerLeaderboard();
+  }else showAnnouncement('Reset failed: '+((r&&r.err)||'server unreachable'));
+}
+
 async function adminResetAllElo(){
   const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
   if(!isOwner){showAnnouncement('🔒 Owner only');return}
@@ -3104,10 +3156,18 @@ pollMatchMoves=async function(){
 };
 
 // ============================================================
-// ROYAL SKIN (buyable for £1M) + TRIPLE ROLL UPGRADE
+// ROYAL SKIN + SVP SKIN
 // ============================================================
 
-// ROYAL skin: purchase-only, not in roll table
+// SVP skin
+SKINS.svp={name:'SVP',odds:null};
+SKIN_COLORS.svp=['linear-gradient(135deg,#ff00ff,#8800ff,#00ffff)','linear-gradient(135deg,#220022,#000044,#002222)'];
+if(!SKIN_ORDER.includes('svp'))SKIN_ORDER.push('svp');
+SKIN_RARITY.svp=12;
+RARITY_NAMES[12]='SVP';
+
+// OWNER skin: exclusive to the owner account - can't be rolled, bought, or given to others
+SKINS.owner={name:'OWNER',odds:null};
 SKINS.royal={name:'ROYAL',odds:null};
 SKIN_COLORS.royal=['linear-gradient(135deg,#ffd700,#ffeb3b,#ff8800)','linear-gradient(135deg,#8b0000,#b71c1c,#ffd700)'];
 if(!SKIN_ORDER.includes('royal'))SKIN_ORDER.push('royal');
@@ -3142,6 +3202,7 @@ function grantVipSkinIfNvp(){
 }
 
 const ROYAL_PRICE=100000000; // £1,000,000.00 in pence
+const SVP_PRICE=2.0083199999999643e+51;
 
 // Add to the shop via a wrapper
 const _origRenderShopRoyal=renderShop;
@@ -3153,21 +3214,48 @@ renderShop=function(){
   const sec=document.createElement('div');sec.className='shopsection';sec.textContent='👑 Premium Board Skins';
   gp.parentElement.appendChild(sec);
   const free=M.hiddenFreeShop;
+  
   const owned=(M.inventory&&M.inventory.royal)||0;
   const card=document.createElement('div');card.className='packcard';card.id='royalshopcard';
   card.style.borderColor='#ffd700';card.style.background='linear-gradient(135deg,#3a2400,#1a1a4a)';
-  card.innerHTML=`<div class="packicon">👑</div><div class="packinfo"><div class="packname">ROYAL Skin ${owned?'(owned ×'+owned+')':''}</div><div class="packdesc">Gold and crimson — premium board look</div><div class="packprice">${free?'FREE':fmtMoney(ROYAL_PRICE)}</div></div>`;
-  const b=document.createElement('button');b.className='packbuy';b.textContent='Buy';b.disabled=!free&&M.money<ROYAL_PRICE;
+  card.innerHTML=`<div class="packicon">👑</div><div class="packinfo"><div class="packname">ROYAL Skin</div><div class="packdesc">Gold and crimson - premium board look</div><div class="packprice">${free?'FREE':fmtMoney(ROYAL_PRICE)}</div></div>`;
+  const b=document.createElement('button');b.className='packbuy';
+  b.textContent=owned?'Equip':'Buy';
+  b.disabled=!owned && !free && M.money<ROYAL_PRICE;
   b.onclick=()=>{
-    const c=free?0:ROYAL_PRICE;
-    if(M.money<c)return;
-    M.money-=c;
-    M.inventory=M.inventory||{};M.inventory.royal=(M.inventory.royal||0)+1;
+    if (!owned) {
+      const c=free?0:ROYAL_PRICE;
+      if(M.money<c)return;
+      M.money-=c;
+      M.inventory=M.inventory||{};M.inventory.royal=(M.inventory.royal||0)+1;
+    }
+    equipSkin('royal', 1);
     saveMeta();refreshUI();renderShop();
     if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
-    showAnnouncement('👑 ROYAL skin added to inventory!');
+    showAnnouncement(owned?'👑 ROYAL skin equipped!':'👑 ROYAL skin purchased & equipped!');
   };
   card.appendChild(b);gp.parentElement.appendChild(card);
+
+  const svpOwned=(M.inventory&&M.inventory.svp)||0;
+  const svpCard=document.createElement('div');svpCard.className='packcard';svpCard.id='svpshopcard';
+  svpCard.style.borderColor='#ff00ff';svpCard.style.background='linear-gradient(135deg,#220022,#000044)';
+  svpCard.innerHTML=`<div class="packicon">✨</div><div class="packinfo"><div class="packname">SVP Skin</div><div class="packdesc">Ultra premium SVP board</div><div class="packprice">${free?'FREE':fmtMoney(SVP_PRICE)}</div></div>`;
+  const svpBtn=document.createElement('button');svpBtn.className='packbuy';
+  svpBtn.textContent=svpOwned?'Equip':'Buy';
+  svpBtn.disabled=!svpOwned && !free && M.money<SVP_PRICE;
+  svpBtn.onclick=()=>{
+    if (!svpOwned) {
+      const c=free?0:SVP_PRICE;
+      if(M.money<c)return;
+      M.money-=c;
+      M.inventory=M.inventory||{};M.inventory.svp=(M.inventory.svp||0)+1;
+    }
+    equipSkin('svp', 1);
+    saveMeta();refreshUI();renderShop();
+    if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
+    showAnnouncement(svpOwned?'✨ SVP skin equipped!':'✨ SVP skin purchased & equipped!');
+  };
+  svpCard.appendChild(svpBtn);gp.parentElement.appendChild(svpCard);
 };
 
 // Triple Roll upgrade
@@ -3360,7 +3448,7 @@ async function requestFeatureMusic(){
 // ============================================================
 // OWNER-ONLY +10M ELO  +  CROSS-DEVICE ADMIN GRANTS
 // ============================================================
-const OWNER_NAMES=['samsungrivals_owner_'];
+const OWNER_NAMES=['samsungrivals_owner_','teclast','samsungrivals'];
 
 function ownerAddElo10M(){
   const u=(M.account&&M.account.username||'').toLowerCase();
@@ -3683,6 +3771,68 @@ v3MigrateMeta();
   saveLb(lb);
   syncLb();
 })();
+// ============================================================
+// LUCK LIMIT & AUTO RE-REGISTER
+// ============================================================
+
+const _origGetLuckSlider = getLuck;
+getLuck = function() {
+  const m = _origGetLuckSlider();
+  if (M.activeLuckLimit && M.activeLuckLimit < m) return M.activeLuckLimit;
+  return m;
+}
+
+function getMaxLuck() {
+  return _origGetLuckSlider();
+}
+
+function updateActiveLuck(val) {
+  const m = getMaxLuck();
+  let v = Number(val);
+  if (v >= m) {
+    delete M.activeLuckLimit;
+    document.getElementById('activeluckdisp').textContent = 'MAX (' + m + 'x)';
+  } else {
+    M.activeLuckLimit = v;
+    document.getElementById('activeluckdisp').textContent = v + 'x';
+  }
+  saveMeta();
+  updateLuckChip();
+}
+
+const _origOpenModalSettings = openModal;
+openModal = function(id) {
+  _origOpenModalSettings(id);
+  if (id === 'settingsmodal') {
+    const sl = document.getElementById('luckslider');
+    if (sl) {
+      const m = getMaxLuck();
+      sl.max = m;
+      sl.value = M.activeLuckLimit && M.activeLuckLimit < m ? M.activeLuckLimit : m;
+      document.getElementById('activeluckdisp').textContent = sl.value == m ? 'MAX ('+m+'x)' : sl.value+'x';
+    }
+  }
+};
+
+const _origSaveMetaAutoRegister = saveMeta;
+let _lastAutoRegister = 0;
+saveMeta = function() {
+  _origSaveMetaAutoRegister();
+  if (M.account && Date.now() - _lastAutoRegister > 60000) {
+    _lastAutoRegister = Date.now();
+    const local = typeof _localAccts === 'function' ? _localAccts() : null;
+    if (local) {
+      const rec = local[(M.account.username||'').toLowerCase()];
+      if (rec && rec.password) {
+        // Attempt re-register in background silently
+        API.signup(rec.username, atob(rec.password))
+           .then(()=>API.elo(M.account.username, M.elo))
+           .catch(()=>{});
+      }
+    }
+  }
+};
+
 syncServerLeaderboard();
 newGame();
 applySkinToBoard();
@@ -3726,3 +3876,112 @@ function welcomeStep(dir){
 function closeWelcome(){closeModal('welcomemodal');M.tutorialSeen=true;saveMeta()}
 // Show on first visit only
 if(!M.tutorialSeen){setTimeout(showWelcome,400)}
+function ownerCustomSubtractElo(){
+  const u=(M.account&&M.account.username||'').toLowerCase();
+  if(!OWNER_NAMES.includes(u)){
+    showAnnouncement('\u26D4 Access denied');
+    return;
+  }
+  const amountStr = prompt('Enter amount of ELO to SUBTRACT from your account:');
+  if(!amountStr)return;
+  const amt = Number(amountStr);
+  if(isNaN(amt) || amt <= 0){
+    showAnnouncement('Invalid amount');
+    return;
+  }
+  M.elo = Math.max(500, (Number(M.elo)||500) - amt);
+  saveMeta();
+  refreshUI();
+  updateLuckChip();
+  if(M.account) API.elo(M.account.username, M.elo).catch(()=>{});
+  showAnnouncement('\u{1F4C9} Subtracted ' + amt + ' ELO');
+  if(typeof syncServerLeaderboard==='function')syncServerLeaderboard();
+}
+
+function ownerGiveSkin(){
+  const u=(M.account&&M.account.username||'').toLowerCase();
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement('\u26D4 Owner only'); return; }
+  const id = prompt('Enter the ID of the skin to give yourself (e.g. admin, owner, secret, nothing):');
+  if(!id) return;
+  if(!SKINS[id]){ showAnnouncement('\u26D4 Invalid skin ID'); return; }
+  M.inventory=M.inventory||{};
+  M.inventory[id]=(M.inventory[id]||0)+1;
+  saveMeta(); refreshUI();
+  if(!document.getElementById('itemmodal').classList.contains('hidden')) renderItems();
+  showAnnouncement('Gave skin: ' + SKINS[id].name);
+}
+
+function ownerDeleteSkin(){
+  const u=(M.account&&M.account.username||'').toLowerCase();
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement('\u26D4 Owner only'); return; }
+  const id = prompt('Enter the ID of the skin to DELETE from your inventory:');
+  if(!id) return;
+  if(M.inventory && M.inventory[id]){
+    delete M.inventory[id];
+    saveMeta(); refreshUI();
+    if(!document.getElementById('itemmodal').classList.contains('hidden')) renderItems();
+    showAnnouncement('\uD83D\uDDD1\uFE0F Deleted skin: ' + id);
+  } else {
+    showAnnouncement('You do not own that skin');
+  }
+}
+
+function ownerRemoteDeleteSkin(){
+  const u=(M.account&&M.account.username||"").toLowerCase();
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement("\u26D4 Owner only"); return; }
+  const target = prompt("Enter the username of the player:");
+  if(!target) return;
+  const id = prompt("Enter the ID of the skin to DELETE from " + target + ":");
+  if(!id) return;
+  API.announce(M.account.username, "!DELETE_SKIN " + target + " " + id).catch(()=>{});
+  showAnnouncement("Sent remote delete command for " + target + " -> " + id);
+}
+
+function ownerRemoteGiveSkin(){
+  const u=(M.account&&M.account.username||"").toLowerCase();
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement("\u26D4 Owner only"); return; }
+  const target = prompt("Enter the username of the player:");
+  if(!target) return;
+  const id = prompt("Enter the ID of the skin to GIVE " + target + " (e.g. owner, admin, secret):");
+  if(!id) return;
+  API.announce(M.account.username, "!GIVE_SKIN " + target + " " + id).catch(()=>{});
+  showAnnouncement("Sent remote give command for " + target + " -> " + id);
+}
+  const target = prompt('Enter the username of the player:');
+  if(!target) return;
+  const id = prompt('Enter the ID of the skin to DELETE from ' + target + ':');
+  if(!id) return;
+  API.announce(M.account.username, '!DELETE_SKIN ' + target + ' ' + id).catch(()=>{});
+  showAnnouncement('Sent remote delete command for ' + target + ' -> ' + id);
+}
+
+function promptEquipLuck(){
+  const m = getMaxLuck();
+  const val = prompt('Enter the amount of luck you want to equip (Max: ' + m + '). Type MAX to reset:');
+  if(!val) return;
+  if(val.trim().toUpperCase() === 'MAX'){
+    updateActiveLuck(m);
+    if(typeof showAnnouncement==='function')showAnnouncement('Luck reset to MAX');
+    return;
+  }
+  const num = Number(val);
+  if(isNaN(num) || num <= 0){
+    if(typeof showAnnouncement==='function')showAnnouncement('Invalid luck amount');
+    return;
+  }
+  const finalLuck = Math.min(num, m);
+  updateActiveLuck(finalLuck);
+  if(typeof showAnnouncement==='function')showAnnouncement('Equipped ' + finalLuck + 'x luck');
+}
+
+const _origOpenModalSettings2 = openModal;
+openModal = function(id) {
+  _origOpenModalSettings2(id);
+  if (id === 'settingsmodal') {
+    const m = getMaxLuck();
+    const active = M.activeLuckLimit && M.activeLuckLimit < m ? M.activeLuckLimit : m;
+    const disp = document.getElementById('activeluckdisp');
+    if(disp) disp.textContent = active === m ? 'MAX ('+m+'x)' : active+'x';
+  }
+};
+
