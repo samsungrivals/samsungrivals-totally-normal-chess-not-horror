@@ -7,7 +7,16 @@ const path = require('path');
 
 const app = express();
 app.use(express.json({ limit: '256kb' }));
-app.use(express.static('.'));
+// Never cache HTML so new deploys take effect immediately (no hard-refresh needed)
+app.use((req, res, next) => {
+  if (req.path === '/' || req.path.endsWith('.html')) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
+  next();
+});
+app.use(express.static('.', { etag: false, lastModified: false }));
 
 const DB_FILE = path.join(__dirname, 'db.json');
 let db = { users: {}, friends: {}, announce: [], queue: [], matches: {} };
