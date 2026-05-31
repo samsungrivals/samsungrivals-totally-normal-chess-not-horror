@@ -501,6 +501,8 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 @keyframes infinitybg{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 #board.skin-royal .light{background:linear-gradient(135deg,#ffd700,#ffeb3b,#ff8800)}
 #board.skin-royal .dark{background:linear-gradient(135deg,#8b0000,#b71c1c,#ffd700)}
+#board.skin-vip .light{background:linear-gradient(135deg,#00ffff,#0088ff,#ffffff)}
+#board.skin-vip .dark{background:linear-gradient(135deg,#001a33,#0044aa,#00ffff)}
 </style>
 </head>
 <body>
@@ -1391,7 +1393,7 @@ function resetLeaderboard(){
 
 function applySkinToBoard(){
   const b=document.getElementById('board');if(!b)return;
-  ['classic','poo','gy','rainbow','nothing','admin','realadmin','sixtyseven','secret','omega','infinity','royal'].forEach(s=>b.classList.remove('skin-'+s));
+  ['classic','poo','gy','rainbow','nothing','admin','realadmin','sixtyseven','secret','omega','infinity','royal','vip'].forEach(s=>b.classList.remove('skin-'+s));
   b.classList.add('skin-'+(M.equipped||'classic'));
 }
 
@@ -4444,6 +4446,7 @@ updateLuckChip();
 applyQuality();
 refreshAccountBtn();
 refreshAdminStatus();
+if(typeof grantVipSkinIfNvp==='function')grantVipSkinIfNvp();
 startAutoRoll();
 
 // ============================================================
