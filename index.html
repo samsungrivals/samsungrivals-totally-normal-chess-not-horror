@@ -615,8 +615,8 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 <div class="modal hidden" id="adminmodal">
   <div class="mbox">
     <div class="mtitle">⚡ Admin Commands <button class="mclose" onclick="closeModal('adminmodal')">✕</button></div>
-    <div class="adminitem" onclick="adminGrantAdmin()" style="background:#3a1f5f;border-color:#7c4dff"><b>👮 Give Admin to a Player</b> — owner only: type a username to grant admin</div>
-    <div class="adminitem" onclick="adminRemoveAdmin()" style="background:#5a1f1f;border-color:#aa4444"><b>🚫 Remove Admin from a Player</b> — owner only: type a username to revoke</div>
+    <div class="adminitem owner-only" id="admin-grant" onclick="adminGrantAdmin()" style="background:#3a1f5f;border-color:#7c4dff"><b>👮 Give Admin to a Player</b> — owner only: type a username to grant admin</div>
+    <div class="adminitem owner-only" id="admin-revoke" onclick="adminRemoveAdmin()" style="background:#5a1f1f;border-color:#aa4444"><b>🚫 Remove Admin from a Player</b> — owner only: type a username to revoke</div>
     <div class="adminitem" onclick="adminGiveAll()"><b>🎁 Give ALL skins</b> — every board skin (incl. 67, Secret, OMEGA, Infinity, Royal) + all piece skins</div>
     <div class="adminitem" onclick="adminGiveAllPieceSkins()"><b>♟ Give all piece skins</b> — Bronze, Silver, Gold, Diamond</div>
     <div class="adminitem" onclick="adminGiveRealAdmin()"><b>👑 Give Real Admin board skin</b> — the blue & red exclusive</div>
@@ -1498,6 +1498,11 @@ function openModal(id){
   if(id==='vsmodal'&&typeof renderBotList==='function')renderBotList();
   if(id==='frmodal'&&typeof renderFriendsList==='function'){renderFriendsList();switchFrTab('list')}
   if(id==='shopmodal'&&typeof renderShop==='function')renderShop();
+  if(id==='adminmodal'){
+    // Grant/Remove admin are OWNER-ONLY: hide for granted (non-owner) admins
+    const isOwner=M.account&&typeof OWNER_NAMES!=='undefined'&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+    document.querySelectorAll('#adminmodal .owner-only').forEach(e=>{e.style.display=isOwner?'':'none'});
+  }
 }
 function closeModal(id){document.getElementById(id).classList.add('hidden')}
 
@@ -1851,7 +1856,7 @@ const BOTS={
   beginner:{name:'Beginner Bea',elo:400,depth:0,tier:'noob',emoji:'🐣',desc:'Likes grabbing free pieces',behavior:'capture'},
   casual:{name:'Casual Carl',elo:700,depth:1,tier:'cas',emoji:'😎',desc:'Plays solid 1-ply moves',behavior:'normal'},
   skilled:{name:'Skilled Sam',elo:1100,depth:1,tier:'cas',emoji:'🎯',desc:'Sees one move ahead',behavior:'normal'},
-  pro_magnus:{name:'Magnus Carlsen',elo:2839,depth:2,tier:'pro',emoji:'👑',desc:'World #1 — positional grinder',behavior:'positional'},
+  pro_magnus:{name:'Magnus Carlsen',elo:2882,depth:2,tier:'pro',emoji:'👑',desc:'World #1 — positional grinder',behavior:'positional'},
   pro_hikaru:{name:'Hikaru Nakamura',elo:2802,depth:2,tier:'pro',emoji:'⚡',desc:'Blitz speedster — aggressive',behavior:'aggressive'},
   pro_bobby:{name:'Bobby Fischer',elo:2785,depth:2,tier:'pro',emoji:'🧠',desc:'Precise endgame technique',behavior:'precise'},
   pro_garry:{name:'Garry Kasparov',elo:2851,depth:2,tier:'pro',emoji:'🔥',desc:'Tactical bulldozer',behavior:'tactical'},
