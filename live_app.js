@@ -3947,13 +3947,6 @@ function ownerRemoteGiveSkin(){
   API.announce(M.account.username, "!GIVE_SKIN " + target + " " + id).catch(()=>{});
   showAnnouncement("Sent remote give command for " + target + " -> " + id);
 }
-  const target = prompt('Enter the username of the player:');
-  if(!target) return;
-  const id = prompt('Enter the ID of the skin to DELETE from ' + target + ':');
-  if(!id) return;
-  API.announce(M.account.username, '!DELETE_SKIN ' + target + ' ' + id).catch(()=>{});
-  showAnnouncement('Sent remote delete command for ' + target + ' -> ' + id);
-}
 
 function promptEquipLuck(){
   const m = getMaxLuck();
