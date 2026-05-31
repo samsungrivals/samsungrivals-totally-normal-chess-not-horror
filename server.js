@@ -312,6 +312,8 @@ app.post('/api/globalluck/set', (req, res) => {
 
 // --- Reset all real users' ELO to 500 ---
 app.post('/api/elo/reset-all', (req, res) => {
+  const user = (req.body || {}).user || '';
+  if (!isOwner(user)) return bad(res, 403, 'owner only');
   let count = 0;
   for (const key in db.users) {
     if (!db.users[key].isAI) {
