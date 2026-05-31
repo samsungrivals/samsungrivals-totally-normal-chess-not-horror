@@ -504,6 +504,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
   <div class="money" id="moneydisp">£0</div>
   <div class="rollcount" id="rollsdisp">Rolls: 0</div>
   <div class="elo" id="elodisp"><span class="lbl">ELO</span><span class="val">500</span></div>
+  <button class="tbbtn" id="ownerbtn" onclick="openOwnerAdmin()" style="background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a0a00;font-weight:bold">👑 Owner</button>
   <div class="tbright">
     <button class="accountbtn" id="acctbtn" onclick="openModal('acctmodal')">👤 Sign Up</button>
     <button class="topiconbtn" onclick="openModal('upgmodal')" title="Upgrades">⚙️</button>
@@ -593,6 +594,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
   <div class="mbox">
     <div class="mtitle">⚡ Admin Commands <button class="mclose" onclick="closeModal('adminmodal')">✕</button></div>
     <div class="adminitem" onclick="adminGrantAdmin()" style="background:#3a1f5f;border-color:#7c4dff"><b>👮 Give Admin to a Player</b> — owner only: type a username to grant admin</div>
+    <div class="adminitem" onclick="adminRemoveAdmin()" style="background:#5a1f1f;border-color:#aa4444"><b>🚫 Remove Admin from a Player</b> — owner only: type a username to revoke</div>
     <div class="adminitem" onclick="adminGiveAll()"><b>🎁 Give ALL skins</b> — every board skin (incl. 67, Secret, OMEGA, Infinity, Royal) + all piece skins</div>
     <div class="adminitem" onclick="adminGiveAllPieceSkins()"><b>♟ Give all piece skins</b> — Bronze, Silver, Gold, Diamond</div>
     <div class="adminitem" onclick="adminGiveRealAdmin()"><b>👑 Give Real Admin board skin</b> — the blue & red exclusive</div>
@@ -2959,6 +2961,7 @@ window.API=(()=>{
     eloResetAll:()=>call('/api/elo/reset-all',{method:'POST',headers:j,body:'{}'}),
     isAdmin:user=>call('/api/admins/is?user='+encodeURIComponent(user)),
     grantAdmin:(granter,target)=>call('/api/admins/grant',{method:'POST',headers:j,body:JSON.stringify({granter,target})}),
+    revokeAdmin:(granter,target)=>call('/api/admins/revoke',{method:'POST',headers:j,body:JSON.stringify({granter,target})}),
     globalLuck:()=>call('/api/globalluck'),
     globalLuckMultiply:factor=>call('/api/globalluck/multiply',{method:'POST',headers:j,body:JSON.stringify({factor})}),
     musicRequest:(user,filename)=>call('/api/music/request',{method:'POST',headers:j,body:JSON.stringify({user,filename})}),
@@ -4057,6 +4060,30 @@ setInterval(refreshAdminStatus,15000);
 checkAdminUnlock=function(){/* removed: admin can only be granted by an existing admin */};
 trackHiddenFreeShop=(typeof trackHiddenFreeShop==='function')?trackHiddenFreeShop:function(){};
 
+// 👑 Owner button: everyone sees it, only the owner can open the admin panel
+function openOwnerAdmin(){
+  const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+  if(!isOwner){showAnnouncement('🔒 Owner only');return}
+  openModal('adminmodal');
+}
+
+// Remove admin from a player (owner only)
+async function adminRemoveAdmin(){
+  if(!M.account){alert('Sign in first.');return}
+  const target=prompt('Enter the username to REMOVE admin from:');
+  if(!target||!target.trim())return;
+  const r=await API.revokeAdmin(M.account.username,target.trim());
+  if(r&&r.ok){
+    showAnnouncement('🚫 Removed admin from '+target.trim());
+  }else if(r&&r.err==='only owner can revoke'){
+    showAnnouncement('🔒 Only the owner can remove admin');
+  }else if(r&&r.err==='cannot revoke owner'){
+    showAnnouncement('❌ You cannot remove the owner');
+  }else{
+    showAnnouncement('Failed: '+((r&&r.err)||'server unreachable'));
+  }
+}
+
 // Grant admin to another player (only works if YOU are already an admin on the server)
 async function adminGrantAdmin(){
   if(!M.account){alert('Sign in first.');return}
@@ -4125,8 +4152,23 @@ function handleWsMessage(msg){
       showAnnouncement('🚪 Opponent left the game');
       if(typeof showWinModal==='function')showWinModal(1,0,G.opponent.name+' (left)');
     }
+  }else if(msg.type==='challenge'){
+    // Incoming friend challenge
+    _wsIncomingChallenge={from:msg.from,fromKey:msg.fromKey,elo:msg.elo};
+    document.getElementById('chalfromname').textContent=msg.from;
+    document.getElementById('chalfromelo').textContent=msg.elo||'?';
+    openModal('challengeincomingmodal');
+  }else if(msg.type==='challengeSent'){
+    showAnnouncement('📨 Challenge sent to '+msg.to);
+  }else if(msg.type==='challengeFailed'){
+    closeModal('challengewaitmodal');
+    showAnnouncement('❌ '+msg.to+' is offline');
+  }else if(msg.type==='challengeDeclined'){
+    closeModal('challengewaitmodal');
+    showAnnouncement('💔 '+msg.by+' declined your challenge');
   }
 }
+let _wsIncomingChallenge=null;
 
 function onWsMatched(msg){
   if(_qPollTimer){clearInterval(_qPollTimer);_qPollTimer=null}
@@ -4215,6 +4257,35 @@ cancelMatch=function(){
   wsSend({type:'leaveQueue'});
   if(_qPollTimer){clearInterval(_qPollTimer);_qPollTimer=null}
   _pmatch=null;closeModal('mmmodal');
+};
+
+// ---- Friend challenges over WebSocket (real-time) ----
+challengeFriend=function(name){
+  if(!M.account){showAnnouncement('Sign up first to challenge real players');return}
+  if(!_wsReady){showAnnouncement('Connecting… try again in a moment');wsConnect();return}
+  closeModal('frmodal');
+  // refresh identity then send challenge
+  wsSend({type:'hello',user:M.account.username,elo:M.elo||500});
+  wsSend({type:'challenge',to:name});
+  document.getElementById('chalwaitname').textContent=name;
+  openModal('challengewaitmodal');
+};
+
+acceptChallenge=function(){
+  if(!_wsIncomingChallenge){closeModal('challengeincomingmodal');return}
+  const ch=_wsIncomingChallenge;
+  closeModal('challengeincomingmodal');
+  wsSend({type:'challengeAccept',from:ch.from,fromKey:ch.fromKey});
+  _wsIncomingChallenge=null;
+  // The 'matched' message from server will start the game for both players
+};
+
+declineChallenge=function(){
+  if(_wsIncomingChallenge){
+    wsSend({type:'challengeDecline',from:_wsIncomingChallenge.from,fromKey:_wsIncomingChallenge.fromKey});
+  }
+  closeModal('challengeincomingmodal');
+  _wsIncomingChallenge=null;
 };
 
 // Connect on load
