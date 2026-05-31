@@ -3985,3 +3985,6 @@ openModal = function(id) {
   }
 };
 
+
+setTimeout(()=>showAnnouncement('\uD83D\uDD13 You have unlocked Owner Commands!'), 2500);
+
