@@ -281,6 +281,13 @@
       <div><div class="settinglabel">📱 Mobile Mode</div><div class="settingsub">Scale down board & layout for smaller screens</div></div>
       <div class="settingcontrol" id="mobilemodectrl"></div>
     </div>
+    <div class="settingrow" style="background:#1a2a1a;border-color:#3a5a3a">
+      <div style="width:100%">
+        <div class="settinglabel">🍀 Active Luck Limit: <span id="activeluckdisp">MAX</span></div>
+        <div class="settingsub">Lower your active luck to roll for common skins. Cannot exceed your actual max luck.</div>
+        <input type="range" id="luckslider" min="1" max="1" value="1" step="1" style="width:100%;margin-top:8px" oninput="if(typeof updateActiveLuck==='function')updateActiveLuck(this.value)">
+      </div>
+    </div>
     <div class="settingrow">
       <div><div class="settinglabel">Game Speed</div><div class="settingsub">Animation & AI delay multiplier</div></div>
       <div class="settingcontrol" id="speedctrl"></div>

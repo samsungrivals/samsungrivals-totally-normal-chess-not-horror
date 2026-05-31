@@ -3735,6 +3735,68 @@ v3MigrateMeta();
   saveLb(lb);
   syncLb();
 })();
+// ============================================================
+// LUCK LIMIT & AUTO RE-REGISTER
+// ============================================================
+
+const _origGetLuckSlider = getLuck;
+getLuck = function() {
+  const m = _origGetLuckSlider();
+  if (M.activeLuckLimit && M.activeLuckLimit < m) return M.activeLuckLimit;
+  return m;
+}
+
+function getMaxLuck() {
+  return _origGetLuckSlider();
+}
+
+function updateActiveLuck(val) {
+  const m = getMaxLuck();
+  let v = Number(val);
+  if (v >= m) {
+    delete M.activeLuckLimit;
+    document.getElementById('activeluckdisp').textContent = 'MAX (' + m + 'x)';
+  } else {
+    M.activeLuckLimit = v;
+    document.getElementById('activeluckdisp').textContent = v + 'x';
+  }
+  saveMeta();
+  updateLuckChip();
+}
+
+const _origOpenModalSettings = openModal;
+openModal = function(id) {
+  _origOpenModalSettings(id);
+  if (id === 'settingsmodal') {
+    const sl = document.getElementById('luckslider');
+    if (sl) {
+      const m = getMaxLuck();
+      sl.max = m;
+      sl.value = M.activeLuckLimit && M.activeLuckLimit < m ? M.activeLuckLimit : m;
+      document.getElementById('activeluckdisp').textContent = sl.value == m ? 'MAX ('+m+'x)' : sl.value+'x';
+    }
+  }
+};
+
+const _origSaveMetaAutoRegister = saveMeta;
+let _lastAutoRegister = 0;
+saveMeta = function() {
+  _origSaveMetaAutoRegister();
+  if (M.account && Date.now() - _lastAutoRegister > 60000) {
+    _lastAutoRegister = Date.now();
+    const local = typeof _localAccts === 'function' ? _localAccts() : null;
+    if (local) {
+      const rec = local[(M.account.username||'').toLowerCase()];
+      if (rec && rec.password) {
+        // Attempt re-register in background silently
+        API.signup(rec.username, atob(rec.password))
+           .then(()=>API.elo(M.account.username, M.elo))
+           .catch(()=>{});
+      }
+    }
+  }
+};
+
 syncServerLeaderboard();
 newGame();
 applySkinToBoard();
