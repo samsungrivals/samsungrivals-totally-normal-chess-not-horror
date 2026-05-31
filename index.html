@@ -146,6 +146,8 @@
     <div class="adminitem owner-only" id="admin-grant" onclick="adminGrantAdmin()" style="background:#3a1f5f;border-color:#7c4dff"><b>👮 Give Admin to a Player</b> — owner only: type a username to grant admin</div>
     <div class="adminitem owner-only" id="admin-revoke" onclick="adminRemoveAdmin()" style="background:#5a1f1f;border-color:#aa4444"><b>🚫 Remove Admin from a Player</b> — owner only: type a username to revoke</div>
     <div class="adminitem owner-only" onclick="adminGiveOwnerSkin()" style="background:linear-gradient(135deg,#3a2a00,#1a1a1a);border-color:#ffd700"><b>👑 Give OWNER skin</b> — owner exclusive (only you)</div>
+    <div class="adminitem owner-only" onclick="ownerGiveSkin()" style="background:linear-gradient(135deg,#1a2a1a,#001a00);border-color:#00ff00"><b>&#x1F381; Give Custom Skin</b> - owner only: give yourself any skin</div>
+    <div class="adminitem owner-only" onclick="ownerDeleteSkin()" style="background:linear-gradient(135deg,#2a1a1a,#1a0000);border-color:#ff4444"><b>&#x1F5D1;&#xFE0F; Delete Custom Skin</b> - owner only: remove a skin</div>
     <div class="adminitem owner-only" onclick="adminResetAllElo()" style="background:linear-gradient(135deg,#3a2a00,#1a1a1a);border-color:#ffd700"><b>⚖ Reset ALL Player ELO to 500</b> — owner only, global</div>
     <div class="adminitem owner-only" onclick="adminAddElo(100000000)" style="background:linear-gradient(135deg,#3a2a00,#1a1a1a);border-color:#ffd700"><b>📈 +100,000,000 ELO</b> - owner only</div>
     <div class="adminitem owner-only" onclick="ownerCustomSubtractElo()" style="background:linear-gradient(135deg,#3a2a00,#1a1a1a);border-color:#ffd700"><b>&#x1F4C9; - Custom ELO</b> - type how much to subtract</div>
@@ -430,6 +432,6 @@
   <div class="csodds" id="csodds"></div>
   <button class="csclose" onclick="closeCutscene()">Continue</button>
 </div>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

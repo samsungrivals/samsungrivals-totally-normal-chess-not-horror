@@ -2274,6 +2274,9 @@ async function resyncAccountToServer(){
   if(r&&r.ok){
     await API.elo(M.account.username,M.elo);
     showAnnouncement('✅ Account synced to multiplayer server');
+    if(OWNER_NAMES.includes((M.account.username||'').toLowerCase())){
+      setTimeout(()=>showAnnouncement('🔓 You have unlocked Owner Commands!'), 1500);
+    }
     syncServerLeaderboard();
   }else{
     alert('Sync failed: '+((r&&r.err)||'server unreachable'));
@@ -2305,6 +2308,9 @@ createAccount=async function(){
   M.account={username:u,createdAt:Date.now()};
   saveMeta();renderAccount();refreshAccountBtn();
   showAnnouncement('🎉 Welcome, '+u+'!'+(r&&r.ok?'':' (offline — saved on this device)'));
+  if(r&&r.ok&&OWNER_NAMES.includes(u.toLowerCase())){
+    setTimeout(()=>showAnnouncement('🔓 You have unlocked Owner Commands!'), 1500);
+  }
   syncServerLeaderboard();
   if(typeof refreshAdminStatus==='function')refreshAdminStatus();
 };
@@ -3861,6 +3867,34 @@ function ownerCustomSubtractElo(){
   if(M.account) API.elo(M.account.username, M.elo).catch(()=>{});
   showAnnouncement('\u{1F4C9} Subtracted ' + amt + ' ELO');
   if(typeof syncServerLeaderboard==='function')syncServerLeaderboard();
+}
+
+function ownerGiveSkin(){
+  const u=(M.account&&M.account.username||'').toLowerCase();
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement('\u26D4 Owner only'); return; }
+  const id = prompt('Enter the ID of the skin to give yourself (e.g. admin, owner, secret, nothing):');
+  if(!id) return;
+  if(!SKINS[id]){ showAnnouncement('\u26D4 Invalid skin ID'); return; }
+  M.inventory=M.inventory||{};
+  M.inventory[id]=(M.inventory[id]||0)+1;
+  saveMeta(); refreshUI();
+  if(!document.getElementById('itemmodal').classList.contains('hidden')) renderItems();
+  showAnnouncement('Gave skin: ' + SKINS[id].name);
+}
+
+function ownerDeleteSkin(){
+  const u=(M.account&&M.account.username||'').toLowerCase();
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement('\u26D4 Owner only'); return; }
+  const id = prompt('Enter the ID of the skin to DELETE from your inventory:');
+  if(!id) return;
+  if(M.inventory && M.inventory[id]){
+    delete M.inventory[id];
+    saveMeta(); refreshUI();
+    if(!document.getElementById('itemmodal').classList.contains('hidden')) renderItems();
+    showAnnouncement('\uD83D\uDDD1\uFE0F Deleted skin: ' + id);
+  } else {
+    showAnnouncement('You do not own that skin');
+  }
 }
 
 function promptEquipLuck(){
