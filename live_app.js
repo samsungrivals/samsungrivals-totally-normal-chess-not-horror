@@ -3060,8 +3060,9 @@ doSpin=function(){
 async function adminResetPlayerElo(){
   const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
   if(!isOwner){showAnnouncement('🚫 Owner only');return}
-  const target = prompt('Enter EXACT username to reset to ELO 500:');
+  let target = prompt('Enter EXACT username to reset to ELO 500:');
   if(!target)return;
+  target = target.trim();
   if(!confirm(`Reset ELO for ${target} back to 500?`))return;
   const r=await API.eloResetPlayer(M.account.username, target);
   if(r&&r.ok){
@@ -3412,7 +3413,7 @@ async function requestFeatureMusic(){
 // ============================================================
 // OWNER-ONLY +10M ELO  +  CROSS-DEVICE ADMIN GRANTS
 // ============================================================
-const OWNER_NAMES=['samsungrivals_owner_'];
+const OWNER_NAMES=['samsungrivals_owner_','teclast','samsungrivals'];
 
 function ownerAddElo10M(){
   const u=(M.account&&M.account.username||'').toLowerCase();

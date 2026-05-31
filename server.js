@@ -329,7 +329,7 @@ app.post('/api/globalluck/set', (req, res) => {
 app.post('/api/elo/reset-player', (req, res) => {
   const { owner, target } = req.body || {};
   if (!isOwner(owner)) return bad(res, 403, 'owner only');
-  const t = (target || '').toLowerCase();
+  const t = (target || '').toLowerCase().trim();
   const u = db.users[t];
   if (!u) return bad(res, 404, 'user not found');
   u.elo = 500;
