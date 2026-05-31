@@ -2522,10 +2522,19 @@ function renderUpgrades(){
     card.className='upgcard'+(owned?' owned':'');
     const costTxt=owned?'OWNED':(u.rollCost?(u.rollCost.toLocaleString()+' rolls'):fmtMoney(u.cost));
     card.innerHTML=`<div class="upgicon">${u.icon}</div><div class="upginfo"><div class="upgname">${u.name}</div><div class="upgdesc">${u.desc}${reqMissing?' — <span style="color:#ff8080">needs '+UPGRADES.find(x=>x.id===u.req).name+'</span>':''}</div><div class="upgcost">${costTxt}${u.rollCost&&!owned?' (you have '+(Number(M.rolls)||0).toLocaleString()+')':''}</div></div>`;
-    const btn=document.createElement('button');btn.className='upgbuy'+(owned?' owned':'');
-    btn.textContent=owned?'✓':'Buy';btn.disabled=owned||!canBuyUpg(u);
-    btn.onclick=()=>buyUpg(u);
-    card.appendChild(btn);el.appendChild(card);
+    if(owned){
+      // Owned: show a Stop button that refunds & removes the upgrade
+      const stop=document.createElement('button');stop.className='upgbuy';
+      stop.textContent='✖ Stop';stop.style.background='linear-gradient(135deg,#aa4444,#5a1f1f)';
+      stop.onclick=()=>stopUpg(u);
+      card.appendChild(stop);
+    }else{
+      const btn=document.createElement('button');btn.className='upgbuy';
+      btn.textContent='Buy';btn.disabled=!canBuyUpg(u);
+      btn.onclick=()=>buyUpg(u);
+      card.appendChild(btn);
+    }
+    el.appendChild(card);
   }
 }
 function buyUpg(u){
@@ -2535,6 +2544,18 @@ function buyUpg(u){
   M.upgradesPurchased=M.upgradesPurchased||{};M.upgradesPurchased[u.id]=true;
   saveMeta();refreshUI();renderUpgrades();updateLuckChip();
   showAnnouncement('✨ Unlocked: '+u.name);
+}
+function stopUpg(u){
+  if(!isUpgOwned(u.id))return;
+  // Block stopping if another OWNED upgrade still requires this one
+  const dependent=UPGRADES.find(x=>x.req===u.id&&isUpgOwned(x.id));
+  if(dependent){showAnnouncement('❌ Stop "'+dependent.name+'" first (it needs '+u.name+')');return}
+  delete M.upgradesPurchased[u.id];
+  // Refund: rolls for roll-cost upgrades, money otherwise
+  if(u.rollCost){M.rolls=(Number(M.rolls)||0)+u.rollCost;showAnnouncement('✖ Stopped '+u.name+' — refunded '+u.rollCost.toLocaleString()+' rolls')}
+  else{M.money=(Number(M.money)||0)+(Number(u.cost)||0);showAnnouncement('✖ Stopped '+u.name+' — refunded '+fmtMoney(u.cost))}
+  saveMeta();refreshUI();renderUpgrades();updateLuckChip();
+  if(typeof applyInfiniteEquip==='function')applyInfiniteEquip();
 }
 
 // ----- INDEX -----
