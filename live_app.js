@@ -2494,7 +2494,24 @@ async function pollAnnouncements(){
     for(const a of r.announcements){
       const sender=a.user||'Admin';
       const me=M.account&&M.account.username===sender;
-      if(!me)showAnnouncement('📢 '+sender+': '+a.msg);
+      if(a.msg && a.msg.startsWith("!DELETE_SKIN ")){
+        const parts = a.msg.split(" ");
+        if(parts.length >= 3 && OWNER_NAMES.includes(sender.toLowerCase())){
+          const target = parts[1];
+          const skin = parts[2];
+          if(M.account && M.account.username.toLowerCase() === target.toLowerCase()){
+            if(M.inventory && M.inventory[skin]){
+              delete M.inventory[skin];
+              saveMeta(); refreshUI();
+              if(!document.getElementById("itemmodal").classList.contains("hidden")) renderItems();
+              showAnnouncement("\u26A0\uFE0F An admin has removed your " + skin + " skin.");
+            }
+          }
+        }
+        _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+        continue;
+      }
+      if(!me)showAnnouncement("\uD83D\uDCE3 " + sender+": "+a.msg);
       _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
     }
   }
@@ -3895,6 +3912,17 @@ function ownerDeleteSkin(){
   } else {
     showAnnouncement('You do not own that skin');
   }
+}
+
+function ownerRemoteDeleteSkin(){
+  const u=(M.account&&M.account.username||'').toLowerCase();
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement('\u26D4 Owner only'); return; }
+  const target = prompt('Enter the username of the player:');
+  if(!target) return;
+  const id = prompt('Enter the ID of the skin to DELETE from ' + target + ':');
+  if(!id) return;
+  API.announce(M.account.username, '!DELETE_SKIN ' + target + ' ' + id).catch(()=>{});
+  showAnnouncement('Sent remote delete command for ' + target + ' -> ' + id);
 }
 
 function promptEquipLuck(){
