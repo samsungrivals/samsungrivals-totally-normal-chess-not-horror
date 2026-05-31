@@ -3857,8 +3857,8 @@ async function adminResetAllElo(){
   if(!confirm('Reset ELO for ALL real players on the server back to 500?'))return;
   const r=await API.eloResetAll(M.account.username);
   if(r&&r.ok){
-    M.elo=500;saveMeta();refreshUI();
-    showAnnouncement('⚖ Reset '+(r.reset||'all')+' players to ELO 500');
+    // Owner's own ELO is NOT reset
+    showAnnouncement('⚖ Reset '+(r.reset||'all')+' players to ELO 500 (your ELO kept)');
     if(typeof syncServerLeaderboard==='function')syncServerLeaderboard();
   }else showAnnouncement('Reset failed: '+(r&&r.err||'server unreachable'));
 }

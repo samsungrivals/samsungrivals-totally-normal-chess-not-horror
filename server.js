@@ -316,10 +316,10 @@ app.post('/api/elo/reset-all', (req, res) => {
   if (!isOwner(user)) return bad(res, 403, 'owner only');
   let count = 0;
   for (const key in db.users) {
-    if (!db.users[key].isAI) {
-      db.users[key].elo = 500;
-      count++;
-    }
+    // Skip AI players and the owner(s) — owner's ELO is kept
+    if (db.users[key].isAI || isOwner(db.users[key].username)) continue;
+    db.users[key].elo = 500;
+    count++;
   }
   saveSoon();
   ok(res, { reset: count });
