@@ -505,7 +505,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 </head>
 <body>
 <div class="topbar">
-  <div class="logo" id="logo" title="Chess RNG">
+  <div class="logo" id="logo" title="Chess RNG — click to refresh" style="cursor:pointer" onclick="location.reload()">
     <svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
       <!-- Roblox-noob-style blocky head -->
       <rect x="6" y="10" width="26" height="24" rx="4" fill="#f5cd30"/>
@@ -760,10 +760,6 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
     <div class="settingrow" style="background:#1a2a2a;border-color:#3a5a5a">
       <div><div class="settinglabel">⏭ Skip Cutscenes</div><div class="settingsub">Rare-skin animations won't play</div></div>
       <div class="settingcontrol" id="skipcsctrl"></div>
-    </div>
-    <div class="settingrow">
-      <div><div class="settinglabel">Board Quality</div><div class="settingsub">Pixel size per square</div></div>
-      <div class="settingcontrol" id="qualityctrl"></div>
     </div>
     <div class="settingrow">
       <div><div class="settinglabel">Game Speed</div><div class="settingsub">Animation & AI delay multiplier</div></div>
@@ -2582,14 +2578,6 @@ function claimIndex(sk){
 
 // ----- SETTINGS -----
 function renderSettings(){
-  // Quality
-  const qc=document.getElementById('qualityctrl');qc.innerHTML='';
-  const qs=['Auto',100,200,300,400,500,600,700,800,900,1000];
-  const curQ=M.quality||'Auto';
-  for(const q of qs){
-    const b=document.createElement('button');b.className='settingchip'+(curQ===q?' on':'');
-    b.textContent=q==='Auto'?'⚙ Auto':q;b.onclick=()=>{M.quality=q;saveMeta();applyQuality();renderSettings()};qc.appendChild(b);
-  }
   // Speed
   const sc=document.getElementById('speedctrl');sc.innerHTML='';
   const ss=[0.25,1,2,3,4,5];const curS=M.gameSpeed||1;
@@ -2631,13 +2619,8 @@ function renderSettings(){
   }
 }
 function applyQuality(){
-  let q=M.quality||'Auto';
-  if(q==='Auto'){
-    // Pick based on viewport: bigger screens get bigger squares
-    const vw=Math.min(window.innerWidth,window.innerHeight);
-    q=vw<560?300:vw<800?600:vw<1100?800:1000;
-  }
-  const px=Math.max(36,Math.min(80,Math.round(q/12.5))); // map 100-1000 to ~44-72
+  // Fixed high quality (1000) — 72px squares
+  const px=72;
   const board=document.getElementById('board');
   if(board){
     const sqs=board.querySelectorAll('.sq');
