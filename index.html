@@ -373,6 +373,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 /* Rarity colors */
 .rar-1{color:#7a5a3a}.rar-2{color:#888}.rar-3{color:#5af}.rar-4{color:#a45af0}.rar-5{color:#ff5af0}.rar-6{color:#ffd700}.rar-7{color:#ff0040;text-shadow:0 0 6px #ff0040}
 .rar-8{color:#00ffea;text-shadow:0 0 6px #00ffea}.rar-9{color:#ff00ff;text-shadow:0 0 8px #ff00ff}.rar-10{color:#00ddff;text-shadow:0 0 8px #00ddff,0 0 14px #0088ff}
+.rar-11{color:#ffd700;text-shadow:0 0 8px #ffd700,0 0 16px #ffaa00;font-weight:900}
 
 /* Settings toggle button */
 .topiconbtn{background:#1a3060;color:#fff;border:1px solid #2a5080;border-radius:8px;padding:8px 12px;font-size:16px;cursor:pointer;line-height:1}
@@ -503,6 +504,9 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 #board.skin-royal .dark{background:linear-gradient(135deg,#8b0000,#b71c1c,#ffd700)}
 #board.skin-vip .light{background:linear-gradient(135deg,#00ffff,#0088ff,#ffffff)}
 #board.skin-vip .dark{background:linear-gradient(135deg,#001a33,#0044aa,#00ffff)}
+#board.skin-owner .light{background:linear-gradient(135deg,#ffd700,#fff8c0,#ffaa00,#ffd700);background-size:300% 300%;animation:ownerbg 5s ease infinite}
+#board.skin-owner .dark{background:linear-gradient(135deg,#1a1a1a,#3a2a00,#000,#1a1a1a);background-size:300% 300%;animation:ownerbg 5s ease infinite}
+@keyframes ownerbg{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 </style>
 </head>
 <body>
@@ -619,6 +623,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
     <div class="mtitle">⚡ Admin Commands <button class="mclose" onclick="closeModal('adminmodal')">✕</button></div>
     <div class="adminitem owner-only" id="admin-grant" onclick="adminGrantAdmin()" style="background:#3a1f5f;border-color:#7c4dff"><b>👮 Give Admin to a Player</b> — owner only: type a username to grant admin</div>
     <div class="adminitem owner-only" id="admin-revoke" onclick="adminRemoveAdmin()" style="background:#5a1f1f;border-color:#aa4444"><b>🚫 Remove Admin from a Player</b> — owner only: type a username to revoke</div>
+    <div class="adminitem" onclick="adminGiveOwnerSkin()" style="background:linear-gradient(135deg,#3a2a00,#1a1a1a);border-color:#ffd700"><b>👑 Give OWNER skin</b> — owner exclusive (only you)</div>
     <div class="adminitem" onclick="adminGiveAll()"><b>🎁 Give ALL skins</b> — every board skin (incl. 67, Secret, OMEGA, Infinity, Royal) + all piece skins</div>
     <div class="adminitem" onclick="adminGiveAllPieceSkins()"><b>♟ Give all piece skins</b> — Bronze, Silver, Gold, Diamond</div>
     <div class="adminitem" onclick="adminGiveRealAdmin()"><b>👑 Give Real Admin board skin</b> — the blue & red exclusive</div>
@@ -1393,7 +1398,7 @@ function resetLeaderboard(){
 
 function applySkinToBoard(){
   const b=document.getElementById('board');if(!b)return;
-  ['classic','poo','gy','rainbow','nothing','admin','realadmin','sixtyseven','secret','omega','infinity','royal','vip'].forEach(s=>b.classList.remove('skin-'+s));
+  ['classic','poo','gy','rainbow','nothing','admin','realadmin','sixtyseven','secret','omega','infinity','royal','vip','owner'].forEach(s=>b.classList.remove('skin-'+s));
   b.classList.add('skin-'+(M.equipped||'classic'));
 }
 
@@ -2561,7 +2566,7 @@ function stopUpg(u){
 function renderIndex(){
   if(typeof grantVipSkinIfNvp==='function')grantVipSkinIfNvp();
   const grid=document.getElementById('indexgrid');grid.innerHTML='';
-  const all=['poo','gy','rainbow','sixtyseven','nothing','admin','realadmin','secret','omega','infinity','royal','vip'];
+  const all=['poo','gy','rainbow','sixtyseven','nothing','admin','realadmin','secret','omega','infinity','royal','vip','owner'];
   let claimable=0;
   for(const sk of all){
     if(!SKINS[sk])continue;
@@ -3907,6 +3912,13 @@ SKINS.vip={name:'VIP',odds:null};
 SKIN_COLORS.vip=['linear-gradient(135deg,#00ffff,#0088ff,#ffffff)','linear-gradient(135deg,#001a33,#0044aa,#00ffff)'];
 if(!SKIN_ORDER.includes('vip'))SKIN_ORDER.push('vip');
 
+// OWNER skin: exclusive to the owner account — can't be rolled, bought, or given to others
+SKINS.owner={name:'OWNER',odds:null};
+SKIN_COLORS.owner=['linear-gradient(135deg,#ffd700,#fff8c0,#ffaa00)','linear-gradient(135deg,#1a1a1a,#3a2a00,#000)'];
+if(!SKIN_ORDER.includes('owner'))SKIN_ORDER.push('owner');
+SKIN_RARITY.owner=11;
+RARITY_NAMES[11]='OWNER';
+
 // ----- Special rarity tiers for the index -----
 SKIN_RARITY.omega=8;     // OMEGA rarity
 SKIN_RARITY.infinity=9;  // MEGA ADMIN rarity
@@ -4005,13 +4017,32 @@ doSpin=function(){
 adminGiveAll=function(){
   M.inventory=M.inventory||{};
   let n=0;
-  for(const k in SKINS){if(k==='classic')continue;M.inventory[k]=(M.inventory[k]||0)+1;n++}
+  for(const k in SKINS){if(k==='classic'||k==='owner')continue;M.inventory[k]=(M.inventory[k]||0)+1;n++}
   // also unlock all piece skins
   M.unlockedPieceSkins=M.unlockedPieceSkins||{};
   for(const k of ['bronze','silver','gold','diamond'])M.unlockedPieceSkins[k]=true;
   saveMeta();refreshUI();
   if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
   showAnnouncement('🎁 Granted ALL '+n+' board skins + all piece skins!');
+};
+
+// OWNER skin — owner only, separate command. Equipping it is also owner-gated.
+function adminGiveOwnerSkin(){
+  const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+  if(!isOwner){showAnnouncement('🔒 Owner only');return}
+  M.inventory=M.inventory||{};M.inventory.owner=(M.inventory.owner||0)+1;
+  saveMeta();refreshUI();
+  if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
+  showAnnouncement('👑 OWNER skin granted!');
+}
+// Gate equip: only the owner can equip the owner skin
+const _origEquipSkin=equipSkin;
+equipSkin=function(sk){
+  if(sk==='owner'){
+    const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+    if(!isOwner){showAnnouncement('🔒 OWNER skin is owner only');return}
+  }
+  _origEquipSkin(sk);
 };
 
 // ============================================================
