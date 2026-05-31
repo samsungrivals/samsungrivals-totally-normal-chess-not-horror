@@ -471,30 +471,30 @@ body.mobile-mode .topbar{padding:8px;gap:6px;font-size:11px}
 body.mobile-mode .spinbtn{padding:8px 14px;font-size:14px}
 
 /* Board skin overrides — applied to #board */
-#board.skin-poo .light{background:#c2a47a}
-#board.skin-poo .dark{background:#5e3a1c}
-#board.skin-gy .light{background:#fff176}
-#board.skin-gy .dark{background:#2e7d32}
-#board.skin-rainbow .light{background:linear-gradient(135deg,#ff5252,#ffeb3b 50%,#69f0ae)}
-#board.skin-rainbow .dark{background:linear-gradient(135deg,#40c4ff,#7c4dff 50%,#ff4081)}
-#board.skin-nothing .light,#board.skin-nothing .dark{background:#0d0d18}
-#board.skin-admin .light{background:#ffd700;background-image:repeating-linear-gradient(45deg,#ffd700,#ffd700 6px,#ffeb3b 6px,#ffeb3b 12px)}
-#board.skin-admin .dark{background:#1a1a1a;background-image:repeating-linear-gradient(45deg,#000,#000 6px,#222 6px,#222 12px)}
-#board.skin-realadmin .light{background:linear-gradient(135deg,#42a5f5,#1976d2)}
-#board.skin-realadmin .dark{background:linear-gradient(135deg,#ef5350,#c62828)}
-#board.skin-sixtyseven .light{background:#00e5ff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%2300e5ff'/%3E%3Ctext x='32' y='46' font-size='34' font-weight='bold' text-anchor='middle' fill='%23ff00aa' font-family='Arial Black,Arial' transform='rotate(-8 32 32)'%3E67%3C/text%3E%3C/svg%3E") center/cover}
-#board.skin-sixtyseven .dark{background:#7b1fa2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%237b1fa2'/%3E%3Ctext x='32' y='46' font-size='34' font-weight='bold' text-anchor='middle' fill='%23ffea00' font-family='Arial Black,Arial' transform='rotate(8 32 32)'%3E67%3C/text%3E%3C/svg%3E") center/cover}
-#board.skin-secret .light{background:#0a0a0a}
-#board.skin-secret .dark{background:linear-gradient(135deg,#ff0040,#8b0000)}
-#board.skin-omega .light{background:linear-gradient(135deg,#0066ff,#00ffff,#ffffff)}
-#board.skin-omega .dark{background:linear-gradient(135deg,#000066,#0066ff,#00ccff)}
-#board.skin-infinity .light{background:linear-gradient(135deg,#ff00ff,#00ffff,#ffff00,#ff8800);background-size:200% 200%;animation:infinitybg 8s ease infinite}
-#board.skin-infinity .dark{background:linear-gradient(135deg,#000033,#660099,#0033cc,#000033);background-size:200% 200%;animation:infinitybg 8s ease infinite}
+#board.skin-poo .light, .sq.skin-poo.light{background:#c2a47a}
+#board.skin-poo .dark, .sq.skin-poo.dark{background:#5e3a1c}
+#board.skin-gy .light, .sq.skin-gy.light{background:#fff176}
+#board.skin-gy .dark, .sq.skin-gy.dark{background:#2e7d32}
+#board.skin-rainbow .light, .sq.skin-rainbow.light{background:linear-gradient(135deg,#ff5252,#ffeb3b 50%,#69f0ae)}
+#board.skin-rainbow .dark, .sq.skin-rainbow.dark{background:linear-gradient(135deg,#40c4ff,#7c4dff 50%,#ff4081)}
+#board.skin-nothing .light,#board.skin-nothing .dark, .sq.skin-nothing.light, .sq.skin-nothing.dark{background:#0d0d18}
+#board.skin-admin .light, .sq.skin-admin.light{background:#ffd700;background-image:repeating-linear-gradient(45deg,#ffd700,#ffd700 6px,#ffeb3b 6px,#ffeb3b 12px)}
+#board.skin-admin .dark, .sq.skin-admin.dark{background:#1a1a1a;background-image:repeating-linear-gradient(45deg,#000,#000 6px,#222 6px,#222 12px)}
+#board.skin-realadmin .light, .sq.skin-realadmin.light{background:linear-gradient(135deg,#42a5f5,#1976d2)}
+#board.skin-realadmin .dark, .sq.skin-realadmin.dark{background:linear-gradient(135deg,#ef5350,#c62828)}
+#board.skin-sixtyseven .light, .sq.skin-sixtyseven.light{background:#00e5ff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%2300e5ff'/%3E%3Ctext x='32' y='46' font-size='34' font-weight='bold' text-anchor='middle' fill='%23ff00aa' font-family='Arial Black,Arial' transform='rotate(-8 32 32)'%3E67%3C/text%3E%3C/svg%3E") center/cover}
+#board.skin-sixtyseven .dark, .sq.skin-sixtyseven.dark{background:#7b1fa2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%237b1fa2'/%3E%3Ctext x='32' y='46' font-size='34' font-weight='bold' text-anchor='middle' fill='%23ffea00' font-family='Arial Black,Arial' transform='rotate(8 32 32)'%3E67%3C/text%3E%3C/svg%3E") center/cover}
+#board.skin-secret .light, .sq.skin-secret.light{background:#0a0a0a}
+#board.skin-secret .dark, .sq.skin-secret.dark{background:linear-gradient(135deg,#ff0040,#8b0000)}
+#board.skin-omega .light, .sq.skin-omega.light{background:linear-gradient(135deg,#0066ff,#00ffff,#ffffff)}
+#board.skin-omega .dark, .sq.skin-omega.dark{background:linear-gradient(135deg,#000066,#0066ff,#00ccff)}
+#board.skin-infinity .light, .sq.skin-infinity.light{background:linear-gradient(135deg,#ff00ff,#00ffff,#ffff00,#ff8800);background-size:200% 200%;animation:infinitybg 8s ease infinite}
+#board.skin-infinity .dark, .sq.skin-infinity.dark{background:linear-gradient(135deg,#000033,#660099,#0033cc,#000033);background-size:200% 200%;animation:infinitybg 8s ease infinite}
 @keyframes infinitybg{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-#board.skin-royal .light{background:linear-gradient(135deg,#ffd700,#ffeb3b,#ff8800)}
-#board.skin-royal .dark{background:linear-gradient(135deg,#8b0000,#b71c1c,#ffd700)}
-#board.skin-vip .light{background:linear-gradient(135deg,#00ffff,#0088ff,#ffffff)}
-#board.skin-vip .dark{background:linear-gradient(135deg,#001a33,#0044aa,#00ffff)}
-#board.skin-owner .light{background:linear-gradient(135deg,#ffd700,#fff8c0,#ffaa00,#ffd700);background-size:300% 300%;animation:ownerbg 5s ease infinite}
-#board.skin-owner .dark{background:linear-gradient(135deg,#1a1a1a,#3a2a00,#000,#1a1a1a);background-size:300% 300%;animation:ownerbg 5s ease infinite}
+#board.skin-royal .light, .sq.skin-royal.light{background:linear-gradient(135deg,#ffd700,#ffeb3b,#ff8800)}
+#board.skin-royal .dark, .sq.skin-royal.dark{background:linear-gradient(135deg,#8b0000,#b71c1c,#ffd700)}
+#board.skin-vip .light, .sq.skin-vip.light{background:linear-gradient(135deg,#00ffff,#0088ff,#ffffff)}
+#board.skin-vip .dark, .sq.skin-vip.dark{background:linear-gradient(135deg,#001a33,#0044aa,#00ffff)}
+#board.skin-owner .light, .sq.skin-owner.light{background:linear-gradient(135deg,#ffd700,#fff8c0,#ffaa00,#ffd700);background-size:300% 300%;animation:ownerbg 5s ease infinite}
+#board.skin-owner .dark, .sq.skin-owner.dark{background:linear-gradient(135deg,#1a1a1a,#3a2a00,#000,#1a1a1a);background-size:300% 300%;animation:ownerbg 5s ease infinite}
 @keyframes ownerbg{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}

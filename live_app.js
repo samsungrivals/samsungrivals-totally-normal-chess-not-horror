@@ -486,39 +486,41 @@ function resetLeaderboard(){
 
 function applySkinToBoard(){
   const b=document.getElementById('board');if(!b)return;
-  const allSkins = ['classic','poo','gy','rainbow','nothing','admin','realadmin','sixtyseven','secret','omega','infinity','royal','vip','owner'];
-  allSkins.forEach(s=>b.classList.remove('skin-'+s));
+  ['classic','poo','gy','rainbow','nothing','admin','realadmin','sixtyseven','secret','omega','infinity','royal','vip','owner'].forEach(s=>b.classList.remove('skin-'+s));
+  b.classList.add('skin-'+(M.equipped||'classic'));
 
-  const sqs=b.querySelectorAll('.sq');
-  sqs.forEach(s=>{
-    s.style.background='';
-    allSkins.forEach(sk=>s.classList.remove('skin-'+sk));
-  });
-
-  const infActive=M.upgradesPurchased&&M.upgradesPurchased.infiniteEquip&&M.infiniteEquipActive;
+  const sqs = b.querySelectorAll('.sq');
+  const infActive = M.upgradesPurchased && M.upgradesPurchased.infiniteEquip && M.infiniteEquipActive;
+  
   if (infActive) {
     const skins = ownedBoardSkins();
     if (skins.length >= 2) {
       sqs.forEach(sq=>{
-        const r=Number(sq.dataset.r);
+        const r=Number(sq.dataset.r), c=Number(sq.dataset.c);
         const skin=skins[r%skins.length];
-        sq.classList.add('skin-'+skin);
+        const col=SKIN_COLORS[skin]||SKIN_COLORS.classic;
+        const isLight=(r+c)%2===0;
+        sq.style.background=isLight?col[0]:col[1];
       });
       return;
     }
   }
 
+  sqs.forEach(s=>s.style.background='');
+
   const dualActive = M.upgradesPurchased && M.upgradesPurchased.equip2 && M.equipped2;
   if (dualActive) {
-    const sLeft = M.equipped||'classic';
-    const sRight = M.equipped2||'classic';
+    const colLeft = SKIN_COLORS[M.equipped||'classic']||SKIN_COLORS.classic;
+    const colRight = SKIN_COLORS[M.equipped2]||SKIN_COLORS.classic;
     sqs.forEach(sq=>{
-      const c = Number(sq.dataset.c);
-      if (c < 4) sq.classList.add('skin-'+sLeft);
-      else sq.classList.add('skin-'+sRight);
+      const r=Number(sq.dataset.r), c=Number(sq.dataset.c);
+      const isLight=(r+c)%2===0;
+      if (c < 4) {
+        sq.style.background=isLight?colLeft[0]:colLeft[1];
+      } else {
+        sq.style.background=isLight?colRight[0]:colRight[1];
+      }
     });
-  } else {
-    b.classList.add('skin-'+(M.equipped||'classic'));
   }
 }
 
