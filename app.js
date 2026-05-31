@@ -271,7 +271,7 @@ function renderBoard(){
     if(!over)sq.addEventListener('click',()=>click(r,c));
     el.appendChild(sq);
   }
-  if(typeof applyInfiniteEquip==='function')applyInfiniteEquip();
+  applySkinToBoard();
 }
 
 function click(r,c){
@@ -488,6 +488,40 @@ function applySkinToBoard(){
   const b=document.getElementById('board');if(!b)return;
   ['classic','poo','gy','rainbow','nothing','admin','realadmin','sixtyseven','secret','omega','infinity','royal','vip','owner'].forEach(s=>b.classList.remove('skin-'+s));
   b.classList.add('skin-'+(M.equipped||'classic'));
+
+  const sqs = b.querySelectorAll('.sq');
+  const infActive = M.upgradesPurchased && M.upgradesPurchased.infiniteEquip && M.infiniteEquipActive;
+  
+  if (infActive) {
+    const skins = ownedBoardSkins();
+    if (skins.length >= 2) {
+      sqs.forEach(sq=>{
+        const r=Number(sq.dataset.r), c=Number(sq.dataset.c);
+        const skin=skins[r%skins.length];
+        const col=SKIN_COLORS[skin]||SKIN_COLORS.classic;
+        const isLight=(r+c)%2===0;
+        sq.style.background=isLight?col[0]:col[1];
+      });
+      return;
+    }
+  }
+
+  sqs.forEach(s=>s.style.background='');
+
+  const dualActive = M.upgradesPurchased && M.upgradesPurchased.equip2 && M.equipped2;
+  if (dualActive) {
+    const colLeft = SKIN_COLORS[M.equipped||'classic']||SKIN_COLORS.classic;
+    const colRight = SKIN_COLORS[M.equipped2]||SKIN_COLORS.classic;
+    sqs.forEach(sq=>{
+      const r=Number(sq.dataset.r), c=Number(sq.dataset.c);
+      const isLight=(r+c)%2===0;
+      if (c < 4) {
+        sq.style.background=isLight?colLeft[0]:colLeft[1];
+      } else {
+        sq.style.background=isLight?colRight[0]:colRight[1];
+      }
+    });
+  }
 }
 
 function applySkinPreview(el,skin){
@@ -629,11 +663,26 @@ function renderItems(){
     info.innerHTML=`<div class="skinname">${SKINS[sk].name}</div><div class="skindetails">Owned: ${owned} • Lvl ${lvl} • ${oddsTxt}</div>`;
     row.appendChild(info);
     const acts=document.createElement('div');acts.className='skinactions';
-    const eq=document.createElement('button');
-    eq.className='skinbtn'+(M.equipped===sk?' equipped':'');
-    eq.textContent=M.equipped===sk?'✓ Equipped':'Equip';
-    eq.onclick=()=>equipSkin(sk);
-    acts.appendChild(eq);
+    const dualActive = M.upgradesPurchased && M.upgradesPurchased.equip2;
+    if (dualActive) {
+      const eqL = document.createElement('button');
+      eqL.className='skinbtn'+(M.equipped===sk?' equipped':'');
+      eqL.textContent=M.equipped===sk?'✓ L':'Equip L';
+      eqL.onclick=()=>equipSkin(sk, 1);
+      acts.appendChild(eqL);
+
+      const eqR = document.createElement('button');
+      eqR.className='skinbtn'+(M.equipped2===sk?' equipped':'');
+      eqR.textContent=M.equipped2===sk?'✓ R':'Equip R';
+      eqR.onclick=()=>equipSkin(sk, 2);
+      acts.appendChild(eqR);
+    } else {
+      const eq=document.createElement('button');
+      eq.className='skinbtn'+(M.equipped===sk?' equipped':'');
+      eq.textContent=M.equipped===sk?'✓ Equipped':'Equip';
+      eq.onclick=()=>equipSkin(sk, 1);
+      acts.appendChild(eq);
+    }
     const up=document.createElement('button');up.className='skinbtn';
     const cost=upgradeCost(sk);
     if(M.currentUpgrade&&M.currentUpgrade.skin===sk){
@@ -661,7 +710,12 @@ function renderItems(){
   if(!any)el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No skins yet — click SPIN to roll!</div>';
 }
 
-function equipSkin(sk){M.equipped=sk;saveMeta();applySkinToBoard();renderItems()}
+function equipSkin(sk, sl = 1){
+  if (sl === 1) M.equipped=sk;
+  if (sl === 2) M.equipped2=sk;
+  M.infiniteEquipActive = false;
+  saveMeta();applySkinToBoard();renderItems()
+}
 
 function startUpgrade(sk){
   const cost=upgradeCost(sk);
@@ -810,7 +864,15 @@ const PIECE_SKINS={
   bronze:{name:'Bronze',req:750,palette:{wn:'Bronze',bn:'Shadow',w:'#cd7f32',wo:'#3a1c00',b:'#1a1a1a',bo:'#cd7f32'}},
   silver:{name:'Silver',req:1200,palette:{wn:'Silver',bn:'Onyx',w:'#e0e0e0',wo:'#222222',b:'#0d0d18',bo:'#e0e0e0'}},
   gold:{name:'Gold',req:1500,palette:{wn:'Gold',bn:'Ebony',w:'#ffd700',wo:'#3a2600',b:'#0a0a0a',bo:'#ffd700'}},
-  diamond:{name:'Diamond',req:2000,palette:{wn:'Diamond',bn:'Obsidian',w:'#80e0ff',wo:'#003a4a',b:'#0a0a2a',bo:'#80e0ff'}}
+  diamond:{name:'Diamond',req:2000,palette:{wn:'Diamond',bn:'Obsidian',w:'#80e0ff',wo:'#003a4a',b:'#0a0a2a',bo:'#80e0ff'}},
+  champion:{name:'Champion',req:10000,palette:{wn:'Ruby',bn:'Crimson',w:'#ff3366',wo:'#660022',b:'#2a0011',bo:'#ff3366'}},
+  grandmaster:{name:'Grandmaster',req:50000,palette:{wn:'Amethyst',bn:'Deep Purple',w:'#cc66ff',wo:'#330066',b:'#1a0033',bo:'#cc66ff'}},
+  legend:{name:'Legend',req:100000,palette:{wn:'Emerald',bn:'Dark Green',w:'#33ff99',wo:'#004d26',b:'#001a0d',bo:'#33ff99'}},
+  mythic:{name:'Mythic',req:500000,palette:{wn:'Sapphire',bn:'Deep Ocean',w:'#3388ff',wo:'#002266',b:'#000d2a',bo:'#3388ff'}},
+  celestial:{name:'Celestial',req:1000000,palette:{wn:'Glowing White',bn:'Starry Night',w:'#ffffff',wo:'#cccccc',b:'#000022',bo:'#ffffff'}},
+  divine:{name:'Divine',req:10000000,palette:{wn:'Radiant Gold',bn:'Holy Light',w:'#ffff99',wo:'#cc9900',b:'#4d3a00',bo:'#ffff99'}},
+  omnipotent:{name:'Omnipotent',req:100000000,palette:{wn:'Neon Pink',bn:'Void Black',w:'#ff00ff',wo:'#660066',b:'#000000',bo:'#ff00ff'}},
+  billionaire:{name:'Billionaire',req:1000000000,palette:{wn:'Diamond Blue',bn:'Solid Gold',w:'#00ffff',wo:'#006666',b:'#ffd700',bo:'#b38f00'}}
 };
 
 const ELO_REWARDS=[
@@ -1688,9 +1750,14 @@ function claimIndex(sk){
   M.claimedSkins=M.claimedSkins||{};
   if(M.claimedSkins[sk])return;
   M.claimedSkins[sk]=true;
-  M.money+=1000; // £10
+  
+  M.indexMultiplier = M.indexMultiplier || 1;
+  const reward = 1000 * M.indexMultiplier;
+  M.money += reward;
+  M.indexMultiplier *= 2; // Double for next time
+  
   saveMeta();refreshUI();renderIndex();
-  showAnnouncement('📖 Claimed +£10 for '+SKINS[sk].name);
+  showAnnouncement('📖 Claimed +£' + (reward/100) + ' for '+SKINS[sk].name + ' (Next claim: £' + (10*M.indexMultiplier) + ')');
 }
 
 // ----- SETTINGS -----
@@ -1725,6 +1792,22 @@ function renderSettings(){
     [['On',true],['Off',false]].forEach(([lbl,val])=>{
       const b=document.createElement('button');b.className='settingchip'+((!!M.skipCutscenes)===val?' on':'');
       b.textContent=lbl;b.onclick=()=>{M.skipCutscenes=val;saveMeta();renderSettings()};skc.appendChild(b);
+    });
+  }
+  // Mobile Mode toggle
+  const mobc=document.getElementById('mobilemodectrl');
+  if(mobc){
+    mobc.innerHTML='';
+    [['On',true],['Off',false]].forEach(([lbl,val])=>{
+      const b=document.createElement('button');b.className='settingchip'+((!!M.mobileMode)===val?' on':'');
+      b.textContent=lbl;b.onclick=()=>{
+        M.mobileMode=val;
+        saveMeta();
+        if(val) document.body.classList.add('mobile-mode');
+        else document.body.classList.remove('mobile-mode');
+        renderSettings();
+      };
+      mobc.appendChild(b);
     });
   }
   // Uploaded music state
@@ -3112,7 +3195,16 @@ function applyInfiniteEquip(){
 }
 
 const _buyUpgInfinite=buyUpg;
-buyUpg=function(u){_buyUpgInfinite(u);if(u&&u.id==='infiniteEquip')applyInfiniteEquip()};
+buyUpg=function(u){
+  _buyUpgInfinite(u);
+  if(u&&u.id==='infiniteEquip'){
+    M.infiniteEquipActive = !M.infiniteEquipActive;
+    saveMeta();
+    applySkinToBoard();
+    if(M.infiniteEquipActive) showAnnouncement('🔄 Infinite Equip: ON');
+    else showAnnouncement('⏸️ Infinite Equip: OFF');
+  }
+};
 
 const _spinNoTriple=doSpin;
 doSpin=function(){
@@ -3145,12 +3237,12 @@ function adminGiveOwnerSkin(){
 }
 // Gate equip: only the owner can equip the owner skin
 const _origEquipSkin=equipSkin;
-equipSkin=function(sk){
+equipSkin=function(sk, sl=1){
   if(sk==='owner'){
     const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
     if(!isOwner){showAnnouncement('🔒 OWNER skin is owner only');return}
   }
-  _origEquipSkin(sk);
+  _origEquipSkin(sk, sl);
 };
 
 // ============================================================
@@ -3291,8 +3383,7 @@ trackHiddenFreeShop=(typeof trackHiddenFreeShop==='function')?trackHiddenFreeSho
 function openOwnerAdmin(){
   const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
   if(!isOwner){showAnnouncement('🔒 Owner only');return}
-  window._openedAsOwner=true;
-  openModal('adminmodal');
+  openModal('ownermodal');
 }
 
 // Remove admin from a player (owner only)
@@ -3588,6 +3679,7 @@ refreshAccountBtn();
 refreshAdminStatus();
 if(typeof grantVipSkinIfNvp==='function')grantVipSkinIfNvp();
 startAutoRoll();
+if(M.mobileMode) document.body.classList.add('mobile-mode');
 
 // ============================================================
 // FIRST-VISIT TUTORIAL

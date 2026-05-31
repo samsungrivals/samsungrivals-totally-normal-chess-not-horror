@@ -461,16 +461,14 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 @keyframes sparkle-rise{0%{transform:translateY(0) scale(0);opacity:0}20%{opacity:1;transform:translateY(-20px) scale(1)}100%{transform:translateY(-120vh) scale(.3);opacity:0}}
 
 /* Mobile */
-@media (max-width:760px){
-  .container{flex-direction:column;align-items:center}
-  .sidebar{width:100%;max-width:540px}
-  #board{grid-template-columns:repeat(8,40px);grid-template-rows:repeat(8,40px)}
-  .sq{width:40px;height:40px;font-size:28px}
-  .flabel{width:40px}
-  .rlabel{height:40px}
-  .topbar{padding:8px;gap:6px;font-size:11px}
-  .spinbtn{padding:8px 14px;font-size:14px}
-}
+body.mobile-mode .container{flex-direction:column;align-items:center}
+body.mobile-mode .sidebar{width:100%;max-width:540px}
+body.mobile-mode #board{grid-template-columns:repeat(8,40px);grid-template-rows:repeat(8,40px)}
+body.mobile-mode .sq{width:40px;height:40px;font-size:28px}
+body.mobile-mode .flabel{width:40px}
+body.mobile-mode .rlabel{height:40px}
+body.mobile-mode .topbar{padding:8px;gap:6px;font-size:11px}
+body.mobile-mode .spinbtn{padding:8px 14px;font-size:14px}
 
 /* Board skin overrides — applied to #board */
 #board.skin-poo .light{background:#c2a47a}

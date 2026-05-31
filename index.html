@@ -118,9 +118,6 @@
 <div class="modal hidden" id="adminmodal">
   <div class="mbox">
     <div class="mtitle">⚡ Admin Commands <button class="mclose" onclick="closeModal('adminmodal')">✕</button></div>
-    <div class="adminitem owner-only" id="admin-grant" onclick="adminGrantAdmin()" style="background:#3a1f5f;border-color:#7c4dff"><b>👮 Give Admin to a Player</b> — owner only: type a username to grant admin</div>
-    <div class="adminitem owner-only" id="admin-revoke" onclick="adminRemoveAdmin()" style="background:#5a1f1f;border-color:#aa4444"><b>🚫 Remove Admin from a Player</b> — owner only: type a username to revoke</div>
-    <div class="adminitem owner-only" onclick="adminGiveOwnerSkin()" style="background:linear-gradient(135deg,#3a2a00,#1a1a1a);border-color:#ffd700"><b>👑 Give OWNER skin</b> — owner exclusive (only you)</div>
     <div class="adminitem" onclick="adminGiveAll()"><b>🎁 Give ALL skins</b> — every board skin (incl. 67, Secret, OMEGA, Infinity, Royal) + all piece skins</div>
     <div class="adminitem" onclick="adminGiveAllPieceSkins()"><b>♟ Give all piece skins</b> — Bronze, Silver, Gold, Diamond</div>
     <div class="adminitem" onclick="adminGiveRealAdmin()"><b>👑 Give Real Admin board skin</b> — the blue & red exclusive</div>
@@ -128,7 +125,6 @@
     <div class="adminitem" onclick="adminAddElo(1000)"><b>⏫ +1,000 ELO</b></div>
     <div class="adminitem" onclick="adminAddElo(100000)"><b>🚀 +100,000 ELO</b></div>
     <div class="adminitem" onclick="adminGiveLuck10()"><b>🌍 ×10 GLOBAL Luck</b> — affects every player on the server</div>
-    <div class="adminitem owner-only" onclick="adminResetAllElo()" style="background:linear-gradient(135deg,#3a2a00,#1a1a1a);border-color:#ffd700"><b>⚖ Reset ALL Player ELO to 500</b> — owner only, global</div>
     <div class="adminitem" onclick="adminGiveLuck1000()"><b>🍀 ×1000 Luck (just you)</b> — local, doesn't affect other players</div>
     <div class="adminitem" onclick="adminGiveMoney(100)"><b>💷 +£100</b></div>
     <div class="adminitem" onclick="adminGiveMoney(10000)"><b>💰 +£10,000</b></div>
@@ -137,6 +133,16 @@
     <div class="adminitem" onclick="openTutorial('cow')"><b>🐄 Learn the Cow opening</b></div>
     <div class="adminitem" onclick="openTutorial('bishop')"><b>♝ Learn the Bishop opening</b></div>
     <div class="adminitem" onclick="openTutorial('london')"><b>🏰 Learn the London System</b></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="ownermodal">
+  <div class="mbox">
+    <div class="mtitle">👑 Owner Commands <button class="mclose" onclick="closeModal('ownermodal')">✕</button></div>
+    <div class="adminitem owner-only" id="admin-grant" onclick="adminGrantAdmin()" style="background:#3a1f5f;border-color:#7c4dff"><b>👮 Give Admin to a Player</b> — owner only: type a username to grant admin</div>
+    <div class="adminitem owner-only" id="admin-revoke" onclick="adminRemoveAdmin()" style="background:#5a1f1f;border-color:#aa4444"><b>🚫 Remove Admin from a Player</b> — owner only: type a username to revoke</div>
+    <div class="adminitem owner-only" onclick="adminGiveOwnerSkin()" style="background:linear-gradient(135deg,#3a2a00,#1a1a1a);border-color:#ffd700"><b>👑 Give OWNER skin</b> — owner exclusive (only you)</div>
+    <div class="adminitem owner-only" onclick="adminResetAllElo()" style="background:linear-gradient(135deg,#3a2a00,#1a1a1a);border-color:#ffd700"><b>⚖ Reset ALL Player ELO to 500</b> — owner only, global</div>
   </div>
 </div>
 
@@ -262,8 +268,12 @@
   <div class="mbox">
     <div class="mtitle">⚙ Settings <button class="mclose" onclick="closeModal('settingsmodal')">✕</button></div>
     <div class="settingrow" style="background:#1a2a2a;border-color:#3a5a5a">
-      <div><div class="settinglabel">⏭ Skip Cutscenes</div><div class="settingsub">Rare-skin animations won't play</div></div>
+      <div><div class="settinglabel">🎥 Skip Cutscenes</div><div class="settingsub">Rare-skin animations won't play</div></div>
       <div class="settingcontrol" id="skipcsctrl"></div>
+    </div>
+    <div class="settingrow" style="background:#2a1a2a;border-color:#5a3a5a">
+      <div><div class="settinglabel">📱 Mobile Mode</div><div class="settingsub">Scale down board & layout for smaller screens</div></div>
+      <div class="settingcontrol" id="mobilemodectrl"></div>
     </div>
     <div class="settingrow">
       <div><div class="settinglabel">Game Speed</div><div class="settingsub">Animation & AI delay multiplier</div></div>
