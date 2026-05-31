@@ -18,7 +18,8 @@ app.use((req, res, next) => {
 });
 app.use(express.static('.', { etag: false, lastModified: false }));
 
-const DB_FILE = path.join(__dirname, 'db.json');
+const dataDir = process.env.DATA_DIR || __dirname;
+const DB_FILE = path.join(dataDir, 'db.json');
 let db = { users: {}, friends: {}, announce: [], queue: [], matches: {} };
 
 // 18 seed AI competitors so the leaderboard is never empty
@@ -43,13 +44,18 @@ for (const ai of SEED_AI) {
 }
 
 let saveTimer = null;
+function saveNow() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  try { fs.writeFileSync(DB_FILE, JSON.stringify(db)); } catch (e) { console.error('save failed', e); }
+}
 function saveSoon() {
   if (saveTimer) return;
-  saveTimer = setTimeout(() => {
-    saveTimer = null;
-    try { fs.writeFileSync(DB_FILE, JSON.stringify(db)); } catch (e) { console.error('save failed', e); }
-  }, 500);
+  saveTimer = setTimeout(() => { saveTimer = null; saveNow(); }, 500);
 }
+// Flush to disk when Railway shuts the process down for a redeploy (needs a Volume to survive)
+function gracefulExit() { saveNow(); process.exit(0); }
+process.on('SIGTERM', gracefulExit);
+process.on('SIGINT', gracefulExit);
 
 function ok(res, data) { res.json({ ok: true, ...data }); }
 function bad(res, code, err) { res.status(code).json({ ok: false, err }); }
@@ -417,6 +423,15 @@ app.get('/api/stats', (req, res) => {
   });
 });
 
+// Health/persistence check
+app.get('/api/health', (req, res) => {
+  ok(res, {
+    dataDir: dataDir,
+    persistent: !!process.env.DATA_DIR,
+    realUsers: Object.values(db.users).filter(u => !u.isAI).length
+  });
+});
+
 // ============================================================
 // REAL-TIME WEBSOCKET MULTIPLAYER  (optional — site still works without it)
 // ============================================================
@@ -570,6 +585,7 @@ const port = process.env.PORT || 3000;
 server.listen(port, '0.0.0.0', () => {
   console.log('chess server listening on ' + port + (WebSocket ? ' (HTTP + WebSocket /ws)' : ' (HTTP only)'));
   console.log('users: ' + Object.keys(db.users).length + ' (' + SEED_AI.length + ' AI seeded)');
+  console.log('data dir: ' + dataDir + (process.env.DATA_DIR ? ' (persistent volume)' : ' (EPHEMERAL — set DATA_DIR + add a Railway Volume to keep players across redeploys)'));
 });
 
 // Last-resort guard: don't let an unexpected error crash the whole process/site
