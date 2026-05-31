@@ -87,9 +87,7 @@ app.post('/api/login', (req, res) => {
 // --- Leaderboard ---
 app.get('/api/leaderboard', (req, res) => {
   const list = Object.values(db.users)
-    .map(u => ({ name: u.username, elo: u.elo, isAI: !!u.isAI }))
-    .sort((a, b) => b.elo - a.elo)
-    .slice(0, 50);
+    .map(u => ({ name: u.username, elo: u.elo, upgrades: u.upgrades||0, isAI: !!u.isAI }))
   ok(res, { lb: list, totalUsers: Object.values(db.users).filter(u => !u.isAI).length });
 });
 
@@ -102,6 +100,17 @@ app.post('/api/elo', (req, res) => {
   u.elo = Math.max(100, Math.round(Number(elo) || 500));
   saveSoon();
   ok(res, { elo: u.elo });
+});
+
+// --- Update Upgrades ---
+app.post('/api/upgrades', (req, res) => {
+  const { username, upgrades } = req.body || {};
+  const key = (username || '').toLowerCase();
+  const u = db.users[key];
+  if (!u) return bad(res, 404, 'no user');
+  u.upgrades = Math.max(0, Math.round(Number(upgrades) || 0));
+  saveSoon();
+  ok(res, { upgrades: u.upgrades });
 });
 
 // --- Search users (for adding friends) ---

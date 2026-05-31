@@ -465,13 +465,13 @@ function syncLb(){
   lb=lb.filter(e=>e&&typeof e.name==='string'&&typeof e.elo==='number'&&e.elo>0);
   // ALWAYS ensure every LB_AI is present
   const have=new Set(lb.map(e=>e.name));
-  for(const ai of LB_AI){if(!have.has(ai.name)){lb.push({name:ai.name,elo:ai.elo});have.add(ai.name)}}
+  for(const ai of LB_AI){if(!have.has(ai.name)){lb.push({name:ai.name,elo:ai.elo,upgrades:Math.floor(ai.elo/100)});have.add(ai.name)}}
   // User entry
   const myName=(M.account&&M.account.username)||'You';
   let me=lb.find(e=>e.self===true)||lb.find(e=>e.name===myName);
   const myElo=Number(M.elo)||500;
-  if(me){me.name=myName;me.elo=myElo;me.self=true}
-  else lb.push({name:myName,elo:myElo,self:true});
+  if(me){me.name=myName;me.elo=myElo;me.upgrades=M.totalUpgrades||0;me.self=true}
+  else lb.push({name:myName,elo:myElo,upgrades:M.totalUpgrades||0,self:true});
   lb.sort((a,b)=>(Number(b.elo)||0)-(Number(a.elo)||0));
   saveLb(lb);
   console.log('[lb] synced — '+lb.length+' entries; top 3:',lb.slice(0,3).map(e=>e.name+' '+e.elo).join(', '));
@@ -729,7 +729,9 @@ function claimUpgrade(){
   const sk=M.currentUpgrade.skin;
   M.upgrades[sk]=(M.upgrades[sk]||0)+1;
   M.currentUpgrade=null;
+  M.totalUpgrades=(M.totalUpgrades||0)+1;
   saveMeta();renderItems();syncLb();
+  if(M.account&&typeof window.API!=='undefined')window.API.upgrades(M.account.username,M.totalUpgrades).catch(()=>{});
   showAnnouncement(`✨ ${SKINS[sk].name} upgraded to Lvl ${M.upgrades[sk]}!`);
 }
 function stopUpgrade(){
@@ -766,8 +768,20 @@ function showAnnouncement(text){
   document.body.appendChild(el);setTimeout(()=>el.remove(),5000);
 }
 
+window._lbTab='elo';
+window.switchLbTab=function(tab){
+  window._lbTab=tab;
+  const tElo=document.getElementById('tab-lb-elo'),tUpg=document.getElementById('tab-lb-upg');
+  if(tElo){tElo.classList.toggle('active',tab==='elo');tElo.style.borderBottomColor=tab==='elo'?'#4a80c0':'transparent';tElo.style.color=tab==='elo'?'#fff':'#888'}
+  if(tUpg){tUpg.classList.toggle('active',tab==='upg');tUpg.style.borderBottomColor=tab==='upg'?'#4a80c0':'transparent';tUpg.style.color=tab==='upg'?'#fff':'#888'}
+  renderLeaderboard();
+};
+
 function renderLeaderboard(){
-  const lbAll=loadLb();const top=lbAll.slice(0,10);
+  const lbAll=loadLb();
+  const tab=window._lbTab||'elo';
+  const sorted=lbAll.sort((a,b)=>tab==='elo'?((Number(b.elo)||0)-(Number(a.elo)||0)):((Number(b.upgrades)||0)-(Number(a.upgrades)||0)));
+  const top=sorted.slice(0,10);
   const el=document.getElementById('lblist');el.innerHTML='';
   const trophies=['🥇','🥈','🥉'];
   const myName=(M.account&&M.account.username)||'You';
@@ -782,19 +796,20 @@ function renderLeaderboard(){
         ?'<button class="skinbtn equipped" disabled>✓ Friend</button>'
         :'<button class="skinbtn" onclick="addLbFriend(\''+entry.name.replace(/'/g,"\\'")+'\','+(Number(entry.elo)||500)+')">+ Add</button>';
     }
-    row.innerHTML=`<div class="lbrank r${i+1}">${rankIcon}</div><div class="lbname">${entry.name}</div><div class="lbscore">${Number(entry.elo)||0} ELO</div>${btnHtml?'<div style="margin-left:8px">'+btnHtml+'</div>':''}`;
+    const valStr=tab==='elo'?`${Number(entry.elo)||0} ELO`:`${Number(entry.upgrades)||0} Upg`;
+    row.innerHTML=`<div class="lbrank r${i+1}">${rankIcon}</div><div class="lbname">${entry.name}</div><div class="lbscore">${valStr}</div>${btnHtml?'<div style="margin-left:8px">'+btnHtml+'</div>':''}`;
     el.appendChild(row);
   });
-  // If user not in top 10, show their rank
-  const meIdx=lbAll.findIndex(e=>e.self||e.name===myName);
+  const meIdx=sorted.findIndex(e=>e.self||e.name===myName);
   if(meIdx>=10){
     const sep=document.createElement('div');sep.style.cssText='text-align:center;color:#666;padding:6px 0;font-size:12px';sep.textContent='⋯';
     el.appendChild(sep);
-    const e=lbAll[meIdx];const row=document.createElement('div');row.className='lbrow lbme';
-    row.innerHTML=`<div class="lbrank">#${meIdx+1}</div><div class="lbname">${e.name}</div><div class="lbscore">${e.elo} ELO</div>`;
+    const e=sorted[meIdx];const row=document.createElement('div');row.className='lbrow lbme';
+    const valStr=tab==='elo'?`${Number(e.elo)||0} ELO`:`${Number(e.upgrades)||0} Upg`;
+    row.innerHTML=`<div class="lbrank">#${meIdx+1}</div><div class="lbname">${e.name}</div><div class="lbscore">${valStr}</div>`;
     el.appendChild(row);
   }
-  if(lbAll.length===0)el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No scores yet — play games to climb!</div>';
+  if(sorted.length===0)el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No scores yet — play games to climb!</div>';
 }
 
 function addLbFriend(name,elo){
@@ -2186,6 +2201,7 @@ window.API=(()=>{
     login:(u,p)=>call('/api/login',{method:'POST',headers:j,body:JSON.stringify({username:u,password:p})}),
     leaderboard:()=>call('/api/leaderboard'),
     elo:(u,e)=>call('/api/elo',{method:'POST',headers:j,body:JSON.stringify({username:u,elo:e})}),
+    upgrades:(u,upg)=>call('/api/upgrades',{method:'POST',headers:j,body:JSON.stringify({username:u,upgrades:upg})}),
     searchUsers:q=>call('/api/users/search?q='+encodeURIComponent(q)),
     friends:u=>call('/api/friends?user='+encodeURIComponent(u)),
     addFriend:(u,f)=>call('/api/friends/add',{method:'POST',headers:j,body:JSON.stringify({user:u,friend:f})}),
@@ -2219,10 +2235,10 @@ async function syncServerLeaderboard(){
   const r=await API.leaderboard();
   if(r&&r.ok&&r.lb){
     const myName=M.account&&M.account.username;
-    const lb=r.lb.map(e=>({name:e.name,elo:e.elo,isAI:e.isAI,self:myName===e.name}));
+    const lb=r.lb.map(e=>({name:e.name,elo:e.elo,upgrades:e.upgrades||0,isAI:e.isAI,self:myName===e.name}));
     // Always include local user even if server doesn't know them yet
     if(myName&&!lb.find(e=>e.name===myName)){
-      lb.push({name:myName,elo:Number(M.elo)||500,self:true,localOnly:true});
+      lb.push({name:myName,elo:Number(M.elo)||500,upgrades:M.totalUpgrades||0,self:true,localOnly:true});
       lb.sort((a,b)=>(Number(b.elo)||0)-(Number(a.elo)||0));
     }
     saveLb(lb);

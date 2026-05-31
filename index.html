@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chess</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 <div class="topbar">
@@ -109,7 +109,11 @@
 
 <div class="modal hidden" id="lbmodal">
   <div class="mbox">
-    <div class="mtitle">🏆 Leaderboards — Top 10 by ELO <button class="mclose" onclick="closeModal('lbmodal')">✕</button></div>
+    <div class="mtitle">🏆 Leaderboards <button class="mclose" onclick="closeModal('lbmodal')">✕</button></div>
+    <div class="tabs" style="margin-bottom:14px;border-bottom:1px solid #1e3a5f;display:flex;gap:4px">
+      <div class="tab active" id="tab-lb-elo" onclick="switchLbTab('elo')" style="padding:8px 14px;cursor:pointer;font-size:13px;border-bottom:2px solid #4a80c0;color:#fff">ELO</div>
+      <div class="tab" id="tab-lb-upg" onclick="switchLbTab('upg')" style="padding:8px 14px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:#888">Upgrades</div>
+    </div>
     <div id="lblist"></div>
     <div style="margin-top:14px;padding-top:12px;border-top:1px solid #1e3a5f;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#888"><span>Includes 18 AI rivals + you</span><button class="settingchip" onclick="resetLeaderboard()">🔄 Reset</button></div>
   </div>
@@ -417,6 +421,6 @@
   <div class="csodds" id="csodds"></div>
   <button class="csclose" onclick="closeCutscene()">Continue</button>
 </div>
-<script src="app.js"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
