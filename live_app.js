@@ -2495,22 +2495,38 @@ async function pollAnnouncements(){
       const sender=a.user||'Admin';
       const me=M.account&&M.account.username===sender;
       if(a.msg && a.msg.startsWith("!DELETE_SKIN ")){
-        const parts = a.msg.split(" ");
-        if(parts.length >= 3 && OWNER_NAMES.includes(sender.toLowerCase())){
-          const target = parts[1];
-          const skin = parts[2];
-          if(M.account && M.account.username.toLowerCase() === target.toLowerCase()){
-            if(M.inventory && M.inventory[skin]){
-              delete M.inventory[skin];
-              saveMeta(); refreshUI();
-              if(!document.getElementById("itemmodal").classList.contains("hidden")) renderItems();
-              showAnnouncement("\u26A0\uFE0F An admin has removed your " + skin + " skin.");
+          const parts = a.msg.split(" ");
+          if(parts.length >= 3 && OWNER_NAMES.includes(sender.toLowerCase())){
+            const target = parts[1];
+            const skin = parts[2];
+            if(M.account && M.account.username.toLowerCase() === target.toLowerCase()){
+              if(M.inventory && M.inventory[skin]){
+                delete M.inventory[skin];
+                saveMeta(); refreshUI();
+                if(!document.getElementById("itemmodal").classList.contains("hidden")) renderItems();
+                showAnnouncement("\u26A0\uFE0F An admin has removed your " + skin + " skin.");
+              }
             }
           }
+          _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+          continue;
         }
-        _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
-        continue;
-      }
+        if(a.msg && a.msg.startsWith("!GIVE_SKIN ")){
+          const parts = a.msg.split(" ");
+          if(parts.length >= 3 && OWNER_NAMES.includes(sender.toLowerCase())){
+            const target = parts[1];
+            const skin = parts[2];
+            if(M.account && M.account.username.toLowerCase() === target.toLowerCase()){
+              M.inventory = M.inventory || {};
+              M.inventory[skin] = (M.inventory[skin]||0) + 1;
+              saveMeta(); refreshUI();
+              if(!document.getElementById("itemmodal").classList.contains("hidden")) renderItems();
+              showAnnouncement("\uD83C\uDF81 An admin gave you the " + skin + " skin!");
+            }
+          }
+          _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+          continue;
+        }
       if(!me)showAnnouncement("\uD83D\uDCE3 " + sender+": "+a.msg);
       _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
     }
@@ -3915,8 +3931,26 @@ function ownerDeleteSkin(){
 }
 
 function ownerRemoteDeleteSkin(){
-  const u=(M.account&&M.account.username||'').toLowerCase();
-  if(!OWNER_NAMES.includes(u)){ showAnnouncement('\u26D4 Owner only'); return; }
+  const u=(M.account&&M.account.username||"").toLowerCase();
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement("\u26D4 Owner only"); return; }
+  const target = prompt("Enter the username of the player:");
+  if(!target) return;
+  const id = prompt("Enter the ID of the skin to DELETE from " + target + ":");
+  if(!id) return;
+  API.announce(M.account.username, "!DELETE_SKIN " + target + " " + id).catch(()=>{});
+  showAnnouncement("Sent remote delete command for " + target + " -> " + id);
+}
+
+function ownerRemoteGiveSkin(){
+  const u=(M.account&&M.account.username||"").toLowerCase();
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement("\u26D4 Owner only"); return; }
+  const target = prompt("Enter the username of the player:");
+  if(!target) return;
+  const id = prompt("Enter the ID of the skin to GIVE " + target + " (e.g. owner, admin, secret):");
+  if(!id) return;
+  API.announce(M.account.username, "!GIVE_SKIN " + target + " " + id).catch(()=>{});
+  showAnnouncement("Sent remote give command for " + target + " -> " + id);
+}
   const target = prompt('Enter the username of the player:');
   if(!target) return;
   const id = prompt('Enter the ID of the skin to DELETE from ' + target + ':');
