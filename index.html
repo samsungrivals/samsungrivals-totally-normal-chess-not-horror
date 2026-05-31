@@ -51,6 +51,11 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 .pchoice{width:72px;height:72px;font-size:46px;background:#1a3060;border:2px solid #2a5080;border-radius:10px;cursor:pointer;display:flex;justify-content:center;align-items:center;transition:background .15s}
 .pchoice:hover{background:#2a4080;border-color:#4a80c0}
 
+/* Logo */
+.logo{display:flex;align-items:center;gap:6px;padding:2px 8px 2px 2px;border-radius:10px;background:linear-gradient(135deg,#1a1f3a,#0d1b3e);border:1px solid #2a5080;flex-shrink:0}
+.logo svg{filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.logotext{font-size:13px;font-weight:900;line-height:1;color:#ffd700;text-shadow:1px 1px 0 #000;letter-spacing:.5px;font-family:Arial Black,Arial,sans-serif}
+
 /* Top bar */
 .topbar{position:fixed;top:0;left:0;right:0;background:#0a0a1e;border-bottom:1px solid #1e3a5f;padding:10px 16px;display:flex;align-items:center;gap:10px;z-index:30;flex-wrap:wrap}
 .spinbtn{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a0a00;border:none;border-radius:10px;padding:10px 28px;font-size:16px;font-weight:bold;cursor:pointer;box-shadow:0 4px 14px rgba(255,140,0,.5);transition:transform .12s}
@@ -367,6 +372,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 
 /* Rarity colors */
 .rar-1{color:#7a5a3a}.rar-2{color:#888}.rar-3{color:#5af}.rar-4{color:#a45af0}.rar-5{color:#ff5af0}.rar-6{color:#ffd700}.rar-7{color:#ff0040;text-shadow:0 0 6px #ff0040}
+.rar-8{color:#00ffea;text-shadow:0 0 6px #00ffea}.rar-9{color:#ff00ff;text-shadow:0 0 8px #ff00ff}.rar-10{color:#00ddff;text-shadow:0 0 8px #00ddff,0 0 14px #0088ff}
 
 /* Settings toggle button */
 .topiconbtn{background:#1a3060;color:#fff;border:1px solid #2a5080;border-radius:8px;padding:8px 12px;font-size:16px;cursor:pointer;line-height:1}
@@ -499,6 +505,22 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 </head>
 <body>
 <div class="topbar">
+  <div class="logo" id="logo" title="Chess RNG">
+    <svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
+      <!-- Roblox-noob-style blocky head -->
+      <rect x="6" y="10" width="26" height="24" rx="4" fill="#f5cd30"/>
+      <rect x="6" y="10" width="26" height="24" rx="4" fill="none" stroke="#caa017" stroke-width="1.5"/>
+      <!-- eyes -->
+      <rect x="12" y="17" width="4" height="6" rx="1" fill="#1a1a1a"/>
+      <rect x="22" y="17" width="4" height="6" rx="1" fill="#1a1a1a"/>
+      <!-- cheeky smile -->
+      <path d="M13 26 q6 6 12 0" stroke="#1a1a1a" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- chess pawn crown on top -->
+      <circle cx="19" cy="6" r="4" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/>
+      <rect x="16" y="8" width="6" height="4" rx="1" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/>
+    </svg>
+    <span class="logotext">CHESS<br>RNG</span>
+  </div>
   <button class="spinbtn" id="spinbtn" onclick="doSpin()">🎰 SPIN</button>
   <button class="tbbtn hidden" id="adminbtn" onclick="openModal('adminmodal')">⚡ Admin</button>
   <div class="money" id="moneydisp">£0</div>
@@ -717,6 +739,18 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
   <div class="mbox">
     <div class="mtitle" id="accttitle">👤 Account <button class="mclose" onclick="closeModal('acctmodal')">✕</button></div>
     <div id="acctview"></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="welcomemodal">
+  <div class="mbox" style="max-width:480px">
+    <div class="mtitle">👋 Welcome to Chess RNG! <button class="mclose" onclick="closeWelcome()">✕</button></div>
+    <div id="welcomebody"></div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px">
+      <button class="settingchip" id="welcomeback" onclick="welcomeStep(-1)">‹ Back</button>
+      <div style="flex:1;text-align:center;color:#7ad3ff;font-size:12px;align-self:center" id="welcomedots"></div>
+      <button class="modebtn mode-vs" style="text-align:center;min-width:90px" id="welcomenext" onclick="welcomeStep(1)">Next ›</button>
+    </div>
   </div>
 </div>
 
@@ -1506,6 +1540,13 @@ function renderItems(){
       const rem=Math.max(0,30-Math.floor((Date.now()-M.currentUpgrade.startTime)/1000));
       if(rem===0){up.textContent='Claim ✓';up.onclick=()=>claimUpgrade()}
       else{up.textContent=`⏳ ${rem}s`;up.disabled=true}
+      // Stop button to cancel the in-progress upgrade (refunds half)
+      const stop=document.createElement('button');stop.className='skinbtn';
+      stop.textContent='✖ Stop';stop.style.background='#5a1f1f';stop.style.borderColor='#aa4444';
+      stop.onclick=()=>stopUpgrade();
+      acts.appendChild(up);acts.appendChild(stop);
+      row.appendChild(acts);el.appendChild(row);
+      continue;
     }else if(M.currentUpgrade){
       up.textContent=`Upg ${fmtMoney(cost)}`;up.disabled=true;
     }else{
@@ -1538,6 +1579,17 @@ function claimUpgrade(){
   M.currentUpgrade=null;
   saveMeta();renderItems();syncLb();
   showAnnouncement(`✨ ${SKINS[sk].name} upgraded to Lvl ${M.upgrades[sk]}!`);
+}
+function stopUpgrade(){
+  if(!M.currentUpgrade)return;
+  const sk=M.currentUpgrade.skin;
+  // Refund half the upgrade cost
+  const refund=Math.floor(upgradeCost(sk)/2);
+  M.money=(Number(M.money)||0)+refund;
+  M.currentUpgrade=null;
+  if(window._upgT){clearInterval(window._upgT);window._upgT=null}
+  saveMeta();refreshUI();renderItems();
+  showAnnouncement('✖ Upgrade stopped — refunded '+fmtMoney(refund));
 }
 
 let autoRollTimer=null;
@@ -2486,23 +2538,25 @@ function buyUpg(u){
 
 // ----- INDEX -----
 function renderIndex(){
+  if(typeof grantVipSkinIfNvp==='function')grantVipSkinIfNvp();
   const grid=document.getElementById('indexgrid');grid.innerHTML='';
-  const all=['poo','gy','rainbow','sixtyseven','nothing','admin','realadmin','secret'];
+  const all=['poo','gy','rainbow','sixtyseven','nothing','admin','realadmin','secret','omega','infinity','royal','vip'];
   let claimable=0;
   for(const sk of all){
+    if(!SKINS[sk])continue;
     const owned=(M.inventory[sk]||0)>0;
     const claimed=M.claimedSkins&&M.claimedSkins[sk];
     const card=document.createElement('div');
     card.className='indexcard'+(owned?' owned':' locked')+(claimed?' claimed':'');
     const prev=document.createElement('div');prev.className='ixprev';
-    if(owned||claimed)applySkinPreview(prev,sk);
-    else applySkinPreview(prev,sk);
+    applySkinPreview(prev,sk);
     card.appendChild(prev);
     const nm=document.createElement('div');nm.className='ixname';
     nm.textContent=owned?SKINS[sk].name:'???';
     card.appendChild(nm);
-    const rar=document.createElement('div');rar.className='ixrar rar-'+(SKIN_RARITY[sk]||1);
-    rar.textContent=owned?RARITY_NAMES[SKIN_RARITY[sk]||1]:'';
+    const tier=SKIN_RARITY[sk]||1;
+    const rar=document.createElement('div');rar.className='ixrar rar-'+tier;
+    rar.textContent=owned?(RARITY_NAMES[tier]||''):'';
     card.appendChild(rar);
     if(owned&&!claimed){claimable++;card.onclick=()=>claimIndex(sk)}
     grid.appendChild(card);
@@ -2525,11 +2579,11 @@ function claimIndex(sk){
 function renderSettings(){
   // Quality
   const qc=document.getElementById('qualityctrl');qc.innerHTML='';
-  const qs=[100,200,300,400,500,600,700,800,900,1000];
-  const curQ=M.quality||600;
+  const qs=['Auto',100,200,300,400,500,600,700,800,900,1000];
+  const curQ=M.quality||'Auto';
   for(const q of qs){
     const b=document.createElement('button');b.className='settingchip'+(curQ===q?' on':'');
-    b.textContent=q;b.onclick=()=>{M.quality=q;saveMeta();applyQuality();renderSettings()};qc.appendChild(b);
+    b.textContent=q==='Auto'?'⚙ Auto':q;b.onclick=()=>{M.quality=q;saveMeta();applyQuality();renderSettings()};qc.appendChild(b);
   }
   // Speed
   const sc=document.getElementById('speedctrl');sc.innerHTML='';
@@ -2572,7 +2626,12 @@ function renderSettings(){
   }
 }
 function applyQuality(){
-  const q=M.quality||600;
+  let q=M.quality||'Auto';
+  if(q==='Auto'){
+    // Pick based on viewport: bigger screens get bigger squares
+    const vw=Math.min(window.innerWidth,window.innerHeight);
+    q=vw<560?300:vw<800?600:vw<1100?800:1000;
+  }
   const px=Math.max(36,Math.min(80,Math.round(q/12.5))); // map 100-1000 to ~44-72
   const board=document.getElementById('board');
   if(board){
@@ -3833,8 +3892,29 @@ pollMatchMoves=async function(){
 // ROYAL skin: purchase-only, not in roll table
 SKINS.royal={name:'ROYAL',odds:null};
 SKIN_COLORS.royal=['linear-gradient(135deg,#ffd700,#ffeb3b,#ff8800)','linear-gradient(135deg,#8b0000,#b71c1c,#ffd700)'];
-SKIN_RARITY.royal=6;
 if(!SKIN_ORDER.includes('royal'))SKIN_ORDER.push('royal');
+
+// VIP skin: only obtainable via NVP++ gamepass
+SKINS.vip={name:'VIP',odds:null};
+SKIN_COLORS.vip=['linear-gradient(135deg,#00ffff,#0088ff,#ffffff)','linear-gradient(135deg,#001a33,#0044aa,#00ffff)'];
+if(!SKIN_ORDER.includes('vip'))SKIN_ORDER.push('vip');
+
+// ----- Special rarity tiers for the index -----
+SKIN_RARITY.omega=8;     // OMEGA rarity
+SKIN_RARITY.infinity=9;  // MEGA ADMIN rarity
+SKIN_RARITY.royal=6;     // Admin (admin only)
+SKIN_RARITY.vip=10;      // NVP++ exclusive
+RARITY_NAMES[8]='OMEGA';
+RARITY_NAMES[9]='MEGA ADMIN';
+RARITY_NAMES[10]='NVP++ ONLY';
+
+// Grant the VIP skin automatically to anyone who owns NVP++
+function grantVipSkinIfNvp(){
+  if(M.gamepasses&&M.gamepasses.nvpPlusPlus){
+    M.inventory=M.inventory||{};
+    if(!(M.inventory.vip>0)){M.inventory.vip=1;saveMeta();}
+  }
+}
 
 const ROYAL_PRICE=100000000; // £1,000,000.00 in pence
 
@@ -4359,6 +4439,38 @@ applyQuality();
 refreshAccountBtn();
 refreshAdminStatus();
 startAutoRoll();
+
+// ============================================================
+// FIRST-VISIT TUTORIAL
+// ============================================================
+const WELCOME_STEPS=[
+  {icon:'♟️',title:'Welcome to Chess RNG!',text:'Play real chess <b>and</b> collect rare board & piece skins. Win games, climb the ELO ladder, and unlock godly rewards.'},
+  {icon:'🎰',title:'SPIN for skins',text:'Hit the <b>🎰 SPIN</b> button (top-left) to roll for skins. Rarer skins = lower odds. Buy <b>Auto Roll</b> (bottom-right) to roll automatically, or press <b>Z</b> to toggle it.'},
+  {icon:'🎒',title:'Items, Shop & Upgrades',text:'Open <b>🎒 Items</b> to equip skins and upgrade them. Visit the <b>🛒 Shop</b> for godly packs and gamepasses, and <b>⚙️ Upgrades</b> for permanent luck & cash boosts.'},
+  {icon:'🌍',title:'Play other people',text:'Use <b>Play vs Computer</b> for bots (including Magnus!), <b>🌍 Find Match</b> to battle a real player live, or <b>👥 Friends</b> to add friends by code and challenge them.'},
+  {icon:'🏆',title:'Climb & collect',text:'Winning raises your ELO and unlocks reward skins. Check the <b>🏆 Leaderboard</b> and the <b>📖 Skin Index</b> to track your collection. Have fun!'}
+];
+let _welcomeIdx=0;
+function showWelcome(){_welcomeIdx=0;renderWelcome();openModal('welcomemodal')}
+function renderWelcome(){
+  const s=WELCOME_STEPS[_welcomeIdx];
+  document.getElementById('welcomebody').innerHTML=
+    '<div style="text-align:center;font-size:56px;margin:8px 0">'+s.icon+'</div>'+
+    '<div style="text-align:center;font-size:20px;font-weight:bold;color:#ffd700;margin-bottom:10px">'+s.title+'</div>'+
+    '<div style="font-size:14px;color:#ccd;line-height:1.6;text-align:center;padding:0 6px">'+s.text+'</div>';
+  document.getElementById('welcomedots').textContent=(_welcomeIdx+1)+' / '+WELCOME_STEPS.length;
+  document.getElementById('welcomeback').style.visibility=_welcomeIdx===0?'hidden':'visible';
+  document.getElementById('welcomenext').textContent=_welcomeIdx===WELCOME_STEPS.length-1?'Play! ✓':'Next ›';
+}
+function welcomeStep(dir){
+  _welcomeIdx+=dir;
+  if(_welcomeIdx>=WELCOME_STEPS.length){closeWelcome();return}
+  if(_welcomeIdx<0)_welcomeIdx=0;
+  renderWelcome();
+}
+function closeWelcome(){closeModal('welcomemodal');M.tutorialSeen=true;saveMeta()}
+// Show on first visit only
+if(!M.tutorialSeen){setTimeout(showWelcome,400)}
 </script>
 </body>
 </html>
