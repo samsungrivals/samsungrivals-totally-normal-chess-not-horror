@@ -28,7 +28,7 @@ function applyRandomColors(){
 
 let G; // game state
 
-function newGame(){ switchChatTab('game'); const gc = document.getElementById('globalchat'); if(gc && gc.style.display === 'none'){gc.style.display='flex'; const ob=document.getElementById('openchatbtn');if(ob)ob.style.display='none';}
+function newGame(){
   if(typeof stopClocks==='function')stopClocks(); // don't auto-run timers (was causing spurious "defeat on time")
   const pal=applyRandomColors();
   G={
@@ -1068,12 +1068,13 @@ const BOTS={
   pro_garry:{name:'Garry Kasparov',elo:2851,depth:2,tier:'pro',emoji:'🔥',desc:'Tactical bulldozer',behavior:'tactical'},
   pro_fabi:{name:'Fabiano Caruana',elo:2820,depth:2,tier:'pro',emoji:'♟️',desc:'Opening preparation king',behavior:'solid'},
   stockfish:{name:'Stockfish 3200',elo:3200,depth:3,tier:'pro',emoji:'🤖',desc:'Maximum strength — depth 3 search (slow, brutal)',behavior:'positional',locked:'stockfishMax'},
-  stockfish_max:{name:'Stockfish 3296',elo:3296,depth:3,tier:'pro',emoji:'🛸',desc:'Engine god — depth 3, never blunders',behavior:'positional',locked:'stockfishMax'}
+  stockfish_max:{name:'Stockfish 3296',elo:3296,depth:3,tier:'pro',emoji:'🛸',desc:'Engine god — depth 3, never blunders',behavior:'positional',locked:'stockfishMax'},
+  stockfish_god:{name:'Stockfish 3400',elo:3400,depth:3,tier:'pro',emoji:'🌌',desc:'Beyond human — depth 3, flawless',behavior:'positional',locked:'stockfishMax'}
 };
 
 function renderBotList(){
   const el=document.getElementById('botlist');el.innerHTML='';
-  const order=['baby','noob','beginner','casual','skilled','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish','stockfish_max'];
+  const order=['baby','noob','beginner','casual','skilled','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish','stockfish_max','stockfish_god'];
   for(const k of order){
     const b=BOTS[k];
     // Locked behind an upgrade?
@@ -1101,6 +1102,7 @@ function startVsComputer(key){
 
 function startGameVsBot(bot){
   newGame();
+  openGameChat();
   G.opponent={type:'ai',name:bot.name,elo:bot.elo,side:'black',depth:bot.depth||1,behavior:bot.behavior||'normal',_eloApplied:false};
   render();
 }
@@ -2957,6 +2959,7 @@ acceptMatch=async function(){
 };
 
 function startMatchPoll(){
+  openGameChat();
   if(_matchPollTimer){clearInterval(_matchPollTimer);_matchPollTimer=null}
   _matchPollTimer=setInterval(pollMatchMoves,1500);
   pollMatchMoves();
@@ -4346,20 +4349,34 @@ function sendGlobalChat() {
 }
 
 window._currentChatTab = 'global';
+function openGameChat() {
+  const gc = document.getElementById('globalchat'); 
+  if(gc && gc.style.display === 'none'){
+      gc.style.display='flex'; 
+      const ob=document.getElementById('openchatbtn');
+      if(ob)ob.style.display='none';
+  }
+  switchChatTab('game');
+}
 function switchChatTab(tab) {
   window._currentChatTab = tab;
-  document.getElementById('tabGlobal').style.background = tab === 'global' ? '#444' : '#333';
-  document.getElementById('tabGlobal').style.color = tab === 'global' ? '#fff' : '#888';
-  document.getElementById('tabGame').style.background = tab === 'game' ? '#444' : '#333';
-  document.getElementById('tabGame').style.color = tab === 'game' ? '#fff' : '#888';
-  document.getElementById('globalchatmessages').style.display = tab === 'global' ? 'block' : 'none';
-  document.getElementById('gamechatmessages').style.display = tab === 'game' ? 'block' : 'none';
-  if(tab === 'game') {
-     const gb = document.getElementById('gamechatmessages');
-     gb.scrollTop = gb.scrollHeight;
-  } else {
-     const gb = document.getElementById('globalchatmessages');
-     gb.scrollTop = gb.scrollHeight;
+  const tg = document.getElementById('tabGlobal');
+  if(!tg) return;
+  tg.style.background = tab === 'global' ? '#444' : '#333';
+  tg.style.color = tab === 'global' ? '#fff' : '#888';
+  const tga = document.getElementById('tabGame');
+  if(tga){
+      tga.style.background = tab === 'game' ? '#444' : '#333';
+      tga.style.color = tab === 'game' ? '#fff' : '#888';
+  }
+  const glo = document.getElementById('globalchatmessages');
+  if(glo) glo.style.display = tab === 'global' ? 'block' : 'none';
+  const gam = document.getElementById('gamechatmessages');
+  if(gam) gam.style.display = tab === 'game' ? 'block' : 'none';
+  if(tab === 'game' && gam) {
+     gam.scrollTop = gam.scrollHeight;
+  } else if (glo) {
+     glo.scrollTop = glo.scrollHeight;
   }
 }
 function sendChatInput() {
@@ -4406,6 +4423,6 @@ window.onunhandledrejection = function(event) {
 function showBugPopup(msg) {
     const d = document.createElement("div");
     d.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#a00;color:#fff;padding:15px;border-radius:8px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.8);max-width:80%;word-wrap:break-word;border:2px solid #f00;font-family:monospace";
-    d.innerHTML = "<b>\u26A0\uFE0F BUG DETECTED</b><br><br>" + msg.replace(/</g,"&lt;") + "<br><br><button onclick=\"this.parentElement.remove()\" style=\"background:#fff;color:#a00;border:none;padding:5px 10px;cursor:pointer;border-radius:4px;font-weight:bold\">Dismiss</button>";
+    d.innerHTML = "<b>\u26A0\uFE0F BUG DETECTED</b><br><br>" + String(msg).replace(/</g,"&lt;") + "<br><br><button onclick=\"this.parentElement.remove()\" style=\"background:#fff;color:#a00;border:none;padding:5px 10px;cursor:pointer;border-radius:4px;font-weight:bold\">Dismiss</button>";
     document.body.appendChild(d);
 }
