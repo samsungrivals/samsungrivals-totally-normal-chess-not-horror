@@ -29,7 +29,7 @@ function applyRandomColors(){
 let G; // game state
 
 function newGame(){
-  if(typeof startClocks==='function')startClocks();
+  if(typeof stopClocks==='function')stopClocks(); // don't auto-run timers (was causing spurious "defeat on time")
   const pal=applyRandomColors();
   G={
     palette:pal,
