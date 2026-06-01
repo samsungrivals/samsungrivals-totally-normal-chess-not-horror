@@ -3853,19 +3853,19 @@ startAutoRoll();
 if(M.mobileMode) document.body.classList.add('mobile-mode');
 
 // ============================================================
-// DO NOTHING BUTTON — counts clicks; 5000 = global MrBeast shoutout
+// DO NOTHING BUTTON — counts clicks; 10000 = global MrBeast shoutout
 // ============================================================
 function doNothingClick(){
   M.doNothingClicks=(Number(M.doNothingClicks)||0)+1;
   saveMeta();
   const n=M.doNothingClicks;
-  if(n%5000===0){
+  if(n%10000===0){
     const who=(M.account&&M.account.username)||'Someone';
     const msg='MrBeast shoutout! '+who+' clicked Do Nothing '+n.toLocaleString()+' times for literally nothing 🫥';
     showAnnouncement('🎉 '+msg);
     if(typeof API!=='undefined'&&M.account){API.announce(who,msg).catch(()=>{})}
   }else{
-    showAnnouncement('🫥 Nothing happened. ('+n.toLocaleString()+' clicks — '+(5000-(n%5000))+' to a MrBeast shoutout)');
+    showAnnouncement('🫥 Nothing happened. ('+n.toLocaleString()+' clicks — '+(10000-(n%10000))+' to a MrBeast shoutout)');
   }
 }
 
