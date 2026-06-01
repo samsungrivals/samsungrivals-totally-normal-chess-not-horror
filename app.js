@@ -1056,6 +1056,7 @@ function computeAIMove(opp){
 
 // ----- BOTS -----
 const BOTS={
+  baby:{name:'Baby Bot',elo:100,depth:0,tier:'noob',emoji:'👶',desc:'Barely knows the rules — totally random',behavior:'random'},
   noob:{name:'Noob Newman',elo:200,depth:0,tier:'noob',emoji:'🤡',desc:'Plays completely random moves',behavior:'random'},
   beginner:{name:'Beginner Bea',elo:400,depth:0,tier:'noob',emoji:'🐣',desc:'Likes grabbing free pieces',behavior:'capture'},
   casual:{name:'Casual Carl',elo:700,depth:1,tier:'cas',emoji:'😎',desc:'Plays solid 1-ply moves',behavior:'normal'},
@@ -1071,7 +1072,7 @@ const BOTS={
 
 function renderBotList(){
   const el=document.getElementById('botlist');el.innerHTML='';
-  const order=['noob','beginner','casual','skilled','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish'];
+  const order=['baby','noob','beginner','casual','skilled','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish'];
   for(const k of order){
     const b=BOTS[k];
     // Locked behind an upgrade?
