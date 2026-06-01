@@ -1081,9 +1081,9 @@ const BOTS={
   stockfish:{name:'Stockfishes',elo:3200,depth:3,tier:'pro',emoji:'🤖',desc:'Maximum strength — depth 3 search (slow, brutal)',behavior:'positional',locked:'stockfishMax'},
   stockfish_max:{name:'Stockfish 3296',elo:3296,depth:3,tier:'pro',emoji:'🛸',desc:'Engine god — depth 3, never blunders',behavior:'positional',locked:'stockfishMax'},
   stockfish_god:{name:'Stockfish 3400',elo:3400,depth:3,tier:'pro',emoji:'👽',desc:'Beyond human - depth 3, flawless',behavior:'positional',locked:'stockfishMax'},
-  stockfish_3600:{name:'Stockfish 3600',elo:3600,depth:4,tier:'pro',emoji:'🌌',desc:'The absolute limit of the engine',behavior:'positional',locked:'stockfishMax'},
-  stockfish_3800:{name:'Stockfish 3800',elo:3800,depth:5,tier:'pro',emoji:'👑',desc:'Chess solved - impossible to defeat',behavior:'positional',locked:'stockfishMax'},
-  stockfish_3999:{name:'Stockfish 3999',elo:3999,depth:6,tier:'pro',emoji:'🔱',desc:'The ultimate AI entity',behavior:'positional',locked:'stockfishMax'}
+  stockfish_3600:{name:'Stockfish 3600',elo:3600,depth:3,tier:'pro',emoji:'🌌',desc:'The absolute limit of the engine',behavior:'positional',locked:'stockfishMax'},
+  stockfish_3800:{name:'Stockfish 3800',elo:3800,depth:3,tier:'pro',emoji:'👑',desc:'Chess solved - impossible to defeat',behavior:'positional',locked:'stockfishMax'},
+  stockfish_3999:{name:'Stockfish 3999',elo:3999,depth:3,tier:'pro',emoji:'🔱',desc:'The ultimate AI entity',behavior:'positional',locked:'stockfishMax'}
 };
 
 function renderBotList(){
