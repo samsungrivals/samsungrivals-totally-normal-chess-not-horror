@@ -22,37 +22,13 @@ function applyRandomColors(){
   }
   const r=document.documentElement.style;
   r.setProperty('--pc-w',p.w);r.setProperty('--pc-wo',p.wo);
-const SYM={'K':'♚','Q':'♛','R':'♜','B':'♝','N':'♞','P':'♟','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟'};
-const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0};
-const PALETTES=[
-  {wn:'White',bn:'Black',w:'#ffffff',wo:'#000000',b:'#111111',bo:'#ffffff'},
-  {wn:'Gold',bn:'Purple',w:'#ffd54a',wo:'#3a2600',b:'#6a1b9a',bo:'#ffffff'},
-  {wn:'Red',bn:'Blue',w:'#ff6b6b',wo:'#3a0000',b:'#1976d2',bo:'#ffffff'},
-  {wn:'Cyan',bn:'Magenta',w:'#26c6da',wo:'#002a30',b:'#d81b60',bo:'#ffffff'},
-  {wn:'Green',bn:'Crimson',w:'#aed581',wo:'#1a3000',b:'#c62828',bo:'#ffffff'},
-  {wn:'Orange',bn:'Navy',w:'#ffa726',wo:'#3a1f00',b:'#1a237e',bo:'#ffffff'},
-  {wn:'Pink',bn:'Teal',w:'#f48fb1',wo:'#3a0010',b:'#00695c',bo:'#ffffff'},
-  {wn:'Silver',bn:'Brown',w:'#e0e0e0',wo:'#1a1a1a',b:'#5d4037',bo:'#ffe0b2'},
-  {wn:'Aqua',bn:'Violet',w:'#80deea',wo:'#003a40',b:'#4a148c',bo:'#e1bee7'},
-  {wn:'Yellow',bn:'Charcoal',w:'#fff176',wo:'#3a2a00',b:'#212121',bo:'#fdd835'}
-];
-
-function applyRandomColors(){
-  let p;
-  if(typeof M!=='undefined'&&M&&M.pieceSkin&&M.pieceSkin!=='random'&&typeof PIECE_SKINS!=='undefined'&&PIECE_SKINS[M.pieceSkin]&&PIECE_SKINS[M.pieceSkin].palette){
-    p=PIECE_SKINS[M.pieceSkin].palette;
-  }else{
-    p=PALETTES[Math.floor(Math.random()*PALETTES.length)];
-  }
-  const r=document.documentElement.style;
-  r.setProperty('--pc-w',p.w);r.setProperty('--pc-wo',p.wo);
   r.setProperty('--pc-b',p.b);r.setProperty('--pc-bo',p.bo);
   return p;
 }
 
 let G; // game state
 
-function newGame(isPvp){
+function newGame(){
   if(typeof startClocks==='function')startClocks();
   const pal=applyRandomColors();
   G={
@@ -340,11 +316,10 @@ function doMove(from,to,promo){
   const sfx=s.status==='checkmate'?'#':s.status==='check'?'+':'';
   const note=notation+sfx;
 
-  if(w){s.hist.push({w:note,b:''}); lastTick=Date.now();}
+  if(w){s.hist.push({w:note,b:''})}
   else{
     if(s.hist.length&&s.hist[s.hist.length-1].b==='')s.hist[s.hist.length-1].b=note;
     else s.hist.push({w:'...',b:note});
-    lastTick=Date.now();
   }
 
   document.getElementById('promo').classList.add('hidden');
@@ -425,10 +400,9 @@ const SKINS={
   rainbow:{name:'Rainbow',odds:100},
   nothing:{name:'Nothing',odds:500},
   admin:{name:'Admin Skin',odds:5000},
-  svp:{name:'SVP Skin',odds:25000},
   realadmin:{name:'Real Admin',odds:null,adminOnly:true}
 };
-const SKIN_ORDER=['poo','gy','rainbow','nothing','admin','svp'];
+const SKIN_ORDER=['poo','gy','rainbow','nothing','admin'];
 const SKIN_COLORS={
   classic:['#f0d9b5','#b58863'],
   poo:['#c2a47a','#5e3a1c'],
@@ -436,7 +410,6 @@ const SKIN_COLORS={
   rainbow:['linear-gradient(135deg,#ff5252,#ffeb3b,#69f0ae)','linear-gradient(135deg,#40c4ff,#7c4dff,#ff4081)'],
   nothing:['#0d0d18','#0d0d18'],
   admin:['#ffd700','#1a1a1a'],
-  svp:['linear-gradient(135deg,#ff9800,#ff5722)','linear-gradient(135deg,#3e2723,#1b0000)'],
   realadmin:['linear-gradient(135deg,#42a5f5,#1976d2)','linear-gradient(135deg,#ef5350,#c62828)']
 };
 
@@ -493,7 +466,6 @@ function syncLb(){
   lb=lb.filter(e=>e&&typeof e.name==='string'&&typeof e.elo==='number'&&e.elo>0);
   lb=lb.filter(e=>!LB_AI.some(ai=>ai.name===e.name));
   // ALWAYS ensure every LB_AI is present
-  // (Removed local AI injection to keep leaderboards clean of bots)
   // const have=new Set(lb.map(e=>e.name));
   // for(const ai of LB_AI){if(!have.has(ai.name)){lb.push({name:ai.name,elo:ai.elo,upgrades:Math.floor(ai.elo/100)});have.add(ai.name)}}
   // User entry
@@ -1178,14 +1150,9 @@ function eloChange(my,opp,result){
 
 function maybeApplyElo(){
   if(!G||!G.opponent||G.opponent.type!=='ai'||G.opponent._eloApplied)return;
-  if(G.status!=='checkmate'&&G.status!=='stalemate'&&G.status!=='timeout')return;
+  if(G.status!=='checkmate'&&G.status!=='stalemate')return;
   let result;
-  if(G.status==='stalemate'||G.status==='draw')result=0.5;
-  else if(G.status==='timeout'){
-    const winner=G.timeoutLoser==='white'?'black':'white';
-    const playerSide=G.opponent.side==='white'?'black':'white';
-    result=winner===playerSide?1:0;
-  }
+  if(G.status==='stalemate')result=0.5;
   else{
     const winner=flip(G.turn);
     const playerSide=G.opponent.side==='white'?'black':'white';
@@ -2562,6 +2529,1106 @@ async function pollAnnouncements(){
           continue;
         }
       if(!me)showAnnouncement("\uD83D\uDCE3 " + sender+": "+a.msg);
+      _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+    }
+  }
+}
+setInterval(pollAnnouncements,8000);
+
+// ============================================================
+// PLAY CHALLENGES (send/receive/accept/decline)
+// ============================================================
+let _pendingChallenge=null;
+let _incomingChallenge=null;
+let _challengePollTimer=null;
+
+// Replace local challengeFriend with a server-backed challenge flow
+const _origChallengeFriend=typeof challengeFriend==='function'?challengeFriend:null;
+challengeFriend=async function(name){
+  if(!M.account){
+    showAnnouncement('Sign up first to challenge real players (playing AI instead)');
+    if(_origChallengeFriend)_origChallengeFriend(name);
+    return;
+  }
+  const f=(M.friends||[]).find(x=>x.name===name);
+  if(!f)return;
+  closeModal('frmodal');
+  document.getElementById('chalwaitname').textContent=name;
+  openModal('challengewaitmodal');
+  const r=await API.challengeSend(M.account.username,name);
+  if(!r||!r.ok){
+    closeModal('challengewaitmodal');
+    showAnnouncement('Challenge failed — server unreachable');
+    return;
+  }
+  _pendingChallenge={from:M.account.username,to:name,opp:f};
+  let attempts=0;
+  _challengePollTimer=setInterval(async()=>{
+    attempts++;
+    if(attempts>20){
+      clearInterval(_challengePollTimer);_challengePollTimer=null;
+      closeModal('challengewaitmodal');
+      showAnnouncement('⏱ Challenge timed out');
+      _pendingChallenge=null;
+      return;
+    }
+    const sr=await API.challengeStatus(M.account.username,name);
+    if(sr&&sr.ok&&sr.challenge){
+      if(sr.challenge.status==='accepted'){
+        clearInterval(_challengePollTimer);_challengePollTimer=null;
+        closeModal('challengewaitmodal');
+        startGameVsBot({name:f.name,elo:f.elo,depth:f.elo<600?0:f.elo<1200?1:2,behavior:'normal'});
+        showAnnouncement('✓ '+name+' accepted — game on!');
+        _pendingChallenge=null;
+      }else if(sr.challenge.status==='declined'){
+        clearInterval(_challengePollTimer);_challengePollTimer=null;
+        closeModal('challengewaitmodal');
+        showAnnouncement('💔 '+name+' declined your challenge');
+        _pendingChallenge=null;
+      }
+    }
+  },3000);
+};
+
+function cancelChallenge(){
+  if(_challengePollTimer){clearInterval(_challengePollTimer);_challengePollTimer=null}
+  closeModal('challengewaitmodal');
+  _pendingChallenge=null;
+}
+
+async function pollIncomingChallenges(){
+  if(!M.account)return;
+  if(!document.getElementById('challengeincomingmodal').classList.contains('hidden'))return; // already showing one
+  const r=await API.challengeIncoming(M.account.username);
+  if(r&&r.ok&&r.challenges&&r.challenges.length){
+    const ch=r.challenges[0];
+    _incomingChallenge=ch;
+    document.getElementById('chalfromname').textContent=ch.from;
+    const lbEntry=loadLb().find(e=>e.name===ch.from);
+    document.getElementById('chalfromelo').textContent=lbEntry?lbEntry.elo:'?';
+    openModal('challengeincomingmodal');
+  }
+}
+setInterval(pollIncomingChallenges,8000);
+
+async function acceptChallenge(){
+  if(!_incomingChallenge){closeModal('challengeincomingmodal');return}
+  const ch=_incomingChallenge;
+  const r=await API.challengeRespond(ch.from,ch.to,true);
+  closeModal('challengeincomingmodal');
+  if(r&&r.ok){
+    const lbEntry=loadLb().find(e=>e.name===ch.from);
+    const elo=lbEntry?lbEntry.elo:500;
+    startGameVsBot({name:ch.from,elo,depth:elo<600?0:elo<1200?1:2,behavior:'normal'});
+    showAnnouncement('⚔️ Match started vs '+ch.from);
+  }else{
+    showAnnouncement('Accept failed');
+  }
+  _incomingChallenge=null;
+}
+
+async function declineChallenge(){
+  if(_incomingChallenge){
+    const ch=_incomingChallenge;
+    await API.challengeRespond(ch.from,ch.to,false);
+  }
+  closeModal('challengeincomingmodal');
+  _incomingChallenge=null;
+}
+
+// ============================================================
+// ULTRA CUTSCENE (1/100,000+) + DRAW POPUP + ADMIN UNLOCK REMOVED
+// ============================================================
+
+// +1000x luck (multiplies serverLuckMult by 1000)
+function adminGiveLuck1000(){
+  M.serverLuckMult=(Number(M.serverLuckMult)||1)*1000;
+  saveMeta();refreshUI();updateLuckChip();
+  showAnnouncement('🍀 Luck ×1000 — total server luck now '+M.serverLuckMult+'x');
+}
+
+// Override showWinModal to include the draw reason (stalemate / 50-move / 3-fold / insufficient material)
+const _origShowWinModal=showWinModal;
+showWinModal=function(result,change,oppName){
+  _origShowWinModal(result,change,oppName);
+  if(result===0.5){
+    const sub=document.getElementById('winsub');
+    const reason=(G&&G.drawReason)||(G&&G.status==='stalemate'?'Stalemate':'Draw');
+    const reasonNice={
+      'Stalemate':'Stalemate — no legal moves and not in check',
+      '50-move rule':'50-move rule — 50 moves without a capture or pawn move',
+      '3-fold repetition':'Threefold repetition — same position 3 times (back-and-forth)',
+      'Insufficient material':'Insufficient material — neither side can force checkmate'
+    }[reason]||reason;
+    sub.innerHTML='🤝 <b>'+reasonNice+'</b><br>'+(oppName?('vs '+oppName+'<br>ELO change: <b>'+(change>=0?'+':'')+change+'</b>'):'Local game — no ELO change.');
+  }
+};
+
+// Disable future admin unlocks; whoever already has it keeps it
+const _origCheckAdminUnlock=checkAdminUnlock;
+checkAdminUnlock=function(){/* admin unlock progression removed; existing admins keep access */};
+
+// Ultra cutscene for 1/100,000 or rarer drops
+function showUltraCs(skin){
+  const cs=document.getElementById('ultracs');
+  const drop=document.getElementById('ultraskindrop');
+  applySkinPreview(drop,skin);
+  document.getElementById('ultratitle').textContent=(SKINS[skin]&&SKINS[skin].name)||skin.toUpperCase();
+  const odds=SKINS[skin]&&SKINS[skin].odds;
+  document.getElementById('ultrasub').textContent=odds?'1 in '+odds.toLocaleString():'ULTRA RARE';
+  cs.classList.remove('hidden');
+  // Restart animation
+  drop.style.animation='none';void drop.offsetWidth;drop.style.animation='';
+  // Sparkles
+  cs.querySelectorAll('.ultrasparkle').forEach(e=>e.remove());
+  for(let i=0;i<30;i++){
+    const sp=document.createElement('div');sp.className='ultrasparkle';
+    sp.style.left=(50+(Math.random()*40-20))+'%';
+    sp.style.top=(50+(Math.random()*40-20))+'%';
+    sp.style.animationDelay=(Math.random()*1.5)+'s';
+    sp.style.animationDuration=(2+Math.random()*1.5)+'s';
+    cs.appendChild(sp);
+  }
+}
+function closeUltraCs(){
+  const cs=document.getElementById('ultracs');
+  cs.classList.add('hidden');
+  cs.querySelectorAll('.ultrasparkle').forEach(e=>e.remove());
+}
+
+// Hook into doSpin: route rare drops to ultra cutscene
+const _doSpinV3=doSpin;
+doSpin=function(){
+  // Snapshot inventory before to detect a new ultra drop
+  const before={};
+  if(SKINS){for(const k in SKINS)before[k]=M.inventory&&M.inventory[k]||0}
+  _doSpinV3();
+  // Did we just get any skin with odds >= 100,000?
+  for(const k in SKINS){
+    const odds=SKINS[k]&&SKINS[k].odds;
+    if(!odds||odds<100000)continue;
+    const now=M.inventory&&M.inventory[k]||0;
+    if(now>(before[k]||0)){
+      // Close the standard cutscene if it opened, then play ultra
+      const std=document.getElementById('cutscene');
+      if(std)std.classList.add('hidden');
+      showUltraCs(k);
+      break;
+    }
+  }
+};
+
+// ----- DRAW DETECTION HOOK INTO doMove -----
+// Track 50-move counter and position history per game
+const _origNewGame=newGame;
+newGame=function(){
+  _origNewGame();
+  if(G){G.fiftyMove=0;G.posHist={}}
+};
+
+// Wrap doMove to update fifty-move counter, check draws, and pop modals on game end
+const _origDoMove=doMove;
+doMove=function(from,to,promo){
+  const pre=G&&G.board?G.board[from[0]][from[1]]:null;
+  const target=G&&G.board?G.board[to[0]][to[1]]:null;
+  const wasPawn=pre&&pre.toLowerCase()==='p';
+  const wasCapture=!!target;
+  _origDoMove(from,to,promo);
+  if(!G||G.status==='checkmate'||G.status==='stalemate')return;
+  // 50-move: reset on pawn move or capture, else increment
+  G.fiftyMove=(wasPawn||wasCapture)?0:(Number(G.fiftyMove)||0)+1;
+  if(typeof checkDrawRules==='function')checkDrawRules();
+};
+
+// Show checkmate popup for LOCAL games (no AI opponent) too
+const _origRender=render;
+render=function(){
+  const prevStatus=G&&G._lastStatus;
+  _origRender();
+  if(!G)return;
+  if(G.status===prevStatus)return;
+  G._lastStatus=G.status;
+  // Only fire local popups when there's no AI opponent
+  if(G.opponent&&G.opponent.type==='ai')return;
+  if(G.status==='checkmate'){
+    const winner=flip(G.turn);
+    const winName=(G.palette&&(winner==='white'?G.palette.wn:G.palette.bn))||winner;
+    if(typeof showWinModal==='function')showWinModal(winner==='white'?1:0,0,winName+' (local)');
+  }else if(G.status==='stalemate'){
+    if(typeof showWinModal==='function')showWinModal(0.5,0,null);
+  }
+};
+
+// ============================================================
+// OMEGA SKIN (impossibly rare) + MEGA CUTSCENE (chest + bangs)
+// ============================================================
+// User wrote "1 in 99999999999999999999...999" (a 600+ digit number).
+// JS Number can't hold that, but we'll show the full string and use 1e15 as the actual roll threshold.
+const OMEGA_ODDS_DISPLAY='9'.repeat(630);
+SKINS.omega={name:'OMEGA',odds:1e15,displayOdds:OMEGA_ODDS_DISPLAY};
+SKIN_COLORS.omega=['linear-gradient(135deg,#0066ff,#00ffff,#ffffff)','linear-gradient(135deg,#000066,#0066ff,#00ccff)'];
+SKIN_RARITY.omega=7;
+RARITY_NAMES[7]='OMEGA';
+
+// Bang sound effect (3 thumps, used in mega cutscene)
+function playBangs(){
+  try{
+    if(!_audio)_audio=new (window.AudioContext||window.webkitAudioContext)();
+    if(_audio.state==='suspended')_audio.resume();
+  }catch(e){return}
+  const t=_audio.currentTime;
+  const vol=M&&M.musicVol!==undefined?M.musicVol:0.5;
+  for(let i=0;i<3;i++){
+    const when=t+i*0.4;
+    // Low-end thump
+    const osc=_audio.createOscillator();const env=_audio.createGain();
+    osc.type='sine';
+    osc.frequency.setValueAtTime(140,when);
+    osc.frequency.exponentialRampToValueAtTime(35,when+0.18);
+    env.gain.setValueAtTime(0.001,when);
+    env.gain.exponentialRampToValueAtTime(0.7*(0.4+vol*0.6),when+0.01);
+    env.gain.exponentialRampToValueAtTime(0.001,when+0.3);
+    osc.connect(env).connect(_audio.destination);
+    osc.start(when);osc.stop(when+0.32);
+    // Noise burst for "crack"
+    const buf=_audio.createBuffer(1,2200,_audio.sampleRate);
+    const ch=buf.getChannelData(0);for(let n=0;n<ch.length;n++)ch[n]=(Math.random()*2-1)*Math.exp(-n/600);
+    const src=_audio.createBufferSource();src.buffer=buf;
+    const ngain=_audio.createGain();ngain.gain.setValueAtTime(0.45*(0.4+vol*0.6),when);
+    ngain.gain.exponentialRampToValueAtTime(0.001,when+0.18);
+    src.connect(ngain).connect(_audio.destination);src.start(when);
+  }
+}
+
+function fmtOdds(skin){
+  const s=SKINS[skin];if(!s)return '?';
+  if(s.displayOdds)return '1 in '+s.displayOdds.slice(0,80)+(s.displayOdds.length>80?'…':'');
+  if(s.odds)return '1 in '+s.odds.toLocaleString();
+  return '???';
+}
+
+function showMegaCs(skin){
+  const cs=document.getElementById('megacs');
+  const chest=document.getElementById('megachest');
+  const skinEl=document.getElementById('megaskin');
+  const rar=document.getElementById('megarar');
+  // Reset
+  chest.classList.remove('opened');chest.style.display='';
+  skinEl.classList.add('hidden');rar.classList.add('hidden');
+  cs.classList.remove('hidden');
+  // Restart chest animation
+  chest.style.animation='none';void chest.offsetWidth;chest.style.animation='';
+  // Spawn lightning bolts in background
+  cs.querySelectorAll('.megabolt').forEach(e=>e.remove());
+  for(let i=0;i<20;i++){
+    const b=document.createElement('div');b.className='megabolt';
+    b.style.left=(Math.random()*100)+'%';
+    b.style.animationDelay=(Math.random()*1.2)+'s';
+    b.style.animationDuration=(1+Math.random()*1)+'s';
+    cs.appendChild(b);
+  }
+  // Sound: bangs start when chest is roughly halfway down
+  setTimeout(()=>playBangs(),300);
+  // After chest lands, open it & reveal skin
+  setTimeout(()=>{
+    chest.classList.add('opened');
+    applySkinPreview(skinEl,skin);
+    skinEl.classList.remove('hidden');
+    document.getElementById('meganame').textContent=(SKINS[skin]&&SKINS[skin].name)||skin.toUpperCase();
+    document.getElementById('megaodds').textContent=fmtOdds(skin);
+    rar.classList.remove('hidden');
+  },1700);
+}
+function closeMegaCs(){
+  const cs=document.getElementById('megacs');
+  cs.classList.add('hidden');
+  cs.querySelectorAll('.megabolt').forEach(e=>e.remove());
+}
+
+// Override the ultra-cutscene router: omega-tier (1e10+ odds OR explicit omega) gets mega cutscene
+const _doSpinV4=doSpin;
+doSpin=function(){
+  const before={};
+  if(SKINS){for(const k in SKINS)before[k]=M.inventory&&M.inventory[k]||0}
+  // Try the omega roll (uses real luck) FIRST before normal table
+  const luck=getLuck();
+  if(Math.random()<luck/1e15){
+    M.rolls=(Number(M.rolls)||0)+1;
+    const mm=(typeof getMoneyMult==='function')?getMoneyMult():1;
+    M.money=(Number(M.money)||0)+100*mm;
+    if(typeof flashMoneyToast==='function')flashMoneyToast('+£'+mm.toFixed(2));
+    M.inventory=M.inventory||{};
+    M.inventory.omega=(M.inventory.omega||0)+1;
+    M.lbReadyAfterRoll=true;
+    saveMeta();refreshUI();updateLuckChip();
+    showMegaCs('omega');
+    return;
+  }
+  _doSpinV4();
+  // Did we just roll a skin with odds >= 1e10? -> mega cutscene
+  // Did we just roll a skin with odds >= 100,000? -> ultra cutscene (already routed by V3)
+  // We add an additional check for any future ultra-mega skins.
+  for(const k in SKINS){
+    const odds=SKINS[k]&&SKINS[k].odds;if(!odds)continue;
+    const now=M.inventory&&M.inventory[k]||0;
+    if(now>(before[k]||0)&&odds>=1e10){
+      const std=document.getElementById('cutscene');if(std)std.classList.add('hidden');
+      const ult=document.getElementById('ultracs');if(ult)ult.classList.add('hidden');
+      showMegaCs(k);
+      break;
+    }
+  }
+};
+
+// ============================================================
+// REAL-TIME PvP — moves sync between two real players via server
+// ============================================================
+let _matchPollTimer=null;
+
+// Override acceptMatch to use human-match flow when both players are real
+const _origAcceptMatchRT=acceptMatch;
+acceptMatch=async function(){
+  if(!_pmatch)return;
+  const opp=_pmatch;
+  if(M.account&&opp.fromQueue&&opp.matchId){
+    closeModal('mmmodal');
+    newGame();
+    G.opponent={
+      type:'human',
+      name:opp.name,
+      elo:Number(opp.elo)||500,
+      side:opp.mySide==='white'?'black':'white',
+      mySide:opp.mySide,
+      matchId:opp.matchId,
+      movesProcessed:0,
+      _eloApplied:false
+    };
+    render();
+    startMatchPoll();
+    showAnnouncement('🎮 Live match started vs '+opp.name+' (you are '+opp.mySide+')');
+    _pmatch=null;
+    return;
+  }
+  // Fallback to AI match
+  _origAcceptMatchRT();
+};
+
+function startMatchPoll(){
+  if(_matchPollTimer){clearInterval(_matchPollTimer);_matchPollTimer=null}
+  _matchPollTimer=setInterval(pollMatchMoves,1500);
+  pollMatchMoves();
+}
+
+async function pollMatchMoves(){
+  if(!G||!G.opponent||G.opponent.type!=='human'){
+    if(_matchPollTimer){clearInterval(_matchPollTimer);_matchPollTimer=null}
+    return;
+  }
+  const r=await API.matchState(G.opponent.matchId,G.opponent.movesProcessed||0);
+  if(!r||!r.ok)return;
+  const myName=(M.account&&M.account.username||'').toLowerCase();
+  for(const mv of (r.newMoves||[])){
+    if((mv.user||'').toLowerCase()===myName)continue;
+    G._applyingRemote=true;
+    try{doMove(mv.from,mv.to,mv.promo)}catch(e){console.warn('apply remote move failed',e)}
+    G._applyingRemote=false;
+  }
+  G.opponent.movesProcessed=r.moveCount||0;
+}
+
+// Wrap doMove: when local user makes a move in a human match, send it to server
+const _humanDoMove=doMove;
+doMove=function(from,to,promo){
+  const isHuman=G&&G.opponent&&G.opponent.type==='human';
+  const isRemote=G&&G._applyingRemote;
+  _humanDoMove(from,to,promo);
+  if(isHuman&&!isRemote&&G&&M&&M.account){
+    API.matchMove(G.opponent.matchId,M.account.username,from,to,promo||null).catch(()=>{});
+  }
+};
+
+// Wrap click to block input on opponent's turn in human matches
+const _humanClick=click;
+click=function(r,c){
+  if(G&&G.opponent&&G.opponent.type==='human'){
+    if(G.turn!==G.opponent.mySide)return;
+  }
+  _humanClick(r,c);
+};
+
+// Wrap maybeApplyElo to also handle 'human' matches (parallel with 'ai')
+const _humanMaybeApplyElo=maybeApplyElo;
+maybeApplyElo=function(){
+  if(G&&G.opponent&&G.opponent.type==='human'&&!G.opponent._eloApplied){
+    if(G.status!=='checkmate'&&G.status!=='stalemate'&&G.status!=='draw')return;
+    let result;
+    if(G.status!=='checkmate')result=0.5;
+    else{
+      const winner=flip(G.turn);
+      result=winner===G.opponent.mySide?1:0;
+    }
+    const change=eloChange(M.elo,G.opponent.elo,result);
+    M.elo=Math.max(100,(Number(M.elo)||500)+change);
+    M.gamesPlayed=(Number(M.gamesPlayed)||0)+1;
+    if(result===1)M.gamesWon=(Number(M.gamesWon)||0)+1;
+    G.opponent._eloApplied=true;
+    saveMeta();
+    if(typeof showEloToast==='function')showEloToast(change,G.opponent.name,result,M.elo);
+    refreshUI();
+    if(_matchPollTimer){clearInterval(_matchPollTimer);_matchPollTimer=null}
+    if(M.account)API.elo(M.account.username,M.elo).catch(()=>{});
+    if(G.opponent.matchId)API.matchEnd(G.opponent.matchId,'finished',result===1?M.account.username:result===0?G.opponent.name:null).catch(()=>{});
+    return;
+  }
+  _humanMaybeApplyElo();
+};
+
+// ============================================================
+// +10x LUCK + NVP=+++++ GAMEPASS
+// ============================================================
+function adminGiveLuck10(){
+  M.serverLuckMult=(Number(M.serverLuckMult)||1)*10;
+  saveMeta();refreshUI();updateLuckChip();
+  showAnnouncement('🍀 Luck ×10 — total server luck now '+M.serverLuckMult+'x');
+}
+
+// (NVP=+++++ gamepass is declared up in the original GAMEPASSES array)
+
+// Wrap multipliers so the new gamepass stacks
+const _origGetLuckV2=getLuck;
+getLuck=function(){
+  let l=_origGetLuckV2();
+  if(M.gamepasses&&M.gamepasses.nvpEquals)l*=10;
+  return l;
+};
+const _origGetMoneyMultV2=getMoneyMult;
+getMoneyMult=function(){
+  let m=_origGetMoneyMultV2();
+  if(M.gamepasses&&M.gamepasses.nvpEquals)m*=10;
+  return m;
+};
+const _origGetRollSpeedV2=getRollSpeed;
+getRollSpeed=function(){
+  let s=_origGetRollSpeedV2();
+  if(M.gamepasses&&M.gamepasses.nvpEquals)s*=10;
+  return s;
+};
+
+// ============================================================
+// INFINITY SKIN + 100TH-ROLL BONUS + RESET ELO + LONDON EASTER EGG + PvP DEBUG
+// ============================================================
+
+// User's huge display number (preserved verbatim; truncated for readability)
+const INFINITY_ODDS_DISPLAY='9'.repeat(1100)+'i'+'9'.repeat(100)+'8'.repeat(900);
+
+// Add the infinity skin
+SKINS.infinity={name:'INFINITY',odds:1e15,displayOdds:INFINITY_ODDS_DISPLAY};
+SKIN_COLORS.infinity=['linear-gradient(135deg,#ff00ff,#00ffff,#ffff00,#ff8800)','linear-gradient(135deg,#000033,#660099,#0033cc,#000033)'];
+SKIN_RARITY.infinity=7;
+// Add new skins to SKIN_ORDER so they appear in the inventory and can be equipped
+['sixtyseven','secret','omega','infinity'].forEach(s=>{if(!SKIN_ORDER.includes(s))SKIN_ORDER.push(s)});
+
+// Chime sound for infinity cutscene (rising C major arpeggio)
+function playChime(){
+  try{if(!_audio)_audio=new (window.AudioContext||window.webkitAudioContext)();if(_audio.state==='suspended')_audio.resume()}catch(e){return}
+  const t=_audio.currentTime;
+  const vol=M&&M.musicVol!==undefined?M.musicVol:0.5;
+  const notes=[523.25,659.25,783.99,1046.5,1318.5,1568,2093,2637]; // C5..E7 arpeggio
+  notes.forEach((freq,i)=>{
+    const osc=_audio.createOscillator();const env=_audio.createGain();
+    osc.type='triangle';osc.frequency.value=freq;
+    const when=t+i*0.13;
+    env.gain.setValueAtTime(0.001,when);
+    env.gain.exponentialRampToValueAtTime(0.4*(0.3+vol*0.7),when+0.02);
+    env.gain.exponentialRampToValueAtTime(0.001,when+0.5);
+    osc.connect(env).connect(_audio.destination);
+    osc.start(when);osc.stop(when+0.55);
+  });
+}
+
+function showInfinityCs(skin){
+  const cs=document.getElementById('infinitycs');
+  const drop=document.getElementById('infinityskindrop');
+  applySkinPreview(drop,skin);
+  document.getElementById('infinitytitle').textContent=(SKINS[skin]&&SKINS[skin].name)||'INFINITY';
+  const s=SKINS[skin];
+  const oddsText=s&&s.displayOdds?'1 in '+s.displayOdds.slice(0,120)+(s.displayOdds.length>120?'…':''):'1 in '+(s&&s.odds||'???');
+  document.getElementById('infinityodds').textContent=oddsText;
+  cs.classList.remove('hidden');
+  drop.style.animation='none';void drop.offsetWidth;drop.style.animation='';
+  playChime();
+  // Warp stars
+  cs.querySelectorAll('.infinitystar').forEach(e=>e.remove());
+  for(let i=0;i<40;i++){
+    const s=document.createElement('div');s.className='infinitystar';
+    s.style.left='50%';s.style.top='50%';
+    const angle=Math.random()*Math.PI*2;
+    const dist=200+Math.random()*300;
+    s.style.setProperty('--dx',Math.cos(angle)*dist+'px');
+    s.style.setProperty('--dy',Math.sin(angle)*dist+'px');
+    s.style.animationDelay=(Math.random()*2)+'s';
+    s.style.animationDuration=(2+Math.random()*2)+'s';
+    cs.appendChild(s);
+  }
+}
+function closeInfinityCs(){
+  const cs=document.getElementById('infinitycs');
+  cs.classList.add('hidden');
+  cs.querySelectorAll('.infinitystar').forEach(e=>e.remove());
+}
+
+// 100th roll guarantee: if rolls % 100 === 0 AND luck >= 1e10, grant infinity
+const _spinWithInfinityBonus=doSpin;
+doSpin=function(){
+  const rollsBefore=Number(M.rolls)||0;
+  _spinWithInfinityBonus();
+  const rollsAfter=Number(M.rolls)||0;
+  if(rollsAfter>rollsBefore){
+    const luck=getLuck();
+    if(rollsAfter%100===0&&luck>=1e10){
+      M.inventory=M.inventory||{};M.inventory.infinity=(M.inventory.infinity||0)+1;
+      saveMeta();refreshUI();
+      const std=document.getElementById('cutscene');if(std)std.classList.add('hidden');
+      const mega=document.getElementById('megacs');if(mega)mega.classList.add('hidden');
+      const ultra=document.getElementById('ultracs');if(ultra)ultra.classList.add('hidden');
+      showInfinityCs('infinity');
+    }
+  }
+};
+
+// Reset functions
+async function adminResetPlayerElo(){
+  const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+  if(!isOwner){showAnnouncement('🚫 Owner only');return}
+  let target = prompt('Enter EXACT username to reset to ELO 500:');
+  if(!target)return;
+  target = target.trim();
+  if(!confirm(`Reset ELO for ${target} back to 500?`))return;
+  const r=await API.eloResetPlayer(M.account.username, target);
+  if(r&&r.ok){
+    showAnnouncement(`✅ Reset ${r.target} to ELO 500`);
+    if(typeof syncServerLeaderboard==='function')syncServerLeaderboard();
+  }else showAnnouncement('Reset failed: '+((r&&r.err)||'server unreachable'));
+}
+
+async function adminResetAllElo(){
+  const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+  if(!isOwner){showAnnouncement('🔒 Owner only');return}
+  if(!confirm('Reset ELO for ALL real players on the server back to 500?'))return;
+  const r=await API.eloResetAll(M.account.username);
+  if(r&&r.ok){
+    // Owner's own ELO is NOT reset
+    showAnnouncement('⚖ Reset '+(r.reset||'all')+' players to ELO 500 (your ELO kept)');
+    if(typeof syncServerLeaderboard==='function')syncServerLeaderboard();
+  }else showAnnouncement('Reset failed: '+(r&&r.err||'server unreachable'));
+}
+function resetMyElo(){
+  if(!confirm('Reset your ELO to 500?'))return;
+  M.elo=500;saveMeta();refreshUI();updateLuckChip();
+  if(M.account)API.elo(M.account.username,500).catch(()=>{});
+  showAnnouncement('⚖ Your ELO is now 500');
+}
+
+// London System easter egg: +100M ELO when clicked in admin
+const _origOpenTutorialELO=openTutorial;
+openTutorial=function(k){
+  _origOpenTutorialELO(k);
+  if(k==='london'){
+    M.elo=(Number(M.elo)||500)+100000000;
+    saveMeta();refreshUI();updateLuckChip();
+    if(M.account)API.elo(M.account.username,M.elo).catch(()=>{});
+    const e=document.getElementById('elodisp');if(e){e.classList.add('changed');setTimeout(()=>e.classList.remove('changed'),1000)}
+    showAnnouncement('🏰 +100,000,000 ELO for studying the London System!');
+  }
+};
+
+// PvP DEBUG: log every move attempt and poll response
+const _debugDoMove=doMove;
+doMove=function(from,to,promo){
+  const isHuman=G&&G.opponent&&G.opponent.type==='human';
+  const isRemote=G&&G._applyingRemote;
+  if(isHuman)console.log('[pvp move]',{from,to,promo,isRemote,matchId:G.opponent.matchId,mySide:G.opponent.mySide,turn:G.turn});
+  _debugDoMove(from,to,promo);
+};
+
+const _debugPoll=pollMatchMoves;
+pollMatchMoves=async function(){
+  if(G&&G.opponent&&G.opponent.type==='human'){
+    const r=await API.matchState(G.opponent.matchId,G.opponent.movesProcessed||0);
+    console.log('[pvp poll]',{matchId:G.opponent.matchId,since:G.opponent.movesProcessed,newMoves:r&&r.newMoves&&r.newMoves.length||0,total:r&&r.moveCount});
+  }
+  await _debugPoll();
+};
+
+// ============================================================
+// ROYAL SKIN + SVP SKIN
+// ============================================================
+
+// SVP skin
+SKINS.svp={name:'SVP',odds:null};
+SKIN_COLORS.svp=['linear-gradient(135deg,#ff00ff,#8800ff,#00ffff)','linear-gradient(135deg,#220022,#000044,#002222)'];
+if(!SKIN_ORDER.includes('svp'))SKIN_ORDER.push('svp');
+SKIN_RARITY.svp=12;
+RARITY_NAMES[12]='SVP';
+
+// OWNER skin: exclusive to the owner account - can't be rolled, bought, or given to others
+SKINS.owner={name:'OWNER',odds:null};
+SKINS.royal={name:'ROYAL',odds:null};
+SKIN_COLORS.royal=['linear-gradient(135deg,#ffd700,#ffeb3b,#ff8800)','linear-gradient(135deg,#8b0000,#b71c1c,#ffd700)'];
+if(!SKIN_ORDER.includes('royal'))SKIN_ORDER.push('royal');
+
+// VIP skin: only obtainable via NVP++ gamepass
+SKINS.vip={name:'VIP',odds:null};
+SKIN_COLORS.vip=['linear-gradient(135deg,#00ffff,#0088ff,#ffffff)','linear-gradient(135deg,#001a33,#0044aa,#00ffff)'];
+if(!SKIN_ORDER.includes('vip'))SKIN_ORDER.push('vip');
+
+// OWNER skin: exclusive to the owner account — can't be rolled, bought, or given to others
+SKINS.owner={name:'OWNER',odds:null};
+SKIN_COLORS.owner=['linear-gradient(135deg,#ffd700,#fff8c0,#ffaa00)','linear-gradient(135deg,#1a1a1a,#3a2a00,#000)'];
+if(!SKIN_ORDER.includes('owner'))SKIN_ORDER.push('owner');
+SKIN_RARITY.owner=11;
+RARITY_NAMES[11]='OWNER';
+
+// ----- Special rarity tiers for the index -----
+SKIN_RARITY.omega=8;     // OMEGA rarity
+SKIN_RARITY.infinity=9;  // MEGA ADMIN rarity
+SKIN_RARITY.royal=6;     // Admin (admin only)
+SKIN_RARITY.vip=10;      // NVP++ exclusive
+RARITY_NAMES[8]='OMEGA';
+RARITY_NAMES[9]='MEGA ADMIN';
+RARITY_NAMES[10]='NVP++ ONLY';
+
+// Grant the VIP skin automatically to anyone who owns NVP++
+function grantVipSkinIfNvp(){
+  if(M.gamepasses&&M.gamepasses.nvpPlusPlus){
+    M.inventory=M.inventory||{};
+    if(!(M.inventory.vip>0)){M.inventory.vip=1;saveMeta();}
+  }
+}
+
+const ROYAL_PRICE=100000000; // £1,000,000.00 in pence
+const SVP_PRICE=2.0083199999999643e+51;
+
+// Add to the shop via a wrapper
+const _origRenderShopRoyal=renderShop;
+renderShop=function(){
+  _origRenderShopRoyal();
+  const gp=document.getElementById('gamepassshop');if(!gp)return;
+  // Avoid double-render: skip if already added in this open
+  if(document.getElementById('royalshopcard'))return;
+  const sec=document.createElement('div');sec.className='shopsection';sec.textContent='👑 Premium Board Skins';
+  gp.parentElement.appendChild(sec);
+  const free=M.hiddenFreeShop;
+  
+  const owned=(M.inventory&&M.inventory.royal)||0;
+  const card=document.createElement('div');card.className='packcard';card.id='royalshopcard';
+  card.style.borderColor='#ffd700';card.style.background='linear-gradient(135deg,#3a2400,#1a1a4a)';
+  card.innerHTML=`<div class="packicon">👑</div><div class="packinfo"><div class="packname">ROYAL Skin</div><div class="packdesc">Gold and crimson - premium board look</div><div class="packprice">${free?'FREE':fmtMoney(ROYAL_PRICE)}</div></div>`;
+  const b=document.createElement('button');b.className='packbuy';
+  b.textContent=owned?'Equip':'Buy';
+  b.disabled=!owned && !free && M.money<ROYAL_PRICE;
+  b.onclick=()=>{
+    if (!owned) {
+      const c=free?0:ROYAL_PRICE;
+      if(M.money<c)return;
+      M.money-=c;
+      M.inventory=M.inventory||{};M.inventory.royal=(M.inventory.royal||0)+1;
+    }
+    equipSkin('royal', 1);
+    saveMeta();refreshUI();renderShop();
+    if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
+    showAnnouncement(owned?'👑 ROYAL skin equipped!':'👑 ROYAL skin purchased & equipped!');
+  };
+  card.appendChild(b);gp.parentElement.appendChild(card);
+
+  const svpOwned=(M.inventory&&M.inventory.svp)||0;
+  const svpCard=document.createElement('div');svpCard.className='packcard';svpCard.id='svpshopcard';
+  svpCard.style.borderColor='#ff00ff';svpCard.style.background='linear-gradient(135deg,#220022,#000044)';
+  svpCard.innerHTML=`<div class="packicon">✨</div><div class="packinfo"><div class="packname">SVP Skin</div><div class="packdesc">Ultra premium SVP board</div><div class="packprice">${free?'FREE':fmtMoney(SVP_PRICE)}</div></div>`;
+  const svpBtn=document.createElement('button');svpBtn.className='packbuy';
+  svpBtn.textContent=svpOwned?'Equip':'Buy';
+  svpBtn.disabled=!svpOwned && !free && M.money<SVP_PRICE;
+  svpBtn.onclick=()=>{
+    if (!svpOwned) {
+      const c=free?0:SVP_PRICE;
+      if(M.money<c)return;
+      M.money-=c;
+      M.inventory=M.inventory||{};M.inventory.svp=(M.inventory.svp||0)+1;
+    }
+    equipSkin('svp', 1);
+    saveMeta();refreshUI();renderShop();
+    if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
+    showAnnouncement(svpOwned?'✨ SVP skin equipped!':'✨ SVP skin purchased & equipped!');
+  };
+  svpCard.appendChild(svpBtn);gp.parentElement.appendChild(svpCard);
+};
+
+// Triple Roll upgrade
+UPGRADES.push({id:'tripleRoll',name:'Triple Roll',desc:'Every spin rolls 3 times in a row',cost:50000000,icon:'🎲🎲🎲',req:'luck8'});
+
+// Cash God: costs 62,978 ROLLS, gives a 1,000,000,000x cash multiplier
+const CASHGOD_MULT=1000000000;
+UPGRADES.push({id:'cashGod',name:'CASH GOD',desc:'×1,000,000,000 cash on every roll (costs 62,978 rolls)',rollCost:62978,icon:'🤑'});
+const _origGetMoneyMultCashGod=getMoneyMult;
+getMoneyMult=function(){
+  let m=_origGetMoneyMultCashGod();
+  if(M.upgradesPurchased&&M.upgradesPurchased.cashGod)m*=CASHGOD_MULT;
+  return m;
+};
+
+// Infinite Equip: huge cash cost; paints each board rank with a DIFFERENT owned skin, cycling forever
+const INFINITE_EQUIP_COST=2.0083199999999643e+50;
+UPGRADES.push({id:'infiniteEquip',name:'INFINITE EQUIP',desc:'Wear every skin at once — each side of the board shows a different owned skin, forever',cost:INFINITE_EQUIP_COST,icon:'♾️🎨'});
+
+function ownedBoardSkins(){
+  const list=['classic'];
+  for(const k in SKINS){if(k==='classic')continue;if((M.inventory&&M.inventory[k])>0)list.push(k)}
+  return list;
+}
+function applyInfiniteEquip(){
+  const on=M.upgradesPurchased&&M.upgradesPurchased.infiniteEquip;
+  const board=document.getElementById('board');if(!board)return;
+  const sqs=board.querySelectorAll('.sq');
+  if(!on){sqs.forEach(s=>{s.style.background=''});return}
+  const skins=ownedBoardSkins();
+  if(skins.length<2){sqs.forEach(s=>{s.style.background=''});return}
+  sqs.forEach(sq=>{
+    const r=Number(sq.dataset.r),c=Number(sq.dataset.c);
+    const skin=skins[r%skins.length]; // each rank = next owned skin, cycling forever
+    const col=SKIN_COLORS[skin]||SKIN_COLORS.classic;
+    const isLight=(r+c)%2===0;
+    sq.style.background=isLight?col[0]:col[1];
+  });
+}
+
+const _buyUpgInfinite=buyUpg;
+buyUpg=function(u){
+  _buyUpgInfinite(u);
+  if(u&&u.id==='infiniteEquip'){
+    M.infiniteEquipActive = !M.infiniteEquipActive;
+    saveMeta();
+    applySkinToBoard();
+    if(M.infiniteEquipActive) showAnnouncement('🔄 Infinite Equip: ON');
+    else showAnnouncement('⏸️ Infinite Equip: OFF');
+  }
+};
+
+const _spinNoTriple=doSpin;
+doSpin=function(){
+  const triple=M.upgradesPurchased&&M.upgradesPurchased.tripleRoll;
+  const count=triple?3:1;
+  for(let i=0;i<count;i++)_spinNoTriple();
+};
+
+// Give-all-skins now grants EVERY skin in the game (board + piece)
+adminGiveAll=function(){
+  M.inventory=M.inventory||{};
+  let n=0;
+  for(const k in SKINS){if(k==='classic'||k==='owner')continue;M.inventory[k]=(M.inventory[k]||0)+1;n++}
+  // also unlock all piece skins
+  M.unlockedPieceSkins=M.unlockedPieceSkins||{};
+  for(const k of ['bronze','silver','gold','diamond'])M.unlockedPieceSkins[k]=true;
+  saveMeta();refreshUI();
+  if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
+  showAnnouncement('🎁 Granted ALL '+n+' board skins + all piece skins!');
+};
+
+// OWNER skin — owner only, separate command. Equipping it is also owner-gated.
+function adminGiveOwnerSkin(){
+  const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+  if(!isOwner){showAnnouncement('🔒 Owner only');return}
+  M.inventory=M.inventory||{};M.inventory.owner=(M.inventory.owner||0)+1;
+  saveMeta();refreshUI();
+  if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
+  showAnnouncement('👑 OWNER skin granted!');
+}
+// Gate equip: only the owner can equip the owner skin
+const _origEquipSkin=equipSkin;
+equipSkin=function(sk, sl=1){
+  if(sk==='owner'){
+    const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+    if(!isOwner){showAnnouncement('🔒 OWNER skin is owner only');return}
+  }
+  _origEquipSkin(sk, sl);
+};
+
+// ============================================================
+// GLOBAL LUCK — set by admins on the server, applied to EVERY player
+// ============================================================
+window._globalLuck=1;
+
+async function fetchGlobalLuck(){
+  const r=await API.globalLuck();
+  if(r&&r.ok&&typeof r.globalLuck==='number'){
+    window._globalLuck=r.globalLuck;
+    if(typeof updateLuckChip==='function')updateLuckChip();
+  }
+}
+// Poll every 10s so a global luck change reaches all open clients
+setInterval(fetchGlobalLuck,10000);
+fetchGlobalLuck();
+
+// Fold global luck into the luck calculation
+const _getLuckBeforeGlobal=getLuck;
+getLuck=function(){
+  let l=_getLuckBeforeGlobal();
+  l*=(Number(window._globalLuck)||1);
+  return l;
+};
+
+// Make the admin luck buttons GLOBAL (server-side) instead of local-only
+adminGiveLuck10=async function(){
+  const r=await API.globalLuckMultiply(10);
+  if(r&&r.ok){
+    window._globalLuck=r.globalLuck;
+    updateLuckChip();
+    showAnnouncement('🌍 GLOBAL luck ×10 for everyone — now '+r.globalLuck+'x');
+    if(M.account)API.announce(M.account.username,'set GLOBAL luck to '+r.globalLuck+'x 🍀').catch(()=>{});
+  }else{
+    // fallback to local if server down
+    M.serverLuckMult=(Number(M.serverLuckMult)||1)*10;saveMeta();refreshUI();updateLuckChip();
+    showAnnouncement('🍀 Luck ×10 (local — server unreachable)');
+  }
+};
+// 1000x luck is LOCAL only (affects just you, not other players)
+adminGiveLuck1000=function(){
+  M.serverLuckMult=(Number(M.serverLuckMult)||1)*1000;
+  saveMeta();refreshUI();updateLuckChip();
+  showAnnouncement('🍀 +1000x luck (just you) — your server luck now '+M.serverLuckMult+'x');
+};
+
+// ============================================================
+// UPLOAD YOUR OWN MUSIC + REQUEST DEV TO FEATURE IT (via Gmail)
+// ============================================================
+const DEV_EMAIL='samsungrivals@gmail.com'; // change to your real address
+window._uploadedMusicName=null;
+window._uploadedMusicPlaying=false;
+
+function onMusicUpload(ev){
+  const file=ev.target.files&&ev.target.files[0];
+  if(!file)return;
+  const audio=document.getElementById('upmusicaudio');
+  const url=URL.createObjectURL(file);
+  audio.src=url;
+  window._uploadedMusicName=file.name;
+  document.getElementById('upmusicname').textContent='Loaded: '+file.name;
+  document.getElementById('upmusicplay').disabled=false;
+  document.getElementById('upmusicreq').disabled=false;
+  showAnnouncement('🎵 Loaded "'+file.name+'" — press ▶ Play');
+}
+
+function toggleUploadedMusic(){
+  const audio=document.getElementById('upmusicaudio');
+  if(!audio.src){showAnnouncement('Choose a file first');return}
+  const vol=M&&M.musicVol!==undefined?M.musicVol:0.5;
+  audio.volume=Math.min(1,vol); // <audio> caps at 1.0
+  const btn=document.getElementById('upmusicplay');
+  if(window._uploadedMusicPlaying){
+    audio.pause();window._uploadedMusicPlaying=false;btn.textContent='▶ Play';
+  }else{
+    // stop the synth music if it's playing so they don't overlap
+    if(_musicOn)toggleMusic();
+    audio.play().catch(()=>showAnnouncement('Playback blocked — click again'));
+    window._uploadedMusicPlaying=true;btn.textContent='⏸ Pause';
+  }
+}
+
+async function requestFeatureMusic(){
+  if(!window._uploadedMusicName){showAnnouncement('Load a music file first');return}
+  const who=(M.account&&M.account.username)||'a player';
+  const fname=window._uploadedMusicName;
+  // Log on the server so the dev can see pending requests
+  try{await API.musicRequest(who,fname)}catch(e){}
+  // Open a pre-filled Gmail compose addressed to the developer
+  const subject=encodeURIComponent('Request to feature my music on the chess website');
+  const body=encodeURIComponent(
+    'Hi,\n\nI\'m '+who+' and I\'d like to request permission to use my music track "'+fname+'" on the website.\n\n'+
+    'Please reply to let me know if that\'s okay.\n\nThanks!'
+  );
+  const gmailUrl='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(DEV_EMAIL)+'&su='+subject+'&body='+body;
+  window.open(gmailUrl,'_blank');
+  showAnnouncement('✉ Opening Gmail to message the developer…');
+}
+
+// ============================================================
+// OWNER-ONLY +10M ELO  +  CROSS-DEVICE ADMIN GRANTS
+// ============================================================
+let OWNER_NAMES=['samsungrivals_owner_','teclast','samsungrivals'];
+
+function ownerAddElo10M(){
+  const u=(M.account&&M.account.username||'').toLowerCase();
+  if(!OWNER_NAMES.includes(u)){
+    // Do NOT reveal which usernames are allowed
+    showAnnouncement('🚫 Access denied');
+    return;
+  }
+  adminAddElo(10000000);
+}
+
+// Admin status is now decided ONLY by the server admin list (no unlock progression)
+async function refreshAdminStatus(){
+  if(!M.account){M.adminUnlocked=false;saveMeta();if(typeof refreshUI==='function')refreshUI();return}
+  const isOwner=OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+  const r=await API.isAdmin(M.account.username);
+  if(r&&r.ok){
+    // Server is the source of truth (owner + anyone the owner granted)
+    M.adminUnlocked=!!r.isAdmin;
+  }else{
+    // Server unreachable: owners keep admin, others don't
+    M.adminUnlocked=isOwner;
+  }
+  saveMeta();if(typeof refreshUI==='function')refreshUI();
+}
+// Re-check whenever the account changes / on boot / periodically
+setInterval(refreshAdminStatus,15000);
+
+// Hard-disable any local admin unlock path
+checkAdminUnlock=function(){/* removed: admin can only be granted by an existing admin */};
+trackHiddenFreeShop=(typeof trackHiddenFreeShop==='function')?trackHiddenFreeShop:function(){};
+
+// 👑 Owner button: everyone sees it, only the owner can open the admin panel
+function openOwnerAdmin(){
+  const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+  if(!isOwner){showAnnouncement('🔒 Owner only');return}
+  openModal('ownermodal');
+}
+
+// Remove admin from a player (owner only)
+async function adminRemoveAdmin(){
+  if(!M.account){alert('Sign in first.');return}
+  const target=prompt('Enter the username to REMOVE admin from:');
+  if(!target||!target.trim())return;
+  const r=await API.revokeAdmin(M.account.username,target.trim());
+  if(r&&r.ok){
+    showAnnouncement('🚫 Removed admin from '+target.trim());
+  }else if(r&&r.err==='only owner can revoke'){
+    showAnnouncement('🔒 Only the owner can remove admin');
+  }else if(r&&r.err==='cannot revoke owner'){
+    showAnnouncement('❌ You cannot remove the owner');
+  }else{
+    showAnnouncement('Failed: '+((r&&r.err)||'server unreachable'));
+  }
+}
+
+// Grant admin to another player (only works if YOU are already an admin on the server)
+async function adminGrantAdmin(){
+  if(!M.account){alert('Sign in first.');return}
+  const target=prompt('Enter the exact username to grant admin commands to:');
+  if(!target||!target.trim())return;
+  const r=await API.grantAdmin(M.account.username,target.trim());
+  if(r&&r.ok){
+    showAnnouncement('👮 Granted admin to '+target.trim());
+    if(M.account)API.announce(M.account.username,'granted admin to '+target.trim()).catch(()=>{});
+  }else if(r&&r.err==='not admin'){
+    showAnnouncement('🚫 Only an admin can grant admin');
+  }else{
+    showAnnouncement('Failed: '+((r&&r.err)||'server unreachable'));
+  }
+}
+
+// ----- Skip Cutscenes setting: short-circuit every cutscene when enabled -----
+['showCutscene','showUltraCs','showMegaCs','showInfinityCs'].forEach(fn=>{
+  if(typeof window[fn]==='function'){
+    const orig=window[fn];
+    window[fn]=function(){if(M&&M.skipCutscenes)return;return orig.apply(this,arguments)};
+  }
+});
+
+// ============================================================
+// REAL-TIME WEBSOCKET MULTIPLAYER (instant move sync)
+// ============================================================
+let _ws=null,_wsReady=false,_wsReconnectT=null;
+
+function wsConnect(){
+  try{
+    const proto=location.protocol==='https:'?'wss:':'ws:';
+    _ws=new WebSocket(proto+'//'+location.host+'/ws');
+  }catch(e){console.warn('[ws] connect failed',e);return}
+  _ws.onopen=()=>{
+    _wsReady=true;
+    console.log('[ws] connected');
+    const name=(M.account&&M.account.username)||('guest_'+Math.floor(Math.random()*100000));
+    wsSend({type:'hello',user:name,elo:M.elo||500});
+  };
+  _ws.onmessage=ev=>{
+    let msg;try{msg=JSON.parse(ev.data)}catch(e){return}
+    handleWsMessage(msg);
+  };
+  _ws.onclose=()=>{
+    _wsReady=false;console.log('[ws] disconnected, retrying in 3s');
+    if(_wsReconnectT)clearTimeout(_wsReconnectT);
+    _wsReconnectT=setTimeout(wsConnect,3000);
+  };
+  _ws.onerror=()=>{try{_ws.close()}catch(e){}};
+}
+function wsSend(obj){if(_ws&&_ws.readyState===WebSocket.OPEN)_ws.send(JSON.stringify(obj))}
+
+function handleWsMessage(msg){
+  if(msg.type==='queued'){
+    const sub=document.querySelector('#mmsearching .mmsearchsub');
+    if(sub)sub.textContent='In queue — waiting for another real player…';
+  }else if(msg.type==='matched'){
+    onWsMatched(msg);
+  }else if(msg.type==='move'){
+    onWsOpponentMove(msg);
+  }else if(msg.type==='gameover'){
+    showAnnouncement('🏁 Opponent reported game over');
+  }else if(msg.type==='opponentLeft'){
+    if(G&&G.opponent&&G.opponent.type==='wspvp'){
+      showAnnouncement('🚪 Opponent left the game');
+      if(typeof showWinModal==='function')showWinModal(1,0,G.opponent.name+' (left)');
+    }
+  }else if(msg.type==='challenge'){
+    // Incoming friend challenge
+    _wsIncomingChallenge={from:msg.from,fromKey:msg.fromKey,elo:msg.elo};
+    document.getElementById('chalfromname').textContent=msg.from;
+    document.getElementById('chalfromelo').textContent=msg.elo||'?';
+    openModal('challengeincomingmodal');
+  }else if(msg.type==='challengeSent'){
+    showAnnouncement('📨 Challenge sent to '+msg.to);
+  }else if(msg.type==='challengeFailed'){
+    closeModal('challengewaitmodal');
+    showAnnouncement('❌ '+msg.to+' is offline');
+  }else if(msg.type==='challengeDeclined'){
+    closeModal('challengewaitmodal');
+    showAnnouncement('💔 '+msg.by+' declined your challenge');
+  }
+}
+let _wsIncomingChallenge=null;
+
+function onWsMatched(msg){
+  if(_qPollTimer){clearInterval(_qPollTimer);_qPollTimer=null}
+  closeModal('mmmodal');
+  newGame();
+  G.opponent={
+    type:'wspvp',
+    name:msg.opponent.name,
+    elo:Number(msg.opponent.elo)||500,
+    side:msg.side==='white'?'black':'white', // opponent's color
+    mySide:msg.side,
+    matchId:msg.matchId,
+    _eloApplied:false
+  };
+  render();
+  showAnnouncement('🎮 LIVE match vs '+msg.opponent.name+' — you are '+msg.side+'!');
+}
+
+function onWsOpponentMove(msg){
+  if(!G||!G.opponent||G.opponent.matchId!==msg.matchId)return;
+  G._applyingRemote=true;
+  try{doMove(msg.from,msg.to,msg.promo)}catch(e){console.warn('apply ws move failed',e)}
+  G._applyingRemote=false;
+}
+
+// Hook doMove: send local moves over WebSocket for wspvp games
+const _wsDoMove=doMove;
+doMove=function(from,to,promo){
+  const isWs=G&&G.opponent&&G.opponent.type==='wspvp';
+  const isRemote=G&&G._applyingRemote;
+  _wsDoMove(from,to,promo);
+  if(isWs&&!isRemote){
+    wsSend({type:'move',matchId:G.opponent.matchId,from,to,promo:promo||null});
+  }
 };
 
 // Hook click: block input on opponent's turn in ws games
@@ -2936,6 +4003,7 @@ openModal = function(id) {
 
 
 setTimeout(()=>showAnnouncement('\uD83D\uDD13 You have unlocked Owner Commands!'), 2500);
+
 
 
 // --- 10 Minute Clocks ---
