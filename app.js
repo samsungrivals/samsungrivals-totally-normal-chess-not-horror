@@ -1812,6 +1812,15 @@ function renderSettings(){
       b.textContent=lbl;b.onclick=()=>{M.skipCutscenes=val;saveMeta();renderSettings()};skc.appendChild(b);
     });
   }
+  // Premoves toggle
+  const prec=document.getElementById('premovectrl');
+  if(prec){
+    prec.innerHTML='';
+    [['On',true],['Off',false]].forEach(([lbl,val])=>{
+      const b=document.createElement('button');b.className='settingchip'+((!!M.premoves)===val?' on':'');
+      b.textContent=lbl;b.onclick=()=>{M.premoves=val;if(!val&&typeof G!=='undefined'&&G){G.premove=null;G.premoveSel=null}saveMeta();renderSettings()};prec.appendChild(b);
+    });
+  }
   // Mobile Mode toggle
   const mobc=document.getElementById('mobilemodectrl');
   if(mobc){
@@ -3835,6 +3844,63 @@ refreshAdminStatus();
 if(typeof grantVipSkinIfNvp==='function')grantVipSkinIfNvp();
 startAutoRoll();
 if(M.mobileMode) document.body.classList.add('mobile-mode');
+
+// ============================================================
+// PREMOVES — queue a move during the opponent's turn; auto-play it on your turn
+// ============================================================
+function _premoveMySide(){
+  if(!G||!G.opponent)return null;
+  if(G.opponent.type==='wspvp')return G.opponent.mySide;
+  if(G.opponent.type==='ai')return flip(G.opponent.side);
+  return null;
+}
+function _paintPremove(){
+  if(!G)return;
+  const b=document.getElementById('board');if(!b)return;
+  const mark=(sq,color)=>{const el=b.querySelector('.sq[data-r="'+sq[0]+'"][data-c="'+sq[1]+'"]');if(el)el.style.boxShadow='inset 0 0 0 4px '+color};
+  if(G.premoveSel)mark(G.premoveSel,'#ffaa00');
+  if(G.premove){mark(G.premove.from,'#ffaa00');mark(G.premove.to,'#ffaa00')}
+}
+function _handlePremoveClick(r,c,my){
+  const piece=G.board[r][c];
+  if(G.premoveSel){
+    G.premove={from:G.premoveSel,to:[r,c]};
+    G.premoveSel=null;
+    renderBoard();_paintPremove();
+    showAnnouncement('⚡ Premove queued');
+  }else if(piece&&own(piece,my)){
+    G.premoveSel=[r,c];
+    renderBoard();_paintPremove();
+  }else{
+    G.premove=null;G.premoveSel=null;renderBoard();
+  }
+}
+// Intercept clicks during the opponent's turn to record a premove
+const _preClickPremove=click;
+click=function(r,c){
+  if(M.premoves&&G&&G.opponent&&G.status==='playing'){
+    const my=_premoveMySide();
+    if(my&&G.turn!==my){_handlePremoveClick(r,c,my);return}
+  }
+  _preClickPremove(r,c);
+};
+// After every render, if it's now my turn and a premove is queued, play it (if legal)
+const _preRenderPremove=render;
+render=function(){
+  _preRenderPremove();
+  if(M.premoves&&G&&G.premove&&G.status==='playing'){
+    const my=_premoveMySide();
+    if(my&&G.turn===my){
+      const pm=G.premove;G.premove=null;G.premoveSel=null;
+      try{
+        const lms=legal(G.board,pm.from[0],pm.from[1],G.ep,G.cr,G.turn);
+        if(lms.some(([tr,tc])=>tr===pm.to[0]&&tc===pm.to[1])){
+          setTimeout(()=>{if(G&&G.turn===my&&G.status==='playing')doMove(pm.from,pm.to)},60);
+        }
+      }catch(e){}
+    }
+  } else if(G&&G.premove){ _paintPremove(); }
+};
 
 // ============================================================
 // DO NOTHING BUTTON — counts clicks; 10000 = global MrBeast shoutout
