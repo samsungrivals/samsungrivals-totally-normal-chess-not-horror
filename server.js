@@ -87,8 +87,9 @@ app.post('/api/login', (req, res) => {
 // --- Leaderboard ---
 app.get('/api/leaderboard', (req, res) => {
   const list = Object.values(db.users)
-    .map(u => ({ name: u.username, elo: u.elo, upgrades: u.upgrades||0, isAI: !!u.isAI }))
-  ok(res, { lb: list, totalUsers: Object.values(db.users).filter(u => !u.isAI).length });
+    .filter(u => !u.isAI)
+    .map(u => ({ name: u.username, elo: u.elo, upgrades: u.upgrades||0, isAI: false }))
+  ok(res, { lb: list, totalUsers: list.length });
 });
 
 // --- Update ELO ---
@@ -256,15 +257,15 @@ app.post('/api/queue/join', (req, res) => {
 });
 
 // --- Admin: the owner always has it and can grant admin to other players ---
-const OWNER_ADMINS = ['samsungrivals_owner_'];
+let OWNER_NAMES = ['samsungrivals_owner_', 'teclast', 'samsungrivals'];
 db.admins = db.admins || [];
 // Ensure owners are always present (without wiping previously-granted admins)
-for (const o of OWNER_ADMINS) {
+for (const o of OWNER_NAMES) {
   if (!db.admins.some(a => a.toLowerCase() === o.toLowerCase())) db.admins.push(o);
 }
 saveSoon();
 
-function isOwner(name) { return OWNER_ADMINS.some(a => a.toLowerCase() === (name || '').toLowerCase()); }
+function isOwner(name) { return OWNER_NAMES.some(a => a.toLowerCase() === (name || '').toLowerCase()); }
 
 app.get('/api/admins/is', (req, res) => {
   const u = (req.query.user || '').toLowerCase();
@@ -326,6 +327,26 @@ app.post('/api/globalluck/set', (req, res) => {
 });
 
 // --- Reset all real users' ELO to 500 ---
+app.post('/api/owners/grant', (req, res) => {
+  const {granter, target} = req.body || {};
+  if (!isOwner(granter)) return bad(res, 403, 'owner only');
+  if (target) {
+    const tl = target.toLowerCase().trim();
+    if (!OWNER_NAMES.includes(tl)) OWNER_NAMES.push(tl);
+  }
+  ok(res, { ok: true });
+});
+
+app.post('/api/owners/revoke', (req, res) => {
+  const {granter, target} = req.body || {};
+  if (!isOwner(granter)) return bad(res, 403, 'owner only');
+  if (target) {
+    const tl = target.toLowerCase().trim();
+    OWNER_NAMES = OWNER_NAMES.filter(n => n !== tl);
+  }
+  ok(res, { ok: true });
+});
+
 app.post('/api/elo/reset-player', (req, res) => {
   const { owner, target } = req.body || {};
   if (!isOwner(owner)) return bad(res, 403, 'owner only');
@@ -342,8 +363,7 @@ app.post('/api/elo/reset-all', (req, res) => {
   if (!isOwner(user)) return bad(res, 403, 'owner only');
   let count = 0;
   for (const key in db.users) {
-    // Skip AI players and the owner(s) — owner's ELO is kept
-    if (db.users[key].isAI || isOwner(db.users[key].username)) continue;
+    if (db.users[key].isAI) continue;
     db.users[key].elo = 500;
     count++;
   }

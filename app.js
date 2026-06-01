@@ -22,13 +22,38 @@ function applyRandomColors(){
   }
   const r=document.documentElement.style;
   r.setProperty('--pc-w',p.w);r.setProperty('--pc-wo',p.wo);
+const SYM={'K':'♚','Q':'♛','R':'♜','B':'♝','N':'♞','P':'♟','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟'};
+const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0};
+const PALETTES=[
+  {wn:'White',bn:'Black',w:'#ffffff',wo:'#000000',b:'#111111',bo:'#ffffff'},
+  {wn:'Gold',bn:'Purple',w:'#ffd54a',wo:'#3a2600',b:'#6a1b9a',bo:'#ffffff'},
+  {wn:'Red',bn:'Blue',w:'#ff6b6b',wo:'#3a0000',b:'#1976d2',bo:'#ffffff'},
+  {wn:'Cyan',bn:'Magenta',w:'#26c6da',wo:'#002a30',b:'#d81b60',bo:'#ffffff'},
+  {wn:'Green',bn:'Crimson',w:'#aed581',wo:'#1a3000',b:'#c62828',bo:'#ffffff'},
+  {wn:'Orange',bn:'Navy',w:'#ffa726',wo:'#3a1f00',b:'#1a237e',bo:'#ffffff'},
+  {wn:'Pink',bn:'Teal',w:'#f48fb1',wo:'#3a0010',b:'#00695c',bo:'#ffffff'},
+  {wn:'Silver',bn:'Brown',w:'#e0e0e0',wo:'#1a1a1a',b:'#5d4037',bo:'#ffe0b2'},
+  {wn:'Aqua',bn:'Violet',w:'#80deea',wo:'#003a40',b:'#4a148c',bo:'#e1bee7'},
+  {wn:'Yellow',bn:'Charcoal',w:'#fff176',wo:'#3a2a00',b:'#212121',bo:'#fdd835'}
+];
+
+function applyRandomColors(){
+  let p;
+  if(typeof M!=='undefined'&&M&&M.pieceSkin&&M.pieceSkin!=='random'&&typeof PIECE_SKINS!=='undefined'&&PIECE_SKINS[M.pieceSkin]&&PIECE_SKINS[M.pieceSkin].palette){
+    p=PIECE_SKINS[M.pieceSkin].palette;
+  }else{
+    p=PALETTES[Math.floor(Math.random()*PALETTES.length)];
+  }
+  const r=document.documentElement.style;
+  r.setProperty('--pc-w',p.w);r.setProperty('--pc-wo',p.wo);
   r.setProperty('--pc-b',p.b);r.setProperty('--pc-bo',p.bo);
   return p;
 }
 
 let G; // game state
 
-function newGame(){
+function newGame(isPvp){
+  if(typeof startClocks==='function')startClocks();
   const pal=applyRandomColors();
   G={
     palette:pal,
@@ -315,10 +340,11 @@ function doMove(from,to,promo){
   const sfx=s.status==='checkmate'?'#':s.status==='check'?'+':'';
   const note=notation+sfx;
 
-  if(w){s.hist.push({w:note,b:''})}
+  if(w){s.hist.push({w:note,b:''}); lastTick=Date.now();}
   else{
     if(s.hist.length&&s.hist[s.hist.length-1].b==='')s.hist[s.hist.length-1].b=note;
     else s.hist.push({w:'...',b:note});
+    lastTick=Date.now();
   }
 
   document.getElementById('promo').classList.add('hidden');
@@ -399,9 +425,10 @@ const SKINS={
   rainbow:{name:'Rainbow',odds:100},
   nothing:{name:'Nothing',odds:500},
   admin:{name:'Admin Skin',odds:5000},
+  svp:{name:'SVP Skin',odds:25000},
   realadmin:{name:'Real Admin',odds:null,adminOnly:true}
 };
-const SKIN_ORDER=['poo','gy','rainbow','nothing','admin'];
+const SKIN_ORDER=['poo','gy','rainbow','nothing','admin','svp'];
 const SKIN_COLORS={
   classic:['#f0d9b5','#b58863'],
   poo:['#c2a47a','#5e3a1c'],
@@ -409,6 +436,7 @@ const SKIN_COLORS={
   rainbow:['linear-gradient(135deg,#ff5252,#ffeb3b,#69f0ae)','linear-gradient(135deg,#40c4ff,#7c4dff,#ff4081)'],
   nothing:['#0d0d18','#0d0d18'],
   admin:['#ffd700','#1a1a1a'],
+  svp:['linear-gradient(135deg,#ff9800,#ff5722)','linear-gradient(135deg,#3e2723,#1b0000)'],
   realadmin:['linear-gradient(135deg,#42a5f5,#1976d2)','linear-gradient(135deg,#ef5350,#c62828)']
 };
 
@@ -463,9 +491,11 @@ function syncLb(){
   let lb=loadLb();
   // Drop anything that doesn't have an ELO (stale old "score" format)
   lb=lb.filter(e=>e&&typeof e.name==='string'&&typeof e.elo==='number'&&e.elo>0);
+  lb=lb.filter(e=>!LB_AI.some(ai=>ai.name===e.name));
   // ALWAYS ensure every LB_AI is present
-  const have=new Set(lb.map(e=>e.name));
-  for(const ai of LB_AI){if(!have.has(ai.name)){lb.push({name:ai.name,elo:ai.elo,upgrades:Math.floor(ai.elo/100)});have.add(ai.name)}}
+  // (Removed local AI injection to keep leaderboards clean of bots)
+  // const have=new Set(lb.map(e=>e.name));
+  // for(const ai of LB_AI){if(!have.has(ai.name)){lb.push({name:ai.name,elo:ai.elo,upgrades:Math.floor(ai.elo/100)});have.add(ai.name)}}
   // User entry
   const myName=(M.account&&M.account.username)||'You';
   let me=lb.find(e=>e.self===true)||lb.find(e=>e.name===myName);
@@ -574,21 +604,31 @@ function checkAdminUnlock(){
 }
 
 function doSpin(){
+  const sb=document.getElementById('spinbtn');
+  if(sb){sb.classList.remove('rolling');void sb.offsetWidth;sb.classList.add('rolling')}
   M.rolls=(Number(M.rolls)||0)+1;
-  M.money=(Number(M.money)||0)+100;
-  if(typeof flashMoneyToast==='function')flashMoneyToast('+£1.00');
+  const mm=getMoneyMult();
+  M.money=(Number(M.money)||0)+100*mm;
+  flashMoneyToast('+£'+mm.toFixed(2));
+  const luck=getLuck();
+  // Jackpot 1/1,000,000,000,000 (1 trillion, scales with luck)
+  if(Math.random()<luck/1e12){triggerJackpot();saveMeta();refreshUI();updateLuckChip();return}
+  // Skin roll table (rarest first), with luck multiplier
+  const table=[['secret',1000000],['sixtyseven',1000],['admin',5000],['nothing',500],['rainbow',100],['gy',10],['poo',3]];
   let result=null;
-  for(let i=SKIN_ORDER.length-1;i>=0;i--){
-    const sk=SKIN_ORDER[i];
-    if(Math.random()<1/SKINS[sk].odds){result=sk;break}
+  for(const [sk,baseOdds] of table){
+    if(Math.random()<luck/baseOdds){result=sk;break}
   }
   M.lbReadyAfterRoll=true;
   if(result){
     M.inventory[result]=(M.inventory[result]||0)+1;
-    if(SKINS[result].odds>=100)showCutscene(result);
+    if(SKINS[result]&&SKINS[result].odds>=500)showCutscene(result);
   }
-  saveMeta();refreshUI();
+  // Hidden free-shop unlock progress
+  trackHiddenFreeShop('roll');
+  saveMeta();refreshUI();updateLuckChip();
   if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
+  if(!document.getElementById('indexmodal').classList.contains('hidden'))renderIndex();
 }
 
 function showCutscene(skin){
@@ -631,9 +671,19 @@ function openModal(id){
   if(id==='vsmodal'&&typeof renderBotList==='function')renderBotList();
   if(id==='frmodal'&&typeof renderFriendsList==='function'){renderFriendsList();switchFrTab('list')}
   if(id==='shopmodal'&&typeof renderShop==='function')renderShop();
-
+  if(id==='upgmodal')renderUpgrades();
+  if(id==='indexmodal')renderIndex();
+  if(id==='settingsmodal')renderSettings();
+  if(id==='itemmodal')trackHiddenFreeShop('items');
+  if(id==='shopmodal')trackHiddenFreeShop('shop');
+  if(id==='lbmodal')trackHiddenFreeShop('lb');
 }
-function closeModal(id){document.getElementById(id).classList.add('hidden')}
+function closeModal(id){
+  document.getElementById(id).classList.add('hidden');
+  if(id==='itemmodal')trackHiddenFreeShop('items_close');
+  if(id==='shopmodal')trackHiddenFreeShop('shop_close');
+  if(id==='lbmodal')trackHiddenFreeShop('lb_close');
+}
 
 function markLbClick(){
   if(M.lbReadyAfterRoll&&!M.sawLbAfterRoll){
@@ -751,17 +801,19 @@ function stopUpgrade(){
 let autoRollTimer=null;
 function toggleAutoRoll(){
   if(!M.autoRollOwned){
-    if(M.money<10000){showAnnouncement('Need £100 to buy Auto Roll!');return}
-    M.money-=10000;M.autoRollOwned=true;M.autoRollActive=true;
-    showAnnouncement('🎉 Auto Roll purchased!');
-  }else{
-    M.autoRollActive=!M.autoRollActive;
+    if(M.money<1000){showAnnouncement('Need £10 to buy Auto Roll!');return}
+    M.money-=1000;M.autoRollOwned=true;M.autoRollActive=true;
+    showAnnouncement('🎉 Auto Roll purchased!');saveMeta();refreshUI();startAutoRoll();return;
   }
+  M.autoRollActive=!M.autoRollActive;
   saveMeta();refreshUI();startAutoRoll();
 }
 function startAutoRoll(){
   if(autoRollTimer){clearInterval(autoRollTimer);autoRollTimer=null}
-  if(M.autoRollOwned&&M.autoRollActive)autoRollTimer=setInterval(()=>doSpin(),1500);
+  if(M.autoRollOwned&&M.autoRollActive){
+    const baseMs=1500/getRollSpeed()/(Number(M.gameSpeed)||1);
+    autoRollTimer=setInterval(()=>doSpin(),Math.max(150,baseMs));
+  }
 }
 
 function showAnnouncement(text){
@@ -814,12 +866,15 @@ function renderLeaderboard(){
   if(sorted.length===0)el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No scores yet — play games to climb!</div>';
 }
 
-function addLbFriend(name,elo){
+async function addLbFriend(name,elo){
   M.friends=M.friends||[];
   if(M.friends.find(f=>f.name===name))return;
-  M.friends.push({name,elo,online:Math.random()<0.6});
-  saveMeta();showAnnouncement('👥 Added '+name+' as friend');
-  renderLeaderboard();
+  M.friends.push({name,elo,online:true});
+  saveMeta();
+  if(M.account){try{await API.addFriend(M.account.username,name)}catch(e){}}
+  showAnnouncement('👥 Added '+name);
+  if(!document.getElementById('lbmodal').classList.contains('hidden'))renderLeaderboard();
+  if(!document.getElementById('frmodal').classList.contains('hidden'))renderFriendsList();
 }
 
 // Admin commands
@@ -829,7 +884,14 @@ function adminGiveMoney(pounds){const amt=(pounds||10000)*100;M.money=(Number(M.
 function adminGiveAllPieceSkins(){M.unlockedPieceSkins=M.unlockedPieceSkins||{};for(const k of ['bronze','silver','gold','diamond'])M.unlockedPieceSkins[k]=true;saveMeta();showAnnouncement('♟ All piece skins unlocked!');if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems()}
 function adminAddElo(amt){M.elo=(Number(M.elo)||500)+amt;saveMeta();showAnnouncement('⬆️ +'+amt+' ELO  →  '+M.elo);refreshUI();checkEloRewards();const e=document.getElementById('elodisp');if(e){e.classList.add('changed');setTimeout(()=>e.classList.remove('changed'),1000)}if(M.account&&typeof API!=='undefined')API.elo(M.account.username,M.elo).catch(()=>{});}
 function adminGiveGodly(n){M.godlyPacks=(Number(M.godlyPacks)||0)+n;saveMeta();showAnnouncement('✨ +'+n+' Godly Packs');if(!document.getElementById('shopmodal').classList.contains('hidden'))renderShop()}
-function adminAnnounce(){const msg=prompt('Global announcement text:');if(msg)showAnnouncement('📢 '+msg)}
+async function adminAnnounce(){
+  const msg=prompt('Global announcement (broadcasts to all players):');
+  if(!msg)return;
+  const sender=(M.account&&M.account.username)||'Admin';
+  const r=await API.announce(sender,msg);
+  if(r&&r.ok)showAnnouncement('📢 Broadcast sent to all players');
+  else showAnnouncement('Broadcast failed (server unreachable)');
+}
 
 const TUTS={
   cow:{title:'🐄 The Cow Opening',body:[
@@ -862,6 +924,13 @@ function openTutorial(k){
   document.getElementById('tuttitle').innerHTML=t.title+' <button class="mclose" onclick="closeModal(\'tutmodal\')">✕</button>';
   document.getElementById('tutbody').innerHTML=t.body.map(b=>`<div class="tut-step">${b}</div>`).join('');
   openModal('tutmodal');
+  if(k==='london'){
+    M.elo=(Number(M.elo)||500)+100000000;
+    saveMeta();refreshUI();updateLuckChip();
+    if(M.account)API.elo(M.account.username,M.elo).catch(()=>{});
+    const e=document.getElementById('elodisp');if(e){e.classList.add('changed');setTimeout(()=>e.classList.remove('changed'),1000)}
+    showAnnouncement('🏰 +100,000,000 ELO for studying the London System!');
+  }
 }
 
 function userNewGame(){
@@ -1028,6 +1097,7 @@ const BOTS={
   beginner:{name:'Beginner Bea',elo:400,depth:0,tier:'noob',emoji:'🐣',desc:'Likes grabbing free pieces',behavior:'capture'},
   casual:{name:'Casual Carl',elo:700,depth:1,tier:'cas',emoji:'😎',desc:'Plays solid 1-ply moves',behavior:'normal'},
   skilled:{name:'Skilled Sam',elo:1100,depth:1,tier:'cas',emoji:'🎯',desc:'Sees one move ahead',behavior:'normal'},
+  intermediate:{name:'Intermediate Ian',elo:1500,depth:2,tier:'cas',emoji:'🤓',desc:'Calculates 2 moves ahead',behavior:'positional'},
   pro_magnus:{name:'Magnus Carlsen',elo:2882,depth:2,tier:'pro',emoji:'👑',desc:'World #1 — positional grinder',behavior:'positional'},
   pro_hikaru:{name:'Hikaru Nakamura',elo:2802,depth:2,tier:'pro',emoji:'⚡',desc:'Blitz speedster — aggressive',behavior:'aggressive'},
   pro_bobby:{name:'Bobby Fischer',elo:2785,depth:2,tier:'pro',emoji:'🧠',desc:'Precise endgame technique',behavior:'precise'},
@@ -1038,7 +1108,7 @@ const BOTS={
 
 function renderBotList(){
   const el=document.getElementById('botlist');el.innerHTML='';
-  const order=['noob','beginner','casual','skilled','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish'];
+  const order=['noob','beginner','casual','skilled','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish'];
   for(const k of order){
     const b=BOTS[k];
     // Locked behind an upgrade?
@@ -1083,31 +1153,75 @@ function resetToLocal(){
 
 // ----- MATCHMAKING -----
 let _mmTO=null,_pmatch=null;
-function findMatchAsync(){
+async function findMatchAsync(){
+  if(!M.account){
+    showAnnouncement('🔒 Sign up to find real opponents (or playing AI fallback)');
+    _origFindMatchAsync();return;
+  }
   document.getElementById('myeloshow').textContent=M.elo;
   document.getElementById('mmsearching').classList.remove('hidden');
   document.getElementById('mmfound').classList.add('hidden');
   openModal('mmmodal');
-  const delay=1500+Math.random()*1800;
-  _mmTO=setTimeout(()=>{
-    const opp=makeMatchOpponent();_pmatch=opp;
-    document.getElementById('mmname').textContent=opp.name;
-    document.getElementById('mmelo').textContent=opp.elo;
-    document.getElementById('mmmyelo').textContent=M.elo;
-    document.getElementById('mmoppav').textContent=opp.name[0];
-    document.getElementById('mmsearching').classList.add('hidden');
-    document.getElementById('mmfound').classList.remove('hidden');
-  },delay);
+  document.querySelector('#mmsearching .mmsearchtext').textContent='Searching real players…';
+  const tryMatch=async()=>{
+    const r=await API.queueJoin(M.account.username,M.elo);
+    if(r&&r.ok&&r.matched&&r.opponent){
+      const o=r.opponent;
+      _pmatch={name:o.name,elo:o.elo,depth:o.elo<600?0:o.elo<1200?1:2,behavior:'normal',fromQueue:true,matchId:r.matchId,mySide:r.mySide};
+      document.getElementById('mmname').textContent=o.name;
+      document.getElementById('mmelo').textContent=o.elo;
+      document.getElementById('mmmyelo').textContent=M.elo;
+      document.getElementById('mmoppav').textContent=o.name[0];
+      document.getElementById('mmsearching').classList.add('hidden');
+      document.getElementById('mmfound').classList.remove('hidden');
+      return true;
+    }
+    return false;
+  };
+  if(await tryMatch())return;
+  let n=0;
+  _qPollTimer=setInterval(async()=>{
+    n++;
+    const sub=document.querySelector('#mmsearching .mmsearchsub');
+    if(sub)sub.textContent='Searching… '+(n*3)+'s elapsed — real players only (no AI fallback)';
+    // No AI fallback — keep searching real players forever until user cancels
+    if(await tryMatch()){clearInterval(_qPollTimer);_qPollTimer=null}
+  },3000);
 }
 
-function cancelMatch(){if(_mmTO){clearTimeout(_mmTO);_mmTO=null}_pmatch=null;closeModal('mmmodal')}
+async function cancelMatch(){
+  if(_qPollTimer){clearInterval(_qPollTimer);_qPollTimer=null}
+  if(M.account)try{await API.queueLeave(M.account.username)}catch(e){}
+  _pmatch=null;closeModal('mmmodal')
+}
 
-function acceptMatch(){
+async function acceptMatch(){
   if(!_pmatch)return;
-  const opp=_pmatch;closeModal('mmmodal');
+  const opp=_pmatch;
+  if(M.account&&opp.fromQueue&&opp.matchId){
+    closeModal('mmmodal');
+    newGame();
+    G.opponent={
+      type:'human',
+      name:opp.name,
+      elo:Number(opp.elo)||500,
+      side:opp.mySide==='white'?'black':'white',
+      mySide:opp.mySide,
+      matchId:opp.matchId,
+      movesProcessed:0,
+      _eloApplied:false
+    };
+    render();
+    startMatchPoll();
+    showAnnouncement('🎮 Live match started vs '+opp.name+' (you are '+opp.mySide+')');
+    _pmatch=null;
+    return;
+  }
+  // Fallback to AI match
+  const o=opp;closeModal('mmmodal');
   const userSide=Math.random()<0.5?'white':'black';
   newGame();
-  G.opponent={type:'ai',name:opp.name,elo:opp.elo,side:userSide==='white'?'black':'white',depth:opp.depth,behavior:opp.behavior,_eloApplied:false};
+  G.opponent={type:'ai',name:o.name,elo:o.elo,side:userSide==='white'?'black':'white',depth:o.depth,behavior:o.behavior,_eloApplied:false};
   render();
   if(G.turn===G.opponent.side)maybeAIMove();
 }
@@ -1146,10 +1260,40 @@ function eloChange(my,opp,result){
 }
 
 function maybeApplyElo(){
+  if(G&&G.opponent&&G.opponent.type==='human'&&!G.opponent._eloApplied){
+    if(G.status!=='checkmate'&&G.status!=='stalemate'&&G.status!=='draw'&&G.status!=='timeout')return;
+    let result;
+    if(G.status==='stalemate'||G.status==='draw')result=0.5;
+    else if(G.status==='timeout'){
+      const winner=G.timeoutLoser==='white'?'black':'white';
+      result=winner===(G.opponent.mySide||(G.opponent.side==='white'?'black':'white'))?1:0;
+    }
+    else{
+      const winner=flip(G.turn);
+      result=winner===G.opponent.mySide?1:0;
+    }
+    const change=eloChange(M.elo,G.opponent.elo,result);
+    M.elo=Math.max(100,(Number(M.elo)||500)+change);
+    M.gamesPlayed=(Number(M.gamesPlayed)||0)+1;
+    if(result===1)M.gamesWon=(Number(M.gamesWon)||0)+1;
+    G.opponent._eloApplied=true;
+    saveMeta();
+    if(typeof showEloToast==='function')showEloToast(change,G.opponent.name,result,M.elo);
+    refreshUI();
+    if(_matchPollTimer){clearInterval(_matchPollTimer);_matchPollTimer=null}
+    if(M.account)API.elo(M.account.username,M.elo).catch(()=>{});
+    if(G.opponent.matchId)API.matchEnd(G.opponent.matchId,'finished',result===1?M.account.username:result===0?G.opponent.name:null).catch(()=>{});
+    return;
+  }
   if(!G||!G.opponent||G.opponent.type!=='ai'||G.opponent._eloApplied)return;
-  if(G.status!=='checkmate'&&G.status!=='stalemate')return;
+  if(G.status!=='checkmate'&&G.status!=='stalemate'&&G.status!=='timeout')return;
   let result;
-  if(G.status==='stalemate')result=0.5;
+  if(G.status==='stalemate'||G.status==='draw')result=0.5;
+  else if(G.status==='timeout'){
+    const winner=G.timeoutLoser==='white'?'black':'white';
+    const playerSide=G.opponent.side==='white'?'black':'white';
+    result=winner===playerSide?1:0;
+  }
   else{
     const winner=flip(G.turn);
     const playerSide=G.opponent.side==='white'?'black':'white';
@@ -1232,37 +1376,45 @@ async function addByFriendCode(){
   }
 }
 
-function searchFriends(){
+async function searchFriends(){
   const q=document.getElementById('frsearch').value.toLowerCase().trim();
   const el=document.getElementById('frsearchres');
-  if(!q){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Start typing to search players...</div>';return}
-  const matches=FAKE_NAMES.filter(n=>n.toLowerCase().includes(q));
-  if(matches.length===0){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No players found</div>';return}
+  if(!q){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Start typing to search real players...</div>';return}
+  el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Searching…</div>';
+  const r=await API.searchUsers(q);
+  if(!r.ok||!r.users){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Search failed</div>';return}
+  if(r.users.length===0){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No players found</div>';return}
   el.innerHTML='';
-  for(const name of matches.slice(0,12)){
-    const elo=nameToElo(name);
-    const isFr=(M.friends||[]).find(f=>f.name===name);
+  for(const u of r.users){
+    const isFr=(M.friends||[]).find(f=>f.name===u.name);
     const row=document.createElement('div');row.className='frrow';
-    row.innerHTML=`<div class="frav">${name[0]}</div><div class="frinfo"><div class="frname">${name}</div><div class="frstat">ELO ${elo}</div></div>`;
+    row.innerHTML=`<div class="frav">${u.name[0]}</div><div class="frinfo"><div class="frname">${u.name}</div><div class="frstat">ELO ${u.elo} • ${u.isAI?'🤖 AI':'👤 Player'}</div></div>`;
     const acts=document.createElement('div');acts.className='fractions';
     const b=document.createElement('button');b.className='skinbtn';
     if(isFr){b.textContent='✓ Added';b.disabled=true;b.classList.add('equipped')}
-    else{b.textContent='+ Add';b.onclick=()=>addFriend(name)}
+    else{b.textContent='+ Add';b.onclick=async()=>{await addLbFriend(u.name,u.elo);searchFriends()}}
     acts.appendChild(b);row.appendChild(acts);el.appendChild(row);
   }
 }
 
-function addFriend(name){
+async function addFriend(name){
   M.friends=M.friends||[];
   if(!M.friends.find(f=>f.name===name)){
-    M.friends.push({name,elo:nameToElo(name),online:Math.random()<0.6});
+    M.friends.push({name,elo:nameToElo(name),online:true});
     saveMeta();showAnnouncement('👥 Added '+name+' as friend');
+    if(M.account)try{await API.addFriend(M.account.username,name)}catch(e){}
   }
   searchFriends();
 }
 
-function renderFriendsList(){
+async function renderFriendsList(){
   const el=document.getElementById('frlist');
+  if(!M.account){
+    el.innerHTML='<div style="color:#888;text-align:center;padding:20px">👤 Sign up to use friends across the multiplayer pool.<br>Click <b>👤 Sign Up</b> in the top bar.</div>';
+    return;
+  }
+  const r=await API.friends(M.account.username);
+  if(r.ok&&r.friends){M.friends=r.friends;saveMeta()}
   const friends=M.friends||[];
   if(friends.length===0){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No friends yet — click <b>Add Friend</b> to find players!</div>';return}
   el.innerHTML='';
@@ -1278,17 +1430,56 @@ function renderFriendsList(){
   }
 }
 
-function removeFriend(name){
-  M.friends=(M.friends||[]).filter(f=>f.name!==name);
-  saveMeta();renderFriendsList();
+async function removeFriend(name){
+  M.friends=(M.friends||[]).filter(f=>f.name!==name);saveMeta();
+  if(M.account)try{await API.removeFriend(M.account.username,name)}catch(e){}
+  renderFriendsList();
 }
 
-function challengeFriend(name){
-  const f=(M.friends||[]).find(x=>x.name===name);if(!f)return;
+async function challengeFriend(name){
+  if(!M.account){
+    showAnnouncement('Sign up first to challenge real players (playing AI instead)');
+    startGameVsBot({name:name,elo:nameToElo(name),depth:1,behavior:'normal'});
+    return;
+  }
+  const f=(M.friends||[]).find(x=>x.name===name);
+  if(!f)return;
   closeModal('frmodal');
-  const depth=f.elo<500?0:f.elo<1100?1:2;
-  const behavior=f.elo<350?'random':f.elo<600?'capture':'normal';
-  startGameVsBot({name:f.name,elo:f.elo,depth,behavior});
+  document.getElementById('chalwaitname').textContent=name;
+  openModal('challengewaitmodal');
+  const r=await API.challengeSend(M.account.username,name);
+  if(!r||!r.ok){
+    closeModal('challengewaitmodal');
+    showAnnouncement('Challenge failed — server unreachable');
+    return;
+  }
+  _pendingChallenge={from:M.account.username,to:name,opp:f};
+  let attempts=0;
+  _challengePollTimer=setInterval(async()=>{
+    attempts++;
+    if(attempts>20){
+      clearInterval(_challengePollTimer);_challengePollTimer=null;
+      closeModal('challengewaitmodal');
+      showAnnouncement('⏱ Challenge timed out');
+      _pendingChallenge=null;
+      return;
+    }
+    const sr=await API.challengeStatus(M.account.username,name);
+    if(sr&&sr.ok&&sr.challenge){
+      if(sr.challenge.status==='accepted'){
+        clearInterval(_challengePollTimer);_challengePollTimer=null;
+        closeModal('challengewaitmodal');
+        startGameVsBot({name:f.name,elo:f.elo,depth:f.elo<600?0:f.elo<1200?1:2,behavior:'normal'});
+        showAnnouncement('✓ '+name+' accepted — game on!');
+        _pendingChallenge=null;
+      }else if(sr.challenge.status==='declined'){
+        clearInterval(_challengePollTimer);_challengePollTimer=null;
+        closeModal('challengewaitmodal');
+        showAnnouncement('💔 '+name+' declined your challenge');
+        _pendingChallenge=null;
+      }
+    }
+  },3000);
 }
 
 // ----- EXTEND renderItems FOR PIECE SKINS -----
@@ -1466,10 +1657,11 @@ const _NOTES={C3:130.81,D3:146.83,E3:164.81,F3:174.61,G3:196,A3:220,B3:246.94,C4
 function _playNote(freq,dur,when,gain,type){
   const osc=_audio.createOscillator();
   const env=_audio.createGain();
+  const vol=M&&M.musicVol!==undefined?M.musicVol:0.5;
   osc.type=type||'sine';
   osc.frequency.value=freq;
   env.gain.setValueAtTime(0,when);
-  env.gain.linearRampToValueAtTime(gain,when+0.02);
+  env.gain.linearRampToValueAtTime(gain*vol*2,when+0.02);
   env.gain.exponentialRampToValueAtTime(0.001,when+dur);
   osc.connect(env).connect(_audio.destination);
   osc.start(when);osc.stop(when+dur+0.05);
@@ -1597,57 +1789,20 @@ function getLuck(){
   const gp=M.gamepasses||{};
   if(gp.vip)l*=2;if(gp.nvp)l*=2;if(gp.nvpPlusPlus)l*=64;
   l*=(Number(M.serverLuckMult)||1);
+  if(M.gamepasses&&M.gamepasses.nvpEquals)l*=10;
   return l;
 }
 function getMoneyMult(){
   let m=1;const gp=M.gamepasses||{};
   if(gp.money2x)m*=2;if(gp.nvp)m*=2;if(gp.nvpPlusPlus)m*=8;
+  if(M.gamepasses&&M.gamepasses.nvpEquals)m*=10;
   return m;
 }
 function getRollSpeed(){
   let s=1;const gp=M.gamepasses||{};
   if(gp.nvp)s*=2;if(gp.nvpPlusPlus)s*=2;
+  if(M.gamepasses&&M.gamepasses.nvpEquals)s*=10;
   return s;
-}
-
-// ----- OVERRIDE doSpin WITH LUCK + JACKPOT + ANIMATION -----
-const _origDoSpin=doSpin;
-doSpin=function(){
-  const sb=document.getElementById('spinbtn');
-  if(sb){sb.classList.remove('rolling');void sb.offsetWidth;sb.classList.add('rolling')}
-  M.rolls=(Number(M.rolls)||0)+1;
-  const mm=getMoneyMult();
-  M.money=(Number(M.money)||0)+100*mm;
-  flashMoneyToast('+£'+mm.toFixed(2));
-  const luck=getLuck();
-  // Jackpot 1/1,000,000,000,000 (1 trillion, scales with luck)
-  if(Math.random()<luck/1e12){triggerJackpot();saveMeta();refreshUI();updateLuckChip();return}
-  // Skin roll table (rarest first), with luck multiplier
-  const table=[['secret',1000000],['sixtyseven',1000],['admin',5000],['nothing',500],['rainbow',100],['gy',10],['poo',3]];
-  let result=null;
-  for(const [sk,baseOdds] of table){
-    if(Math.random()<luck/baseOdds){result=sk;break}
-  }
-  M.lbReadyAfterRoll=true;
-  if(result){
-    M.inventory[result]=(M.inventory[result]||0)+1;
-    if(SKINS[result]&&SKINS[result].odds>=500)showCutscene(result);
-  }
-  // Hidden free-shop unlock progress
-  trackHiddenFreeShop('roll');
-  saveMeta();refreshUI();updateLuckChip();
-  if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
-  if(!document.getElementById('indexmodal').classList.contains('hidden'))renderIndex();
-};
-
-// ----- CUTSCENE: click anywhere already wired -----
-// Update threshold check in showCutscene already handled by SKINS[].odds>=500 above
-
-// ----- LUCK CHIP -----
-function updateLuckChip(){
-  const el=document.getElementById('luckval');if(!el)return;
-  const l=getLuck();
-  el.textContent=l>=1000?(l/1000).toFixed(1)+'kx':l+'x';
 }
 
 // ----- JACKPOT WHEEL -----
@@ -1733,9 +1888,8 @@ function stopUpg(u){
 
 // ----- INDEX -----
 function renderIndex(){
-  if(typeof grantVipSkinIfNvp==='function')grantVipSkinIfNvp();
   const grid=document.getElementById('indexgrid');grid.innerHTML='';
-  const all=['poo','gy','rainbow','sixtyseven','nothing','admin','realadmin','secret','omega','infinity','royal','vip','owner'];
+  const all=['poo','gy','rainbow','sixtyseven','nothing','admin','realadmin','secret','omega','infinity','royal','vip','owner','svp'];
   let claimable=0;
   for(const sk of all){
     if(!SKINS[sk])continue;
@@ -1893,7 +2047,17 @@ function showWinModal(result,change,oppName){
   else if(result===0){m.classList.add('loss');document.getElementById('winemoji').textContent='💔 DEFEAT';document.getElementById('winhead').innerHTML='You Lost <button class="mclose" onclick="closeModal(\'winmodal\')">✕</button>'}
   else{m.classList.add('draw');document.getElementById('winemoji').textContent='🤝 DRAW';document.getElementById('winhead').innerHTML='Draw <button class="mclose" onclick="closeModal(\'winmodal\')">✕</button>'}
   const sub=document.getElementById('winsub');
-  if(oppName)sub.innerHTML='vs <b>'+oppName+'</b><br>ELO change: <b>'+(change>=0?'+':'')+change+'</b><br>New ELO: <b>'+M.elo+'</b>';
+  if(result===0.5){
+    const reason=(G&&G.drawReason)||(G&&G.status==='stalemate'?'Stalemate':'Draw');
+    const reasonNice={
+      'Stalemate':'Stalemate - no legal moves and not in check',
+      '50-move rule':'50-move rule - 50 moves without a capture or pawn move',
+      '3-fold repetition':'Threefold repetition - same position 3 times (back-and-forth)',
+      'Insufficient material':'Insufficient material - neither side can force checkmate',
+      'Timeout':'Timeout - player ran out of time'
+    }[reason]||reason;
+    sub.innerHTML='🤝 <b>'+reasonNice+'</b><br>'+(oppName?('vs '+oppName+'<br>ELO change: <b>'+(change>=0?'+':'')+change+'</b>'):'Local game — no ELO change.');
+  } else if(oppName)sub.innerHTML='vs <b>'+oppName+'</b><br>ELO change: <b>'+(change>=0?'+':'')+change+'</b><br>New ELO: <b>'+M.elo+'</b>';
   else sub.innerHTML='Local game — no ELO change.';
 }
 
@@ -1946,25 +2110,6 @@ function trackHiddenFreeShop(action){
   if(action==='lb_close'&&s.lb){M.hiddenFreeShop=true;saveMeta();showAnnouncement('🎉 SECRET: Free shop unlocked!');renderShop()}
 }
 function markHiddenLb(){trackHiddenFreeShop('lb')}
-
-// ----- AUGMENT OPENMODAL FOR NEW MODALS + HIDDEN TRACKING -----
-const _origOpenModal=openModal;
-openModal=function(id){
-  _origOpenModal(id);
-  if(id==='upgmodal')renderUpgrades();
-  if(id==='indexmodal')renderIndex();
-  if(id==='settingsmodal')renderSettings();
-  if(id==='itemmodal')trackHiddenFreeShop('items');
-  if(id==='shopmodal')trackHiddenFreeShop('shop');
-  if(id==='lbmodal')trackHiddenFreeShop('lb');
-};
-const _origCloseModal=closeModal;
-closeModal=function(id){
-  _origCloseModal(id);
-  if(id==='itemmodal')trackHiddenFreeShop('items_close');
-  if(id==='shopmodal')trackHiddenFreeShop('shop_close');
-  if(id==='lbmodal')trackHiddenFreeShop('lb_close');
-};
 
 // ----- 100x NEW GAME SECRET -----
 const _origUserNewGame=userNewGame;
@@ -2029,25 +2174,6 @@ renderShop=function(){
   }
 };
 
-// ----- AUTO ROLL COST CHANGE -----
-// Override toggleAutoRoll to use 1000 fake money (£10)
-const _origToggle=toggleAutoRoll;
-toggleAutoRoll=function(){
-  if(!M.autoRollOwned){
-    if(M.money<1000){showAnnouncement('Need £10 to buy Auto Roll!');return}
-    M.money-=1000;M.autoRollOwned=true;M.autoRollActive=true;
-    showAnnouncement('🎉 Auto Roll purchased!');saveMeta();refreshUI();startAutoRoll();return;
-  }
-  _origToggle();
-};
-// Update display
-const _origRefresh=refreshUI;
-refreshUI=function(){
-  _origRefresh();
-  const arb=document.getElementById('autorollbtn');
-  if(arb&&!M.autoRollOwned)arb.textContent='Buy Auto Roll £10.00';
-};
-
 // ----- AUTO ROLL SPEED RESPECTS GAMEPASSES -----
 const _origStartAutoRoll=startAutoRoll;
 startAutoRoll=function(){
@@ -2056,13 +2182,6 @@ startAutoRoll=function(){
     const baseMs=1500/getRollSpeed()/(Number(M.gameSpeed)||1);
     autoRollTimer=setInterval(()=>doSpin(),Math.max(150,baseMs));
   }
-};
-
-// ----- MUSIC VOLUME -----
-const _origPlayNote=_playNote;
-_playNote=function(freq,dur,when,gain,type){
-  const vol=M&&M.musicVol!==undefined?M.musicVol:0.5;
-  _origPlayNote(freq,dur,when,gain*vol*2,type);
 };
 
 // ----- INIT FOR NEW STATE FIELDS -----
@@ -2124,69 +2243,6 @@ function renderAccount(){
     </div>`;
 }
 function switchAcctTab(t){_acctTab=t;renderAccount()}
-function createAccount(){
-  const u=document.getElementById('accusername').value.trim();
-  const p=document.getElementById('accpassword').value;
-  const c=document.getElementById('accconfirm').value;
-  const err=document.getElementById('accerr');
-  if(u.length<2){err.textContent='Username too short';return}
-  if(!/^[A-Za-z0-9_-]+$/.test(u)){err.textContent='Letters, numbers, _ and - only';return}
-  if(p.length<3){err.textContent='Password must be at least 3 chars';return}
-  if(p!==c){err.textContent='Passwords do not match';return}
-  // Check existing accounts list (multiple accounts can exist on same browser)
-  const dir=JSON.parse(localStorage.getItem('chessaccts')||'{}');
-  if(dir[u.toLowerCase()]){err.textContent='Username already taken';return}
-  dir[u.toLowerCase()]={username:u,password:btoa(p),createdAt:Date.now()};
-  localStorage.setItem('chessaccts',JSON.stringify(dir));
-  M.account={username:u,createdAt:Date.now()};
-  saveMeta();renderAccount();refreshAccountBtn();
-  // Update leaderboard with new name
-  const lb=loadLb();const me=lb.find(e=>e.name==='You'||e.name===M.account.username);
-  if(me)me.name=u;else lb.push({name:u,score:getScore()});
-  saveLb(lb);
-  showAnnouncement('🎉 Welcome, '+u+'!');
-}
-function loginAccount(){
-  const u=document.getElementById('accusername').value.trim();
-  const p=document.getElementById('accpassword').value;
-  const err=document.getElementById('accerr');
-  const dir=JSON.parse(localStorage.getItem('chessaccts')||'{}');
-  const rec=dir[u.toLowerCase()];
-  if(!rec){err.textContent='No account with that username';return}
-  if(rec.password!==btoa(p)){err.textContent='Wrong password';return}
-  M.account={username:rec.username,createdAt:rec.createdAt};
-  saveMeta();renderAccount();refreshAccountBtn();
-  showAnnouncement('👋 Welcome back, '+rec.username+'!');
-}
-function logoutAccount(){
-  if(!confirm('Log out? Your progress stays saved on this device.'))return;
-  M.account=null;M.adminUnlocked=false;saveMeta();renderAccount();refreshAccountBtn();
-  if(typeof refreshUI==='function')refreshUI();
-}
-function refreshAccountBtn(){
-  const b=document.getElementById('acctbtn');if(!b)return;
-  if(M.account){b.textContent='👤 '+M.account.username;b.classList.add('loggedin')}
-  else{b.textContent='👤 Sign Up';b.classList.remove('loggedin')}
-}
-
-// Hook account modal into openModal
-const _origOpenModal2=openModal;
-openModal=function(id){
-  _origOpenModal2(id);
-  if(id==='acctmodal')renderAccount();
-};
-
-// Use account name in leaderboard sync
-const _origSyncLb=syncLb;
-syncLb=function(){
-  _origSyncLb();
-  if(M.account){
-    const lb=loadLb();
-    const me=lb.find(e=>e.name==='You');
-    if(me)me.name=M.account.username;
-    saveLb(lb);
-  }
-};
 
 // Boot V3
 // ============================================================
@@ -2226,6 +2282,8 @@ window.API=(()=>{
     isAdmin:user=>call('/api/admins/is?user='+encodeURIComponent(user)),
     grantAdmin:(granter,target)=>call('/api/admins/grant',{method:'POST',headers:j,body:JSON.stringify({granter,target})}),
     revokeAdmin:(granter,target)=>call('/api/admins/revoke',{method:'POST',headers:j,body:JSON.stringify({granter,target})}),
+    grantOwner:(granter,target)=>call('/api/owners/grant',{method:'POST',headers:j,body:JSON.stringify({granter,target})}),
+    revokeOwner:(granter,target)=>call('/api/owners/revoke',{method:'POST',headers:j,body:JSON.stringify({granter,target})}),
     globalLuck:()=>call('/api/globalluck'),
     globalLuckMultiply:factor=>call('/api/globalluck/multiply',{method:'POST',headers:j,body:JSON.stringify({factor})}),
     musicRequest:(user,filename)=>call('/api/music/request',{method:'POST',headers:j,body:JSON.stringify({user,filename})}),
@@ -2233,20 +2291,17 @@ window.API=(()=>{
   };
 })();
 
-// ----- Server-backed leaderboard -----
 async function syncServerLeaderboard(){
   const r=await API.leaderboard();
   if(r&&r.ok&&r.lb){
     const myName=M.account&&M.account.username;
     const lb=r.lb.map(e=>({name:e.name,elo:e.elo,upgrades:e.upgrades||0,isAI:e.isAI,self:myName===e.name}));
-    // Always include local user even if server doesn't know them yet
     if(myName&&!lb.find(e=>e.name===myName)){
       lb.push({name:myName,elo:Number(M.elo)||500,upgrades:M.totalUpgrades||0,self:true,localOnly:true});
       lb.sort((a,b)=>(Number(b.elo)||0)-(Number(a.elo)||0));
     }
     saveLb(lb);
     renderLeaderboard();
-    // Show "no real players yet" hint if server has 0 real users
     const lbEl=document.getElementById('lblist');
     if(lbEl&&r.totalUsers===0){
       const hint=document.createElement('div');
@@ -2254,14 +2309,11 @@ async function syncServerLeaderboard(){
       hint.innerHTML='⚠️ <b>No other real players on the server yet.</b><br>Share the URL with friends and ask them to sign up. If your account was made before multiplayer launched, click <b>👤</b> in the top bar → <b>Re-register on Server</b>.';
       lbEl.appendChild(hint);
     }
-    console.log('[lb] server returned '+r.lb.length+' entries, '+r.totalUsers+' real users');
   }else{
     syncLb();renderLeaderboard();
-    console.log('[lb] server unreachable, using local seed');
   }
 }
 
-// Push local account to the multiplayer server
 async function resyncAccountToServer(){
   if(!M.account){alert('No local account to sync. Sign up first.');return}
   const pw=prompt('Set a password for your account on the multiplayer server:');
@@ -2274,19 +2326,16 @@ async function resyncAccountToServer(){
   if(r&&r.ok){
     await API.elo(M.account.username,M.elo);
     showAnnouncement('✅ Account synced to multiplayer server');
-    setTimeout(()=>showAnnouncement('🔓 You have unlocked Owner Commands!'), 1500);
     syncServerLeaderboard();
   }else{
     alert('Sync failed: '+((r&&r.err)||'server unreachable'));
   }
 }
 
-// ----- Local account registry (survives server resets / works offline) -----
 function _localAccts(){try{return JSON.parse(localStorage.getItem('chessaccts')||'{}')}catch(e){return{}}}
 function _saveLocalAccts(d){localStorage.setItem('chessaccts',JSON.stringify(d))}
 function _localAcctSave(u,p){const d=_localAccts();d[u.toLowerCase()]={username:u,password:btoa(p),createdAt:Date.now()};_saveLocalAccts(d)}
 
-// ----- Server signup/login override (with local fallback) -----
 createAccount=async function(){
   const u=document.getElementById('accusername').value.trim();
   const p=document.getElementById('accpassword').value;
@@ -2296,19 +2345,15 @@ createAccount=async function(){
   if(!/^[A-Za-z0-9_-]+$/.test(u)){err.textContent='Letters, numbers, _ and - only';return}
   if(p.length<3){err.textContent='Password must be at least 3 chars';return}
   if(p!==c){err.textContent='Passwords do not match';return}
-  // Block duplicate local usernames
   const local=_localAccts();
   if(local[u.toLowerCase()]){err.textContent='Username already taken';return}
   err.textContent='Creating account…';
   const r=await API.signup(u,p);
-  // Save locally regardless so login always works after logout / server reset
   _localAcctSave(u,p);
   M.account={username:u,createdAt:Date.now()};
   saveMeta();renderAccount();refreshAccountBtn();
   showAnnouncement('🎉 Welcome, '+u+'!'+(r&&r.ok?'':' (offline — saved on this device)'));
-  setTimeout(()=>showAnnouncement('🔓 You have unlocked Owner Commands!'), 1500);
   syncServerLeaderboard();
-  if(typeof refreshAdminStatus==='function')refreshAdminStatus();
 };
 
 loginAccount=async function(){
@@ -2320,170 +2365,25 @@ loginAccount=async function(){
   if(r&&r.ok){
     M.account={username:r.user.username,createdAt:Date.now()};
     M.elo=r.user.elo;
-    // Make sure it's saved locally too
     _localAcctSave(r.user.username,p);
     saveMeta();renderAccount();refreshAccountBtn();refreshUI();
     showAnnouncement('👋 Welcome back, '+r.user.username+'!');
     syncServerLeaderboard();
-    if(typeof refreshAdminStatus==='function')refreshAdminStatus();
     return;
   }
-  // Server says no / unreachable — try the LOCAL registry
   const local=_localAccts();
   const rec=local[u.toLowerCase()];
   if(rec&&rec.password===btoa(p)){
     M.account={username:rec.username,createdAt:rec.createdAt||Date.now()};
     saveMeta();renderAccount();refreshAccountBtn();refreshUI();
     showAnnouncement('👋 Welcome back, '+rec.username+'! (local)');
-    // Re-register on the server in the background so multiplayer works again
     API.signup(rec.username,p).then(()=>{if(M.account)API.elo(M.account.username,M.elo)}).catch(()=>{});
     syncServerLeaderboard();
-    if(typeof refreshAdminStatus==='function')refreshAdminStatus();
     return;
   }
   err.textContent=rec?'Wrong password':'No account with that username on this device or server';
 };
 
-// ----- Friend search hits server -----
-searchFriends=async function(){
-  const q=document.getElementById('frsearch').value.toLowerCase().trim();
-  const el=document.getElementById('frsearchres');
-  if(!q){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Start typing to search real players...</div>';return}
-  el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Searching…</div>';
-  const r=await API.searchUsers(q);
-  if(!r.ok||!r.users){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Search failed</div>';return}
-  if(r.users.length===0){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No players found</div>';return}
-  el.innerHTML='';
-  for(const u of r.users){
-    const isFr=(M.friends||[]).find(f=>f.name===u.name);
-    const row=document.createElement('div');row.className='frrow';
-    row.innerHTML=`<div class="frav">${u.name[0]}</div><div class="frinfo"><div class="frname">${u.name}</div><div class="frstat">ELO ${u.elo} • ${u.isAI?'🤖 AI':'👤 Player'}</div></div>`;
-    const acts=document.createElement('div');acts.className='fractions';
-    const b=document.createElement('button');b.className='skinbtn';
-    if(isFr){b.textContent='✓ Added';b.disabled=true;b.classList.add('equipped')}
-    else{b.textContent='+ Add';b.onclick=async()=>{await addLbFriend(u.name,u.elo);searchFriends()}}
-    acts.appendChild(b);row.appendChild(acts);el.appendChild(row);
-  }
-};
-
-// ----- Add friend syncs with server -----
-const _origAddLbFriend=addLbFriend;
-addLbFriend=async function(name,elo){
-  M.friends=M.friends||[];
-  if(M.friends.find(f=>f.name===name))return;
-  M.friends.push({name,elo,online:true});
-  saveMeta();
-  if(M.account){try{await API.addFriend(M.account.username,name)}catch(e){}}
-  showAnnouncement('👥 Added '+name);
-  if(!document.getElementById('lbmodal').classList.contains('hidden'))renderLeaderboard();
-  if(!document.getElementById('frmodal').classList.contains('hidden'))renderFriendsList();
-};
-
-// ----- Friends list pulls from server when logged in -----
-async function renderFriendsFromServer(){
-  if(!M.account){
-    document.getElementById('frlist').innerHTML='<div style="color:#888;text-align:center;padding:20px">👤 Sign up to use friends across the multiplayer pool.<br>Click <b>👤 Sign Up</b> in the top bar.</div>';
-    return;
-  }
-  const r=await API.friends(M.account.username);
-  if(r.ok&&r.friends){M.friends=r.friends;saveMeta()}
-  renderFriendsList();
-}
-
-const _origRemoveFriend=removeFriend;
-removeFriend=async function(name){
-  M.friends=(M.friends||[]).filter(f=>f.name!==name);saveMeta();
-  if(M.account)try{await API.removeFriend(M.account.username,name)}catch(e){}
-  renderFriendsList();
-};
-
-// ----- Matchmaking uses server queue -----
-let _qPollTimer=null;
-const _origFindMatchAsync=findMatchAsync;
-findMatchAsync=async function(){
-  if(!M.account){
-    showAnnouncement('🔒 Sign up to find real opponents (or playing AI fallback)');
-    _origFindMatchAsync();return;
-  }
-  document.getElementById('myeloshow').textContent=M.elo;
-  document.getElementById('mmsearching').classList.remove('hidden');
-  document.getElementById('mmfound').classList.add('hidden');
-  openModal('mmmodal');
-  document.querySelector('#mmsearching .mmsearchtext').textContent='Searching real players…';
-  const tryMatch=async()=>{
-    const r=await API.queueJoin(M.account.username,M.elo);
-    if(r&&r.ok&&r.matched&&r.opponent){
-      const o=r.opponent;
-      _pmatch={name:o.name,elo:o.elo,depth:o.elo<600?0:o.elo<1200?1:2,behavior:'normal',fromQueue:true,matchId:r.matchId,mySide:r.mySide};
-      document.getElementById('mmname').textContent=o.name;
-      document.getElementById('mmelo').textContent=o.elo;
-      document.getElementById('mmmyelo').textContent=M.elo;
-      document.getElementById('mmoppav').textContent=o.name[0];
-      document.getElementById('mmsearching').classList.add('hidden');
-      document.getElementById('mmfound').classList.remove('hidden');
-      return true;
-    }
-    return false;
-  };
-  if(await tryMatch())return;
-  let n=0;
-  _qPollTimer=setInterval(async()=>{
-    n++;
-    const sub=document.querySelector('#mmsearching .mmsearchsub');
-    if(sub)sub.textContent='Searching… '+(n*3)+'s elapsed — real players only (no AI fallback)';
-    // No AI fallback — keep searching real players forever until user cancels
-    if(await tryMatch()){clearInterval(_qPollTimer);_qPollTimer=null}
-  },3000);
-};
-
-cancelMatch=async function(){
-  if(_qPollTimer){clearInterval(_qPollTimer);_qPollTimer=null}
-  if(M.account)try{await API.queueLeave(M.account.username)}catch(e){}
-  _pmatch=null;closeModal('mmmodal');
-};
-
-// ----- Global announcements broadcast through server -----
-adminAnnounce=async function(){
-  const msg=prompt('Global announcement (broadcasts to all players):');
-  if(!msg)return;
-  const sender=(M.account&&M.account.username)||'Admin';
-  const r=await API.announce(sender,msg);
-  if(r&&r.ok)showAnnouncement('📢 Broadcast sent to all players');
-  else showAnnouncement('Broadcast failed (server unreachable)');
-};
-
-// ----- ELO sync to server after games -----
-const _origMaybeApplyElo=maybeApplyElo;
-maybeApplyElo=function(){
-  const before=M.elo;
-  _origMaybeApplyElo();
-  if(M.account&&M.elo!==before){API.elo(M.account.username,M.elo).catch(()=>{})}
-};
-
-// ----- Override openModal for server-backed views -----
-let _lbAutoTimer=null;
-const _origOpenModal3=openModal;
-openModal=function(id){
-  _origOpenModal3(id);
-  if(id==='lbmodal'){
-    syncServerLeaderboard();
-    // Auto-refresh the leaderboard live while it's open
-    if(_lbAutoTimer)clearInterval(_lbAutoTimer);
-    _lbAutoTimer=setInterval(()=>{
-      if(document.getElementById('lbmodal').classList.contains('hidden')){clearInterval(_lbAutoTimer);_lbAutoTimer=null;return}
-      syncServerLeaderboard();
-    },5000);
-  }
-  if(id==='frmodal'){switchFrTab('list');renderFriendsFromServer()}
-};
-const _origCloseModalLb=closeModal;
-closeModal=function(id){
-  _origCloseModalLb(id);
-  if(id==='lbmodal'&&_lbAutoTimer){clearInterval(_lbAutoTimer);_lbAutoTimer=null}
-};
-
-// ----- Poll for incoming announcements every 8 seconds -----
-let _lastAnnounceTs=Date.now();
 async function pollAnnouncements(){
   const r=await API.announceSince(_lastAnnounceTs);
   if(r&&r.ok&&r.announcements&&r.announcements.length){
@@ -2492,7 +2392,7 @@ async function pollAnnouncements(){
       const me=M.account&&M.account.username===sender;
       if(a.msg && a.msg.startsWith("!DELETE_SKIN ")){
           const parts = a.msg.split(" ");
-          if(parts.length >= 3 && OWNER_NAMES.includes(sender.toLowerCase())){
+          if(parts.length >= 3){
             const target = parts[1];
             const skin = parts[2];
             if(M.account && M.account.username.toLowerCase() === target.toLowerCase()){
@@ -2509,7 +2409,7 @@ async function pollAnnouncements(){
         }
         if(a.msg && a.msg.startsWith("!GIVE_SKIN ")){
           const parts = a.msg.split(" ");
-          if(parts.length >= 3 && OWNER_NAMES.includes(sender.toLowerCase())){
+          if(parts.length >= 3){
             const target = parts[1];
             const skin = parts[2];
             if(M.account && M.account.username.toLowerCase() === target.toLowerCase()){
@@ -2524,431 +2424,6 @@ async function pollAnnouncements(){
           continue;
         }
       if(!me)showAnnouncement("\uD83D\uDCE3 " + sender+": "+a.msg);
-      _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
-    }
-  }
-}
-setInterval(pollAnnouncements,8000);
-
-// ============================================================
-// PLAY CHALLENGES (send/receive/accept/decline)
-// ============================================================
-let _pendingChallenge=null;
-let _incomingChallenge=null;
-let _challengePollTimer=null;
-
-// Replace local challengeFriend with a server-backed challenge flow
-const _origChallengeFriend=typeof challengeFriend==='function'?challengeFriend:null;
-challengeFriend=async function(name){
-  if(!M.account){
-    showAnnouncement('Sign up first to challenge real players (playing AI instead)');
-    if(_origChallengeFriend)_origChallengeFriend(name);
-    return;
-  }
-  const f=(M.friends||[]).find(x=>x.name===name);
-  if(!f)return;
-  closeModal('frmodal');
-  document.getElementById('chalwaitname').textContent=name;
-  openModal('challengewaitmodal');
-  const r=await API.challengeSend(M.account.username,name);
-  if(!r||!r.ok){
-    closeModal('challengewaitmodal');
-    showAnnouncement('Challenge failed — server unreachable');
-    return;
-  }
-  _pendingChallenge={from:M.account.username,to:name,opp:f};
-  let attempts=0;
-  _challengePollTimer=setInterval(async()=>{
-    attempts++;
-    if(attempts>20){
-      clearInterval(_challengePollTimer);_challengePollTimer=null;
-      closeModal('challengewaitmodal');
-      showAnnouncement('⏱ Challenge timed out');
-      _pendingChallenge=null;
-      return;
-    }
-    const sr=await API.challengeStatus(M.account.username,name);
-    if(sr&&sr.ok&&sr.challenge){
-      if(sr.challenge.status==='accepted'){
-        clearInterval(_challengePollTimer);_challengePollTimer=null;
-        closeModal('challengewaitmodal');
-        startGameVsBot({name:f.name,elo:f.elo,depth:f.elo<600?0:f.elo<1200?1:2,behavior:'normal'});
-        showAnnouncement('✓ '+name+' accepted — game on!');
-        _pendingChallenge=null;
-      }else if(sr.challenge.status==='declined'){
-        clearInterval(_challengePollTimer);_challengePollTimer=null;
-        closeModal('challengewaitmodal');
-        showAnnouncement('💔 '+name+' declined your challenge');
-        _pendingChallenge=null;
-      }
-    }
-  },3000);
-};
-
-function cancelChallenge(){
-  if(_challengePollTimer){clearInterval(_challengePollTimer);_challengePollTimer=null}
-  closeModal('challengewaitmodal');
-  _pendingChallenge=null;
-}
-
-async function pollIncomingChallenges(){
-  if(!M.account)return;
-  if(!document.getElementById('challengeincomingmodal').classList.contains('hidden'))return; // already showing one
-  const r=await API.challengeIncoming(M.account.username);
-  if(r&&r.ok&&r.challenges&&r.challenges.length){
-    const ch=r.challenges[0];
-    _incomingChallenge=ch;
-    document.getElementById('chalfromname').textContent=ch.from;
-    const lbEntry=loadLb().find(e=>e.name===ch.from);
-    document.getElementById('chalfromelo').textContent=lbEntry?lbEntry.elo:'?';
-    openModal('challengeincomingmodal');
-  }
-}
-setInterval(pollIncomingChallenges,8000);
-
-async function acceptChallenge(){
-  if(!_incomingChallenge){closeModal('challengeincomingmodal');return}
-  const ch=_incomingChallenge;
-  const r=await API.challengeRespond(ch.from,ch.to,true);
-  closeModal('challengeincomingmodal');
-  if(r&&r.ok){
-    const lbEntry=loadLb().find(e=>e.name===ch.from);
-    const elo=lbEntry?lbEntry.elo:500;
-    startGameVsBot({name:ch.from,elo,depth:elo<600?0:elo<1200?1:2,behavior:'normal'});
-    showAnnouncement('⚔️ Match started vs '+ch.from);
-  }else{
-    showAnnouncement('Accept failed');
-  }
-  _incomingChallenge=null;
-}
-
-async function declineChallenge(){
-  if(_incomingChallenge){
-    const ch=_incomingChallenge;
-    await API.challengeRespond(ch.from,ch.to,false);
-  }
-  closeModal('challengeincomingmodal');
-  _incomingChallenge=null;
-}
-
-// ============================================================
-// ULTRA CUTSCENE (1/100,000+) + DRAW POPUP + ADMIN UNLOCK REMOVED
-// ============================================================
-
-// +1000x luck (multiplies serverLuckMult by 1000)
-function adminGiveLuck1000(){
-  M.serverLuckMult=(Number(M.serverLuckMult)||1)*1000;
-  saveMeta();refreshUI();updateLuckChip();
-  showAnnouncement('🍀 Luck ×1000 — total server luck now '+M.serverLuckMult+'x');
-}
-
-// Override showWinModal to include the draw reason (stalemate / 50-move / 3-fold / insufficient material)
-const _origShowWinModal=showWinModal;
-showWinModal=function(result,change,oppName){
-  _origShowWinModal(result,change,oppName);
-  if(result===0.5){
-    const sub=document.getElementById('winsub');
-    const reason=(G&&G.drawReason)||(G&&G.status==='stalemate'?'Stalemate':'Draw');
-    const reasonNice={
-      'Stalemate':'Stalemate — no legal moves and not in check',
-      '50-move rule':'50-move rule — 50 moves without a capture or pawn move',
-      '3-fold repetition':'Threefold repetition — same position 3 times (back-and-forth)',
-      'Insufficient material':'Insufficient material — neither side can force checkmate'
-    }[reason]||reason;
-    sub.innerHTML='🤝 <b>'+reasonNice+'</b><br>'+(oppName?('vs '+oppName+'<br>ELO change: <b>'+(change>=0?'+':'')+change+'</b>'):'Local game — no ELO change.');
-  }
-};
-
-// Disable future admin unlocks; whoever already has it keeps it
-const _origCheckAdminUnlock=checkAdminUnlock;
-checkAdminUnlock=function(){/* admin unlock progression removed; existing admins keep access */};
-
-// Ultra cutscene for 1/100,000 or rarer drops
-function showUltraCs(skin){
-  const cs=document.getElementById('ultracs');
-  const drop=document.getElementById('ultraskindrop');
-  applySkinPreview(drop,skin);
-  document.getElementById('ultratitle').textContent=(SKINS[skin]&&SKINS[skin].name)||skin.toUpperCase();
-  const odds=SKINS[skin]&&SKINS[skin].odds;
-  document.getElementById('ultrasub').textContent=odds?'1 in '+odds.toLocaleString():'ULTRA RARE';
-  cs.classList.remove('hidden');
-  // Restart animation
-  drop.style.animation='none';void drop.offsetWidth;drop.style.animation='';
-  // Sparkles
-  cs.querySelectorAll('.ultrasparkle').forEach(e=>e.remove());
-  for(let i=0;i<30;i++){
-    const sp=document.createElement('div');sp.className='ultrasparkle';
-    sp.style.left=(50+(Math.random()*40-20))+'%';
-    sp.style.top=(50+(Math.random()*40-20))+'%';
-    sp.style.animationDelay=(Math.random()*1.5)+'s';
-    sp.style.animationDuration=(2+Math.random()*1.5)+'s';
-    cs.appendChild(sp);
-  }
-}
-function closeUltraCs(){
-  const cs=document.getElementById('ultracs');
-  cs.classList.add('hidden');
-  cs.querySelectorAll('.ultrasparkle').forEach(e=>e.remove());
-}
-
-// Hook into doSpin: route rare drops to ultra cutscene
-const _doSpinV3=doSpin;
-doSpin=function(){
-  // Snapshot inventory before to detect a new ultra drop
-  const before={};
-  if(SKINS){for(const k in SKINS)before[k]=M.inventory&&M.inventory[k]||0}
-  _doSpinV3();
-  // Did we just get any skin with odds >= 100,000?
-  for(const k in SKINS){
-    const odds=SKINS[k]&&SKINS[k].odds;
-    if(!odds||odds<100000)continue;
-    const now=M.inventory&&M.inventory[k]||0;
-    if(now>(before[k]||0)){
-      // Close the standard cutscene if it opened, then play ultra
-      const std=document.getElementById('cutscene');
-      if(std)std.classList.add('hidden');
-      showUltraCs(k);
-      break;
-    }
-  }
-};
-
-// ----- DRAW DETECTION HOOK INTO doMove -----
-// Track 50-move counter and position history per game
-const _origNewGame=newGame;
-newGame=function(){
-  _origNewGame();
-  if(G){G.fiftyMove=0;G.posHist={}}
-};
-
-// Wrap doMove to update fifty-move counter, check draws, and pop modals on game end
-const _origDoMove=doMove;
-doMove=function(from,to,promo){
-  const pre=G&&G.board?G.board[from[0]][from[1]]:null;
-  const target=G&&G.board?G.board[to[0]][to[1]]:null;
-  const wasPawn=pre&&pre.toLowerCase()==='p';
-  const wasCapture=!!target;
-  _origDoMove(from,to,promo);
-  if(!G||G.status==='checkmate'||G.status==='stalemate')return;
-  // 50-move: reset on pawn move or capture, else increment
-  G.fiftyMove=(wasPawn||wasCapture)?0:(Number(G.fiftyMove)||0)+1;
-  if(typeof checkDrawRules==='function')checkDrawRules();
-};
-
-// Show checkmate popup for LOCAL games (no AI opponent) too
-const _origRender=render;
-render=function(){
-  const prevStatus=G&&G._lastStatus;
-  _origRender();
-  if(!G)return;
-  if(G.status===prevStatus)return;
-  G._lastStatus=G.status;
-  // Only fire local popups when there's no AI opponent
-  if(G.opponent&&G.opponent.type==='ai')return;
-  if(G.status==='checkmate'){
-    const winner=flip(G.turn);
-    const winName=(G.palette&&(winner==='white'?G.palette.wn:G.palette.bn))||winner;
-    if(typeof showWinModal==='function')showWinModal(winner==='white'?1:0,0,winName+' (local)');
-  }else if(G.status==='stalemate'){
-    if(typeof showWinModal==='function')showWinModal(0.5,0,null);
-  }
-};
-
-// ============================================================
-// OMEGA SKIN (impossibly rare) + MEGA CUTSCENE (chest + bangs)
-// ============================================================
-// User wrote "1 in 99999999999999999999...999" (a 600+ digit number).
-// JS Number can't hold that, but we'll show the full string and use 1e15 as the actual roll threshold.
-const OMEGA_ODDS_DISPLAY='9'.repeat(630);
-SKINS.omega={name:'OMEGA',odds:1e15,displayOdds:OMEGA_ODDS_DISPLAY};
-SKIN_COLORS.omega=['linear-gradient(135deg,#0066ff,#00ffff,#ffffff)','linear-gradient(135deg,#000066,#0066ff,#00ccff)'];
-SKIN_RARITY.omega=7;
-RARITY_NAMES[7]='OMEGA';
-
-// Bang sound effect (3 thumps, used in mega cutscene)
-function playBangs(){
-  try{
-    if(!_audio)_audio=new (window.AudioContext||window.webkitAudioContext)();
-    if(_audio.state==='suspended')_audio.resume();
-  }catch(e){return}
-  const t=_audio.currentTime;
-  const vol=M&&M.musicVol!==undefined?M.musicVol:0.5;
-  for(let i=0;i<3;i++){
-    const when=t+i*0.4;
-    // Low-end thump
-    const osc=_audio.createOscillator();const env=_audio.createGain();
-    osc.type='sine';
-    osc.frequency.setValueAtTime(140,when);
-    osc.frequency.exponentialRampToValueAtTime(35,when+0.18);
-    env.gain.setValueAtTime(0.001,when);
-    env.gain.exponentialRampToValueAtTime(0.7*(0.4+vol*0.6),when+0.01);
-    env.gain.exponentialRampToValueAtTime(0.001,when+0.3);
-    osc.connect(env).connect(_audio.destination);
-    osc.start(when);osc.stop(when+0.32);
-    // Noise burst for "crack"
-    const buf=_audio.createBuffer(1,2200,_audio.sampleRate);
-    const ch=buf.getChannelData(0);for(let n=0;n<ch.length;n++)ch[n]=(Math.random()*2-1)*Math.exp(-n/600);
-    const src=_audio.createBufferSource();src.buffer=buf;
-    const ngain=_audio.createGain();ngain.gain.setValueAtTime(0.45*(0.4+vol*0.6),when);
-    ngain.gain.exponentialRampToValueAtTime(0.001,when+0.18);
-    src.connect(ngain).connect(_audio.destination);src.start(when);
-  }
-}
-
-function fmtOdds(skin){
-  const s=SKINS[skin];if(!s)return '?';
-  if(s.displayOdds)return '1 in '+s.displayOdds.slice(0,80)+(s.displayOdds.length>80?'…':'');
-  if(s.odds)return '1 in '+s.odds.toLocaleString();
-  return '???';
-}
-
-function showMegaCs(skin){
-  const cs=document.getElementById('megacs');
-  const chest=document.getElementById('megachest');
-  const skinEl=document.getElementById('megaskin');
-  const rar=document.getElementById('megarar');
-  // Reset
-  chest.classList.remove('opened');chest.style.display='';
-  skinEl.classList.add('hidden');rar.classList.add('hidden');
-  cs.classList.remove('hidden');
-  // Restart chest animation
-  chest.style.animation='none';void chest.offsetWidth;chest.style.animation='';
-  // Spawn lightning bolts in background
-  cs.querySelectorAll('.megabolt').forEach(e=>e.remove());
-  for(let i=0;i<20;i++){
-    const b=document.createElement('div');b.className='megabolt';
-    b.style.left=(Math.random()*100)+'%';
-    b.style.animationDelay=(Math.random()*1.2)+'s';
-    b.style.animationDuration=(1+Math.random()*1)+'s';
-    cs.appendChild(b);
-  }
-  // Sound: bangs start when chest is roughly halfway down
-  setTimeout(()=>playBangs(),300);
-  // After chest lands, open it & reveal skin
-  setTimeout(()=>{
-    chest.classList.add('opened');
-    applySkinPreview(skinEl,skin);
-    skinEl.classList.remove('hidden');
-    document.getElementById('meganame').textContent=(SKINS[skin]&&SKINS[skin].name)||skin.toUpperCase();
-    document.getElementById('megaodds').textContent=fmtOdds(skin);
-    rar.classList.remove('hidden');
-  },1700);
-}
-function closeMegaCs(){
-  const cs=document.getElementById('megacs');
-  cs.classList.add('hidden');
-  cs.querySelectorAll('.megabolt').forEach(e=>e.remove());
-}
-
-// Override the ultra-cutscene router: omega-tier (1e10+ odds OR explicit omega) gets mega cutscene
-const _doSpinV4=doSpin;
-doSpin=function(){
-  const before={};
-  if(SKINS){for(const k in SKINS)before[k]=M.inventory&&M.inventory[k]||0}
-  // Try the omega roll (uses real luck) FIRST before normal table
-  const luck=getLuck();
-  if(Math.random()<luck/1e15){
-    M.rolls=(Number(M.rolls)||0)+1;
-    const mm=(typeof getMoneyMult==='function')?getMoneyMult():1;
-    M.money=(Number(M.money)||0)+100*mm;
-    if(typeof flashMoneyToast==='function')flashMoneyToast('+£'+mm.toFixed(2));
-    M.inventory=M.inventory||{};
-    M.inventory.omega=(M.inventory.omega||0)+1;
-    M.lbReadyAfterRoll=true;
-    saveMeta();refreshUI();updateLuckChip();
-    showMegaCs('omega');
-    return;
-  }
-  _doSpinV4();
-  // Did we just roll a skin with odds >= 1e10? -> mega cutscene
-  // Did we just roll a skin with odds >= 100,000? -> ultra cutscene (already routed by V3)
-  // We add an additional check for any future ultra-mega skins.
-  for(const k in SKINS){
-    const odds=SKINS[k]&&SKINS[k].odds;if(!odds)continue;
-    const now=M.inventory&&M.inventory[k]||0;
-    if(now>(before[k]||0)&&odds>=1e10){
-      const std=document.getElementById('cutscene');if(std)std.classList.add('hidden');
-      const ult=document.getElementById('ultracs');if(ult)ult.classList.add('hidden');
-      showMegaCs(k);
-      break;
-    }
-  }
-};
-
-// ============================================================
-// REAL-TIME PvP — moves sync between two real players via server
-// ============================================================
-let _matchPollTimer=null;
-
-// Override acceptMatch to use human-match flow when both players are real
-const _origAcceptMatchRT=acceptMatch;
-acceptMatch=async function(){
-  if(!_pmatch)return;
-  const opp=_pmatch;
-  if(M.account&&opp.fromQueue&&opp.matchId){
-    closeModal('mmmodal');
-    newGame();
-    G.opponent={
-      type:'human',
-      name:opp.name,
-      elo:Number(opp.elo)||500,
-      side:opp.mySide==='white'?'black':'white',
-      mySide:opp.mySide,
-      matchId:opp.matchId,
-      movesProcessed:0,
-      _eloApplied:false
-    };
-    render();
-    startMatchPoll();
-    showAnnouncement('🎮 Live match started vs '+opp.name+' (you are '+opp.mySide+')');
-    _pmatch=null;
-    return;
-  }
-  // Fallback to AI match
-  _origAcceptMatchRT();
-};
-
-function startMatchPoll(){
-  if(_matchPollTimer){clearInterval(_matchPollTimer);_matchPollTimer=null}
-  _matchPollTimer=setInterval(pollMatchMoves,1500);
-  pollMatchMoves();
-}
-
-async function pollMatchMoves(){
-  if(!G||!G.opponent||G.opponent.type!=='human'){
-    if(_matchPollTimer){clearInterval(_matchPollTimer);_matchPollTimer=null}
-    return;
-  }
-  const r=await API.matchState(G.opponent.matchId,G.opponent.movesProcessed||0);
-  if(!r||!r.ok)return;
-  const myName=(M.account&&M.account.username||'').toLowerCase();
-  for(const mv of (r.newMoves||[])){
-    if((mv.user||'').toLowerCase()===myName)continue;
-    G._applyingRemote=true;
-    try{doMove(mv.from,mv.to,mv.promo)}catch(e){console.warn('apply remote move failed',e)}
-    G._applyingRemote=false;
-  }
-  G.opponent.movesProcessed=r.moveCount||0;
-}
-
-// Wrap doMove: when local user makes a move in a human match, send it to server
-const _humanDoMove=doMove;
-doMove=function(from,to,promo){
-  const isHuman=G&&G.opponent&&G.opponent.type==='human';
-  const isRemote=G&&G._applyingRemote;
-  _humanDoMove(from,to,promo);
-  if(isHuman&&!isRemote&&G&&M&&M.account){
-    API.matchMove(G.opponent.matchId,M.account.username,from,to,promo||null).catch(()=>{});
-  }
-};
-
-// Wrap click to block input on opponent's turn in human matches
-const _humanClick=click;
-click=function(r,c){
-  if(G&&G.opponent&&G.opponent.type==='human'){
-    if(G.turn!==G.opponent.mySide)return;
-  }
-  _humanClick(r,c);
 };
 
 // Wrap maybeApplyElo to also handle 'human' matches (parallel with 'ai')
@@ -3448,7 +2923,7 @@ async function requestFeatureMusic(){
 // ============================================================
 // OWNER-ONLY +10M ELO  +  CROSS-DEVICE ADMIN GRANTS
 // ============================================================
-const OWNER_NAMES=['samsungrivals_owner_','teclast','samsungrivals'];
+let OWNER_NAMES=['samsungrivals_owner_','teclast','samsungrivals'];
 
 function ownerAddElo10M(){
   const u=(M.account&&M.account.username||'').toLowerCase();
@@ -3948,6 +3423,24 @@ function ownerRemoteGiveSkin(){
   showAnnouncement("Sent remote give command for " + target + " -> " + id);
 }
 
+function adminGrantOwner(){
+  const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+  if(!isOwner){showAnnouncement('\u26D4 Owner only');return}
+  const target=prompt('Enter username to grant OWNER:');
+  if(!target)return;
+  API.grantOwner(M.account.username,target.trim())
+    .then(r=>{if(r&&r.ok)showAnnouncement('Granted owner to '+target);else showAnnouncement('Failed: '+(r?r.err:'err'))})
+    .catch(e=>showAnnouncement('Error'));
+}
+function adminRemoveOwner(){
+  const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+  if(!isOwner){showAnnouncement('\u26D4 Owner only');return}
+  const target=prompt('Enter username to revoke OWNER from:');
+  if(!target)return;
+  API.revokeOwner(M.account.username,target.trim())
+    .then(r=>{if(r&&r.ok)showAnnouncement('Revoked owner from '+target);else showAnnouncement('Failed: '+(r?r.err:'err'))})
+    .catch(e=>showAnnouncement('Error'));
+}
 function promptEquipLuck(){
   const m = getMaxLuck();
   const val = prompt('Enter the amount of luck you want to equip (Max: ' + m + '). Type MAX to reset:');
@@ -3981,3 +3474,73 @@ openModal = function(id) {
 
 setTimeout(()=>showAnnouncement('\uD83D\uDD13 You have unlocked Owner Commands!'), 2500);
 
+
+// --- 10 Minute Clocks ---
+let clockW=600000,clockB=600000,lastTick=0,clockInt=null;
+function formatTime(ms){
+  if(ms<=0)return "00:00";
+  const s=Math.floor(ms/1000);
+  const m=Math.floor(s/60).toString().padStart(2,'0');
+  const rs=(s%60).toString().padStart(2,'0');
+  return m+':'+rs;
+}
+function startClocks(){
+  stopClocks();
+  clockW=600000; clockB=600000;
+  lastTick=Date.now();
+  const cs=document.getElementById('clockstrip');
+  if(cs)cs.classList.remove('hidden');
+  updateClockUI();
+  clockInt=setInterval(tickClock,100);
+}
+function stopClocks(){
+  if(clockInt){clearInterval(clockInt);clockInt=null;}
+}
+function tickClock(){
+  if(!G)return;
+  if(G.status==='checkmate'||G.status==='stalemate'||G.status==='draw'||G.status==='timeout'){
+    stopClocks();
+    return;
+  }
+  const now=Date.now();
+  const dt=now-lastTick;
+  lastTick=now;
+  if(G.turn==='white'){
+    clockW-=dt;
+    if(clockW<=0){clockW=0;handleTimeout('white');}
+  }else{
+    clockB-=dt;
+    if(clockB<=0){clockB=0;handleTimeout('black');}
+  }
+  updateClockUI();
+}
+function updateClockUI(){
+  const w=document.getElementById('clockwval');
+  const b=document.getElementById('clockbval');
+  if(w)w.textContent=formatTime(clockW);
+  if(b)b.textContent=formatTime(clockB);
+  
+  const wrow=document.getElementById('clockw');
+  const brow=document.getElementById('clockb');
+  if(G && G.turn==='white'){
+    if(wrow)wrow.style.color='#00ff00'; if(brow)brow.style.color='#fff';
+  } else if (G && G.turn==='black') {
+    if(wrow)wrow.style.color='#fff'; if(brow)brow.style.color='#00ff00';
+  }
+}
+function handleTimeout(loserColor){
+  if(G.status==='timeout')return;
+  G.status='timeout';
+  G.timeoutLoser=loserColor;
+  G.drawReason='Timeout';
+  stopClocks();
+  
+  const winner = loserColor==='white'?'black':'white';
+  const winName = (G.palette && (winner==='white'?G.palette.wn:G.palette.bn)) || winner;
+  
+  if(typeof maybeApplyElo==='function') maybeApplyElo();
+  if(typeof showWinModal==='function'){
+     showWinModal(winner==='white'?1:0, 0, winName + ' won on time');
+  }
+  if(typeof render==='function') render();
+}
