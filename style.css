@@ -50,7 +50,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 .logotext{font-size:13px;font-weight:900;line-height:1;color:#ffd700;text-shadow:1px 1px 0 #000;letter-spacing:.5px;font-family:Arial Black,Arial,sans-serif}
 
 /* Top bar */
-.topbar{position:fixed;top:0;left:0;right:0;background:#0a0a1e;border-bottom:1px solid #1e3a5f;padding:10px 16px;display:flex;align-items:center;gap:10px;z-index:30;flex-wrap:wrap}
+.topbar{position:sticky;top:0;left:0;right:0;background:#0a0a1e;border-bottom:1px solid #1e3a5f;padding:10px 16px;display:flex;align-items:center;gap:10px;z-index:30;flex-wrap:wrap}
 .spinbtn{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a0a00;border:none;border-radius:10px;padding:10px 28px;font-size:16px;font-weight:bold;cursor:pointer;box-shadow:0 4px 14px rgba(255,140,0,.5);transition:transform .12s}
 .spinbtn:hover{transform:scale(1.06)}
 .spinbtn:active{transform:scale(.95)}
@@ -63,7 +63,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 #adminbtn{background:linear-gradient(135deg,#1976d2,#d32f2f);color:#fff;border:none;font-weight:bold;animation:adm-glow 2s ease-in-out infinite}
 #adminbtn.hidden{display:none}
 @keyframes adm-glow{0%,100%{box-shadow:0 0 4px #d32f2f}50%{box-shadow:0 0 16px #1976d2}}
-.container{padding-top:78px}
+.container{padding-top:12px}
 
 /* Bottom right */
 .brcorner{position:fixed;bottom:18px;right:18px;display:flex;flex-direction:column;gap:8px;z-index:30}
@@ -315,7 +315,7 @@ body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;m
 .winactions{display:flex;gap:8px;justify-content:center}
 
 /* Timer */
-.clockstrip{position:fixed;left:18px;top:80px;background:#0d1b3e;border:1px solid #2a5080;border-radius:10px;padding:8px 12px;z-index:25;font-family:monospace;display:flex;flex-direction:column;gap:6px;min-width:120px}
+.clockstrip{position:fixed;left:18px;bottom:90px;background:#0d1b3e;border:1px solid #2a5080;border-radius:10px;padding:8px 12px;z-index:25;font-family:monospace;display:flex;flex-direction:column;gap:6px;min-width:120px}
 .clockstrip.hidden{display:none}
 .clockrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 8px;border-radius:6px;background:#1a1a2e}
 .clockrow.active{background:#2a5a2a;box-shadow:0 0 12px rgba(74,218,74,.4)}
