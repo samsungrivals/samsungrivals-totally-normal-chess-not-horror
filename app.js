@@ -979,7 +979,13 @@ function evalBoard(b){
 }
 
 function negamax(b,ep,cr,turn,depth,alpha,beta){
-  if(depth===0){const v=evalBoard(b);return turn==='white'?v:-v}
+  if(depth===0){
+    if(inCheck(b,turn==='white')){
+      const moves=allLegal(b,ep,cr,turn);
+      if(moves.length===0) return -100000;
+    }
+    const v=evalBoard(b);return turn==='white'?v:-v;
+  }
   const moves=allLegal(b,ep,cr,turn);
   if(moves.length===0){if(inCheck(b,turn==='white'))return -100000+(10-depth);return 0}
   let max=-Infinity;
