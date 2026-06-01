@@ -4,3 +4,7 @@ package-lock.json
 Thumbs.db
 *.log
 db.json
+# Local refactor/tooling scripts (not part of the app)
+*.ps1
+append_clocks.js
+live_app.js
