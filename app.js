@@ -1078,16 +1078,17 @@ const BOTS={
   pro_bobby:{name:'Bobby Fischer',elo:2785,depth:2,tier:'pro',emoji:'🧠',desc:'Precise endgame technique',behavior:'precise'},
   pro_garry:{name:'Garry Kasparov',elo:2851,depth:2,tier:'pro',emoji:'🔥',desc:'Tactical bulldozer',behavior:'tactical'},
   pro_fabi:{name:'Fabiano Caruana',elo:2820,depth:2,tier:'pro',emoji:'♟️',desc:'Opening preparation king',behavior:'solid'},
-  stockfish:{name:'Stockfish 3200',elo:3200,depth:3,tier:'pro',emoji:'🤖',desc:'Maximum strength — depth 3 search (slow, brutal)',behavior:'positional',locked:'stockfishMax'},
+  stockfish:{name:'Stockfishes',elo:3200,depth:3,tier:'pro',emoji:'🤖',desc:'Maximum strength — depth 3 search (slow, brutal)',behavior:'positional',locked:'stockfishMax'},
   stockfish_max:{name:'Stockfish 3296',elo:3296,depth:3,tier:'pro',emoji:'🛸',desc:'Engine god — depth 3, never blunders',behavior:'positional',locked:'stockfishMax'},
   stockfish_god:{name:'Stockfish 3400',elo:3400,depth:3,tier:'pro',emoji:'👽',desc:'Beyond human - depth 3, flawless',behavior:'positional',locked:'stockfishMax'},
   stockfish_3600:{name:'Stockfish 3600',elo:3600,depth:4,tier:'pro',emoji:'🌌',desc:'The absolute limit of the engine',behavior:'positional',locked:'stockfishMax'},
-  stockfish_3800:{name:'Stockfish 3800',elo:3800,depth:5,tier:'pro',emoji:'👑',desc:'Chess solved - impossible to defeat',behavior:'positional',locked:'stockfishMax'}
+  stockfish_3800:{name:'Stockfish 3800',elo:3800,depth:5,tier:'pro',emoji:'👑',desc:'Chess solved - impossible to defeat',behavior:'positional',locked:'stockfishMax'},
+  stockfish_3999:{name:'Stockfish 3999',elo:3999,depth:6,tier:'pro',emoji:'🔱',desc:'The ultimate AI entity',behavior:'positional',locked:'stockfishMax'}
 };
 
 function renderBotList(){
   const el=document.getElementById('botlist');el.innerHTML='';
-  const order=['baby','noob','beginner','casual','skilled','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish','stockfish_max','stockfish_god','stockfish_3600','stockfish_3800'];
+  const order=['baby','noob','beginner','casual','skilled','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish','stockfish_max','stockfish_god','stockfish_3600','stockfish_3800','stockfish_3999'];
   for(const k of order){
     const b=BOTS[k];
     // Locked behind an upgrade?
@@ -1632,7 +1633,7 @@ const UPGRADES=[
   {id:'luck2',name:'2x Luck',desc:'Doubles your roll luck',cost:50000,icon:'🍀',req:'equip2'},
   {id:'luck4',name:'4x Luck',desc:'Quadruples roll luck',cost:200000,icon:'🍀🍀',req:'luck2'},
   {id:'luck8',name:'8x Luck',desc:'8x roll luck',cost:800000,icon:'🌟',req:'luck4'},
-  {id:'stockfishMax',name:'Stockfish 3200',desc:'Unlocks max-strength bot (depth 3)',cost:1500000,icon:'🧠',req:'luck8'},
+  {id:'stockfishMax',name:'Stockfishes',desc:'Unlocks max-strength bots (depth 3+)',cost:1500000,icon:'🧠',req:'luck8'},
   {id:'autoOpenPacks',name:'Auto-Open Packs',desc:'Packs open instantly when bought',cost:3000000,icon:'⚡',req:'stockfishMax'},
   {id:'luck124',name:'124x Luck',desc:'Max luck upgrade',cost:9999900,icon:'🌈',req:'autoOpenPacks'}
 ];
