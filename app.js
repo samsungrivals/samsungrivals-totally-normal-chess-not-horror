@@ -1041,10 +1041,25 @@ function _allowsOpponentMate(b,ep,cr,turn,mv){
   const res=apply(b,mv.from,mv.to,ep,cr);
   return !!findMateInOne(res.board,res.ep,res.cr,flip(turn));
 }
+function findForcedMateInTwo(b,ep,cr,turn){
+  for(const mv of allLegal(b,ep,cr,turn)){
+    const res=apply(b,mv.from,mv.to,ep,cr);
+    if(gameStatus(res.board,res.ep,res.cr,flip(turn))==='checkmate')return mv;
+    const oppMoves=allLegal(res.board,res.ep,res.cr,flip(turn));
+    if(oppMoves.length===0)continue;
+    let forced=true;
+    for(const omv of oppMoves){
+      const ores=apply(res.board,omv.from,omv.to,res.ep,res.cr);
+      if(!findMateInOne(ores.board,ores.ep,ores.cr,turn)){forced=false;break;}
+    }
+    if(forced)return mv;
+  }
+  return null;
+}
 function computeAIMove(opp){
   const b=G.board,ep=G.ep,cr=G.cr,turn=G.turn;
-  // Step 1: always take a mate-in-1 if one exists
-  const mate=findMateInOne(b,ep,cr,turn);
+  // Step 1: always take a mate-in-1 or mate-in-2 if one exists
+  const mate=findForcedMateInTwo(b,ep,cr,turn);
   if(mate)return mate;
   // Step 2: pick the move per the bot's normal behavior
   let mv;
@@ -3921,6 +3936,7 @@ if(M.mobileMode) document.body.classList.add('mobile-mode');
 function _premoveMySide(){
   if(!G||!G.opponent)return null;
   if(G.opponent.type==='wspvp')return G.opponent.mySide;
+  if(G.opponent.type==='human')return G.opponent.mySide;
   if(G.opponent.type==='ai')return flip(G.opponent.side);
   return null;
 }
