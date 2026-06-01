@@ -553,16 +553,9 @@ function refreshUI(){
 }
 
 function updateUnlockHint(){
+  // Obsolete admin-unlock tracker — always hidden (admin is owner-only now)
   const el=document.getElementById('unlockhint');
-  if(M.adminUnlocked){el.classList.add('hidden');return}
-  if(M.totalMoves<10&&M.rolls<3){el.classList.add('hidden');return}
-  const parts=[];
-  parts.push(`moves ${Math.min(M.totalMoves,100)}/100`);
-  parts.push(`new games ${Math.min(M.newGameClicks,10)}/10`);
-  parts.push(`rolled: ${M.lbReadyAfterRoll?'✓':'✗'}`);
-  parts.push(`lb visited: ${M.sawLbAfterRoll?'✓':'✗'}`);
-  el.textContent='🔐 '+parts.join(' • ');
-  el.classList.remove('hidden');
+  if(el)el.classList.add('hidden');
 }
 
 function checkAdminUnlock(){
