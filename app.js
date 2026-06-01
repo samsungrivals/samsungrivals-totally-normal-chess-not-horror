@@ -888,7 +888,8 @@ const PIECE_SKINS={
   celestial:{name:'Celestial',req:1000000,palette:{wn:'Glowing White',bn:'Starry Night',w:'#ffffff',wo:'#cccccc',b:'#000022',bo:'#ffffff'}},
   divine:{name:'Divine',req:10000000,palette:{wn:'Radiant Gold',bn:'Holy Light',w:'#ffff99',wo:'#cc9900',b:'#4d3a00',bo:'#ffff99'}},
   omnipotent:{name:'Omnipotent',req:100000000,palette:{wn:'Neon Pink',bn:'Void Black',w:'#ff00ff',wo:'#660066',b:'#000000',bo:'#ff00ff'}},
-  billionaire:{name:'Billionaire',req:1000000000,palette:{wn:'Diamond Blue',bn:'Solid Gold',w:'#00ffff',wo:'#006666',b:'#ffd700',bo:'#b38f00'}}
+  billionaire:{name:'Billionaire',req:1000000000,palette:{wn:'Diamond Blue',bn:'Solid Gold',w:'#00ffff',wo:'#006666',b:'#ffd700',bo:'#b38f00'}},
+  trillion:{name:'Trillion',req:1000000000000,palette:{wn:'Cyber Teal',bn:'Quantum Red',w:'#00ffcc',wo:'#003322',b:'#ff0033',bo:'#440011'}}
 };
 
 const ELO_REWARDS=[
