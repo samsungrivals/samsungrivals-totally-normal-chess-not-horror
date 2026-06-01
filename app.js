@@ -4210,6 +4210,13 @@ function updateClockUI(){
   if(w)w.textContent=formatTime(clockW);
   if(b)b.textContent=formatTime(clockB);
   
+  const wn = document.querySelector('#clockw .clockname');
+  const bn = document.querySelector('#clockb .clockname');
+  if (G && G.palette) {
+    if(wn) wn.textContent = G.palette.wc + ' ' + G.palette.wn;
+    if(bn) bn.textContent = G.palette.bc + ' ' + G.palette.bn;
+  }
+  
   const wrow=document.getElementById('clockw');
   const brow=document.getElementById('clockb');
   if(G && G.turn==='white'){
