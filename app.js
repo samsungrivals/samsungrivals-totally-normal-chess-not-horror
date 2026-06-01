@@ -1,4 +1,4 @@
-const SYM={'K':'♚','Q':'♛','R':'♜','B':'♝','N':'♞','P':'♟','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟'};
+﻿const SYM={'K':'â™š','Q':'â™›','R':'â™œ','B':'â™','N':'â™ž','P':'â™Ÿ','k':'â™š','q':'â™›','r':'â™œ','b':'â™','n':'â™ž','p':'â™Ÿ'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0};
 const PALETTES=[
   {wn:'White',bn:'Black',w:'#ffffff',wo:'#000000',b:'#111111',bo:'#ffffff'},
@@ -354,17 +354,17 @@ function updateStatus(){
     const wn=winner==='white'?s.palette.wn:s.palette.bn;
     st.textContent=`${wn} wins!`;
     st.classList.add('mate');
-    tpc.textContent='♚';tpc.classList.add(winner==='white'?'w':'b');
+    tpc.textContent='â™š';tpc.classList.add(winner==='white'?'w':'b');
     tlbl.textContent='Checkmate!';
   }else if(s.status==='stalemate'){
     st.textContent='Draw by stalemate';st.classList.add('draw');
-    tpc.textContent='½';tlbl.textContent='Stalemate';
+    tpc.textContent='Â½';tlbl.textContent='Stalemate';
   }else if(s.status==='check'){
     st.textContent=`${tn} in check`;st.classList.add('check');
-    tpc.textContent='♚';tpc.classList.add(w?'w':'b');tlbl.textContent=`${tn} to move`;
+    tpc.textContent='â™š';tpc.classList.add(w?'w':'b');tlbl.textContent=`${tn} to move`;
   }else{
     st.textContent=`${tn}'s turn`;st.classList.add('normal');
-    tpc.textContent='♟';tpc.classList.add(w?'w':'b');tlbl.textContent=`${tn} to move`;
+    tpc.textContent='â™Ÿ';tpc.classList.add(w?'w':'b');tlbl.textContent=`${tn} to move`;
   }
 }
 
@@ -475,14 +475,14 @@ function syncLb(){
   else lb.push({name:myName,elo:myElo,upgrades:M.totalUpgrades||0,self:true});
   lb.sort((a,b)=>(Number(b.elo)||0)-(Number(a.elo)||0));
   saveLb(lb);
-  console.log('[lb] synced — '+lb.length+' entries; top 3:',lb.slice(0,3).map(e=>e.name+' '+e.elo).join(', '));
+  console.log('[lb] synced â€” '+lb.length+' entries; top 3:',lb.slice(0,3).map(e=>e.name+' '+e.elo).join(', '));
 }
 
 function resetLeaderboard(){
   localStorage.removeItem('chesslb');
   syncLb();
   renderLeaderboard();
-  showAnnouncement('🏆 Leaderboard reset & reseeded');
+  showAnnouncement('ðŸ† Leaderboard reset & reseeded');
 }
 
 function applySkinToBoard(){
@@ -533,7 +533,7 @@ function applySkinPreview(el,skin){
   }
 }
 
-function fmtMoney(p){const n=(Number(p)||0)/100; return n>=1e21?'£'+n.toExponential(2):'£'+n.toFixed(2)}
+function fmtMoney(p){const n=(Number(p)||0)/100; return n>=1e21?'Â£'+n.toExponential(2):'Â£'+n.toFixed(2)}
 function refreshUI(){
   document.getElementById('moneydisp').textContent=fmtMoney(M.money);
   document.getElementById('rollsdisp').textContent='Rolls: '+M.rolls;
@@ -541,7 +541,7 @@ function refreshUI(){
   if(eloEl)eloEl.querySelector('.val').textContent=M.elo||500;
   const arb=document.getElementById('autorollbtn');
   if(M.autoRollOwned){
-    arb.textContent=M.autoRollActive?'⚡ Auto Roll: ON':'Auto Roll: OFF';
+    arb.textContent=M.autoRollActive?'âš¡ Auto Roll: ON':'Auto Roll: OFF';
     arb.classList.toggle('owned',!M.autoRollActive);
     arb.classList.toggle('active',M.autoRollActive);
   }else{
@@ -553,7 +553,7 @@ function refreshUI(){
 }
 
 function updateUnlockHint(){
-  // Obsolete admin-unlock tracker — always hidden (admin is owner-only now)
+  // Obsolete admin-unlock tracker â€” always hidden (admin is owner-only now)
   const el=document.getElementById('unlockhint');
   if(el)el.classList.add('hidden');
 }
@@ -562,7 +562,7 @@ function checkAdminUnlock(){
   if(M.adminUnlocked)return;
   if(M.totalMoves>=100&&M.newGameClicks>=10&&M.lbReadyAfterRoll&&M.sawLbAfterRoll){
     M.adminUnlocked=true;saveMeta();
-    showAnnouncement('⚡ ADMIN COMMANDS UNLOCKED ⚡');
+    showAnnouncement('âš¡ ADMIN COMMANDS UNLOCKED âš¡');
     refreshUI();
   }
 }
@@ -570,7 +570,7 @@ function checkAdminUnlock(){
 function doSpin(){
   M.rolls=(Number(M.rolls)||0)+1;
   M.money=(Number(M.money)||0)+100;
-  if(typeof flashMoneyToast==='function')flashMoneyToast('+£1.00');
+  if(typeof flashMoneyToast==='function')flashMoneyToast('+Â£1.00');
   let result=null;
   for(let i=SKIN_ORDER.length-1;i>=0;i--){
     const sk=SKIN_ORDER[i];
@@ -590,7 +590,7 @@ function showCutscene(skin){
   const coin=document.getElementById('cscoin');
   applySkinPreview(coin,skin);
   const odds=SKINS[skin].odds;
-  document.getElementById('cstitle').textContent=odds>=5000?'🌟 LEGENDARY! 🌟':odds>=500?'✨ ULTRA RARE! ✨':'⭐ RARE! ⭐';
+  document.getElementById('cstitle').textContent=odds>=5000?'ðŸŒŸ LEGENDARY! ðŸŒŸ':odds>=500?'âœ¨ ULTRA RARE! âœ¨':'â­ RARE! â­';
   document.getElementById('csname').textContent=SKINS[skin].name;
   document.getElementById('csodds').textContent='1 in '+odds;
   cs.classList.remove('hidden');
@@ -616,7 +616,7 @@ function setOwnerItemsVisible(show){
 function openModal(id){
   document.getElementById(id).classList.remove('hidden');
   if(id==='adminmodal'){
-    // Owner-only commands only appear when the OWNER opened it (via the 👑 Owner button)
+    // Owner-only commands only appear when the OWNER opened it (via the ðŸ‘‘ Owner button)
     setOwnerItemsVisible(!!window._openedAsOwner);
     window._openedAsOwner=false;
   }
@@ -654,26 +654,26 @@ function renderItems(){
     applySkinPreview(prev,sk);row.appendChild(prev);
     const info=document.createElement('div');info.className='skininfo';
     const oddsTxt=SKINS[sk].odds?`1/${SKINS[sk].odds}`:(sk==='classic'?'default':'admin only');
-    info.innerHTML=`<div class="skinname">${SKINS[sk].name}</div><div class="skindetails">Owned: ${owned} • Lvl ${lvl} • ${oddsTxt}</div>`;
+    info.innerHTML=`<div class="skinname">${SKINS[sk].name}</div><div class="skindetails">Owned: ${owned} â€¢ Lvl ${lvl} â€¢ ${oddsTxt}</div>`;
     row.appendChild(info);
     const acts=document.createElement('div');acts.className='skinactions';
     const dualActive = M.upgradesPurchased && M.upgradesPurchased.equip2;
     if (dualActive) {
       const eqL = document.createElement('button');
       eqL.className='skinbtn'+(M.equipped===sk?' equipped':'');
-      eqL.textContent=M.equipped===sk?'✓ L':'Equip L';
+      eqL.textContent=M.equipped===sk?'âœ“ L':'Equip L';
       eqL.onclick=()=>equipSkin(sk, 1);
       acts.appendChild(eqL);
 
       const eqR = document.createElement('button');
       eqR.className='skinbtn'+(M.equipped2===sk?' equipped':'');
-      eqR.textContent=M.equipped2===sk?'✓ R':'Equip R';
+      eqR.textContent=M.equipped2===sk?'âœ“ R':'Equip R';
       eqR.onclick=()=>equipSkin(sk, 2);
       acts.appendChild(eqR);
     } else {
       const eq=document.createElement('button');
       eq.className='skinbtn'+(M.equipped===sk?' equipped':'');
-      eq.textContent=M.equipped===sk?'✓ Equipped':'Equip';
+      eq.textContent=M.equipped===sk?'âœ“ Equipped':'Equip';
       eq.onclick=()=>equipSkin(sk, 1);
       acts.appendChild(eq);
     }
@@ -681,11 +681,11 @@ function renderItems(){
     const cost=upgradeCost(sk);
     if(M.currentUpgrade&&M.currentUpgrade.skin===sk){
       const rem=Math.max(0,30-Math.floor((Date.now()-M.currentUpgrade.startTime)/1000));
-      if(rem===0){up.textContent='Claim ✓';up.onclick=()=>claimUpgrade()}
-      else{up.textContent=`⏳ ${rem}s`;up.disabled=true}
+      if(rem===0){up.textContent='Claim âœ“';up.onclick=()=>claimUpgrade()}
+      else{up.textContent=`â³ ${rem}s`;up.disabled=true}
       // Stop button to cancel the in-progress upgrade (refunds half)
       const stop=document.createElement('button');stop.className='skinbtn';
-      stop.textContent='✖ Stop';stop.style.background='#5a1f1f';stop.style.borderColor='#aa4444';
+      stop.textContent='âœ– Stop';stop.style.background='#5a1f1f';stop.style.borderColor='#aa4444';
       stop.onclick=()=>stopUpgrade();
       acts.appendChild(up);acts.appendChild(stop);
       row.appendChild(acts);el.appendChild(row);
@@ -701,7 +701,7 @@ function renderItems(){
     row.appendChild(acts);
     el.appendChild(row);
   }
-  if(!any)el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No skins yet — click SPIN to roll!</div>';
+  if(!any)el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No skins yet â€” click SPIN to roll!</div>';
 }
 
 function equipSkin(sk, sl = 1){
@@ -728,7 +728,7 @@ function claimUpgrade(){
   M.totalUpgrades=(M.totalUpgrades||0)+1;
   saveMeta();renderItems();syncLb();
   if(M.account&&typeof window.API!=='undefined')window.API.upgrades(M.account.username,M.totalUpgrades).catch(()=>{});
-  showAnnouncement(`✨ ${SKINS[sk].name} upgraded to Lvl ${M.upgrades[sk]}!`);
+  showAnnouncement(`âœ¨ ${SKINS[sk].name} upgraded to Lvl ${M.upgrades[sk]}!`);
 }
 function stopUpgrade(){
   if(!M.currentUpgrade)return;
@@ -739,15 +739,15 @@ function stopUpgrade(){
   M.currentUpgrade=null;
   if(window._upgT){clearInterval(window._upgT);window._upgT=null}
   saveMeta();refreshUI();renderItems();
-  showAnnouncement('✖ Upgrade stopped — refunded '+fmtMoney(refund));
+  showAnnouncement('âœ– Upgrade stopped â€” refunded '+fmtMoney(refund));
 }
 
 let autoRollTimer=null;
 function toggleAutoRoll(){
   if(!M.autoRollOwned){
-    if(M.money<10000){showAnnouncement('Need £100 to buy Auto Roll!');return}
+    if(M.money<10000){showAnnouncement('Need Â£100 to buy Auto Roll!');return}
     M.money-=10000;M.autoRollOwned=true;M.autoRollActive=true;
-    showAnnouncement('🎉 Auto Roll purchased!');
+    showAnnouncement('ðŸŽ‰ Auto Roll purchased!');
   }else{
     M.autoRollActive=!M.autoRollActive;
   }
@@ -790,7 +790,7 @@ function renderLeaderboard(){
   });
   const top=sorted.slice(0,10);
   const el=document.getElementById('lblist');el.innerHTML='';
-  const trophies=['🥇','🥈','🥉'];
+  const trophies=['ðŸ¥‡','ðŸ¥ˆ','ðŸ¥‰'];
   const myName=(M.account&&M.account.username)||'You';
   top.forEach((entry,i)=>{
     const isMe=entry.self||entry.name===myName;
@@ -800,63 +800,63 @@ function renderLeaderboard(){
     let btnHtml='';
     if(!isMe){
       btnHtml=alreadyFr
-        ?'<button class="skinbtn equipped" disabled>✓ Friend</button>'
+        ?'<button class="skinbtn equipped" disabled>âœ“ Friend</button>'
         :'<button class="skinbtn" onclick="addLbFriend(\''+entry.name.replace(/'/g,"\\'")+'\','+(Number(entry.elo)||500)+')">+ Add</button>';
     }
-    const valStr=tab==='money'?`£${formatNumber(Number(entry.money)||0)}`:tab==='rolls'?`${formatNumber(Number(entry.rolls)||0)} Rolls`:tab==='upg'?`${Number(entry.upgrades)||0} Upg`:`${Number(entry.elo)||0} ELO`;
+    const valStr=tab==='money'?`Â£${formatNumber(Number(entry.money)||0)}`:tab==='rolls'?`${formatNumber(Number(entry.rolls)||0)} Rolls`:tab==='upg'?`${Number(entry.upgrades)||0} Upg`:`${Number(entry.elo)||0} ELO`;
     row.innerHTML=`<div class="lbrank r${i+1}">${rankIcon}</div><div class="lbname">${entry.name}</div><div class="lbscore">${valStr}</div>${btnHtml?'<div style="margin-left:8px">'+btnHtml+'</div>':''}`;
     el.appendChild(row);
   });
   const meIdx=sorted.findIndex(e=>e.self||e.name===myName);
   if(meIdx>=10){
-    const sep=document.createElement('div');sep.style.cssText='text-align:center;color:#666;padding:6px 0;font-size:12px';sep.textContent='⋯';
+    const sep=document.createElement('div');sep.style.cssText='text-align:center;color:#666;padding:6px 0;font-size:12px';sep.textContent='â‹¯';
     el.appendChild(sep);
     const e=sorted[meIdx];const row=document.createElement('div');row.className='lbrow lbme';
     const valStr=tab==='elo'?`${Number(e.elo)||0} ELO`:`${Number(e.upgrades)||0} Upg`;
     row.innerHTML=`<div class="lbrank">#${meIdx+1}</div><div class="lbname">${e.name}</div><div class="lbscore">${valStr}</div>`;
     el.appendChild(row);
   }
-  if(sorted.length===0)el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No scores yet — play games to climb!</div>';
+  if(sorted.length===0)el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No scores yet â€” play games to climb!</div>';
 }
 
 function addLbFriend(name,elo){
   M.friends=M.friends||[];
   if(M.friends.find(f=>f.name===name))return;
   M.friends.push({name,elo,online:Math.random()<0.6});
-  saveMeta();showAnnouncement('👥 Added '+name+' as friend');
+  saveMeta();showAnnouncement('ðŸ‘¥ Added '+name+' as friend');
   renderLeaderboard();
 }
 
 // Admin commands
-function adminGiveAll(){for(const s of [...SKIN_ORDER,'realadmin'])M.inventory[s]=(M.inventory[s]||0)+1;saveMeta();showAnnouncement('🎁 All board skins granted!');renderItems()}
-function adminGiveRealAdmin(){M.inventory.realadmin=(M.inventory.realadmin||0)+1;saveMeta();showAnnouncement('👑 Real Admin skin granted!');renderItems()}
-function adminGiveMoney(pounds){const amt=(pounds||10000)*100;M.money=(Number(M.money)||0)+amt;saveMeta();showAnnouncement('💰 +'+fmtMoney(amt));refreshUI()}
-function adminGiveAllPieceSkins(){M.unlockedPieceSkins=M.unlockedPieceSkins||{};for(const k of ['bronze','silver','gold','diamond'])M.unlockedPieceSkins[k]=true;saveMeta();showAnnouncement('♟ All piece skins unlocked!');if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems()}
-function adminAddElo(amt){M.elo=(Number(M.elo)||500)+amt;saveMeta();showAnnouncement('⬆️ +'+amt+' ELO  →  '+M.elo);refreshUI();checkEloRewards();const e=document.getElementById('elodisp');if(e){e.classList.add('changed');setTimeout(()=>e.classList.remove('changed'),1000)}if(M.account&&typeof API!=='undefined')API.elo(M.account.username,M.elo).catch(()=>{});}
-function adminGiveGodly(n){M.godlyPacks=(Number(M.godlyPacks)||0)+n;saveMeta();showAnnouncement('✨ +'+n+' Godly Packs');if(typeof maybeAutoOpenPacks==='function'&&maybeAutoOpenPacks())return;if(!document.getElementById('shopmodal').classList.contains('hidden'))renderShop()}
-function adminAnnounce(){const msg=prompt('Global announcement text:');if(msg)showAnnouncement('📢 '+msg)}
+function adminGiveAll(){for(const s of [...SKIN_ORDER,'realadmin'])M.inventory[s]=(M.inventory[s]||0)+1;saveMeta();showAnnouncement('ðŸŽ All board skins granted!');renderItems()}
+function adminGiveRealAdmin(){M.inventory.realadmin=(M.inventory.realadmin||0)+1;saveMeta();showAnnouncement('ðŸ‘‘ Real Admin skin granted!');renderItems()}
+function adminGiveMoney(pounds){const amt=(pounds||10000)*100;M.money=(Number(M.money)||0)+amt;saveMeta();showAnnouncement('ðŸ’° +'+fmtMoney(amt));refreshUI()}
+function adminGiveAllPieceSkins(){M.unlockedPieceSkins=M.unlockedPieceSkins||{};for(const k of ['bronze','silver','gold','diamond'])M.unlockedPieceSkins[k]=true;saveMeta();showAnnouncement('â™Ÿ All piece skins unlocked!');if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems()}
+function adminAddElo(amt){M.elo=(Number(M.elo)||500)+amt;saveMeta();showAnnouncement('â¬†ï¸ +'+amt+' ELO  â†’  '+M.elo);refreshUI();checkEloRewards();const e=document.getElementById('elodisp');if(e){e.classList.add('changed');setTimeout(()=>e.classList.remove('changed'),1000)}if(M.account&&typeof API!=='undefined')API.elo(M.account.username,M.elo).catch(()=>{});}
+function adminGiveGodly(n){M.godlyPacks=(Number(M.godlyPacks)||0)+n;saveMeta();showAnnouncement('âœ¨ +'+n+' Godly Packs');if(typeof maybeAutoOpenPacks==='function'&&maybeAutoOpenPacks())return;if(!document.getElementById('shopmodal').classList.contains('hidden'))renderShop()}
+function adminAnnounce(){const msg=prompt('Global announcement text:');if(msg)showAnnouncement('ðŸ“¢ '+msg)}
 
 const TUTS={
-  cow:{title:'🐄 The Cow Opening',body:[
+  cow:{title:'ðŸ„ The Cow Opening',body:[
     '<b>The Cow</b> is an offbeat opening where Black develops knights to passive squares to lure White into overextending.',
-    '<b>1. e4 e6</b> — solid French-style setup.',
-    '<b>2. d4 d6</b> — restrained, refusing the center.',
-    '<b>3. Nf3 Ne7</b> — the first cow knight.',
-    '<b>4. Bc4 Nd7</b> — both knights "moo" on d7 and e7.',
+    '<b>1. e4 e6</b> â€” solid French-style setup.',
+    '<b>2. d4 d6</b> â€” restrained, refusing the center.',
+    '<b>3. Nf3 Ne7</b> â€” the first cow knight.',
+    '<b>4. Bc4 Nd7</b> â€” both knights "moo" on d7 and e7.',
     '<b>Goal:</b> reroute knights via Ng6 and Nb6, then strike with c5 or e5.',
-    'It looks weird but it&apos;s solid — top grandmasters have played similar setups in blitz.'
+    'It looks weird but it&apos;s solid â€” top grandmasters have played similar setups in blitz.'
   ]},
-  bishop:{title:'♝ Bishop&apos;s Opening',body:[
-    '<b>1. e4 e5 2. Bc4</b> — develop the bishop before the knight.',
+  bishop:{title:'â™ Bishop&apos;s Opening',body:[
+    '<b>1. e4 e5 2. Bc4</b> â€” develop the bishop before the knight.',
     'Threatens early f7 pressure and prepares d3, Nf3, c3, d4.',
     '<b>Common reply:</b> 2...Nf6 hitting e4. White plays 3.d3 supporting it.',
     '<b>Plan:</b> often transposes to Italian or Vienna structures.',
     'Great for sidestepping prepared lines like the Petroff or Berlin.'
   ]},
-  london:{title:'🏰 The London System',body:[
-    'A <b>system</b> opening — same setup against almost anything.',
-    '<b>1. d4 d5 2. Nf3 Nf6 3. Bf4</b> — the London bishop comes out before e3.',
-    '<b>Then:</b> e3, Bd3, c3, Nbd2, O-O — the classic pyramid.',
+  london:{title:'ðŸ° The London System',body:[
+    'A <b>system</b> opening â€” same setup against almost anything.',
+    '<b>1. d4 d5 2. Nf3 Nf6 3. Bf4</b> â€” the London bishop comes out before e3.',
+    '<b>Then:</b> e3, Bd3, c3, Nbd2, O-O â€” the classic pyramid.',
     '<b>Goal:</b> safe king, no weaknesses, push e4 when ready.',
     '<b>Pros:</b> easy to learn, hard to crack, low theory.',
     '<b>Cons:</b> can be drawish; Black gets equality with ...c5 and ...Bf5.'
@@ -864,7 +864,7 @@ const TUTS={
 };
 function openTutorial(k){
   const t=TUTS[k];
-  document.getElementById('tuttitle').innerHTML=t.title+' <button class="mclose" onclick="closeModal(\'tutmodal\')">✕</button>';
+  document.getElementById('tuttitle').innerHTML=t.title+' <button class="mclose" onclick="closeModal(\'tutmodal\')">âœ•</button>';
   document.getElementById('tutbody').innerHTML=t.body.map(b=>`<div class="tut-step">${b}</div>`).join('');
   openModal('tutmodal');
 }
@@ -898,12 +898,12 @@ const PIECE_SKINS={
 };
 
 const ELO_REWARDS=[
-  {elo:600,type:'money',amount:500,label:'£500'},
+  {elo:600,type:'money',amount:500,label:'Â£500'},
   {elo:750,type:'pskin',skin:'bronze',label:'Bronze Pieces'},
-  {elo:1000,type:'money',amount:2000,label:'£2,000'},
+  {elo:1000,type:'money',amount:2000,label:'Â£2,000'},
   {elo:1200,type:'pskin',skin:'silver',label:'Silver Pieces'},
   {elo:1500,type:'pskin',skin:'gold',label:'Gold Pieces'},
-  {elo:1800,type:'money',amount:10000,label:'£10,000'},
+  {elo:1800,type:'money',amount:10000,label:'Â£10,000'},
   {elo:2000,type:'pskin',skin:'diamond',label:'Diamond Pieces'}
 ];
 
@@ -926,7 +926,7 @@ function equipPieceSkin(key){
   r.setProperty('--pc-b',pal.b);r.setProperty('--pc-bo',pal.bo);
   if(G)G.palette=pal;
   renderItems();updateStatus();updateCap();
-  showAnnouncement('♟ Equipped: '+sk.name+' pieces');
+  showAnnouncement('â™Ÿ Equipped: '+sk.name+' pieces');
 }
 
 function checkEloRewards(){
@@ -944,7 +944,7 @@ function checkEloRewards(){
 
 function showRewardToast(r){
   const t=document.createElement('div');t.className='rwdtoast';
-  t.innerHTML=`<h4>🏆 ELO REWARD UNLOCKED</h4><div class="rwdname">${r.label}</div><div class="rwdelo">Reached ELO ${r.elo}</div>`;
+  t.innerHTML=`<h4>ðŸ† ELO REWARD UNLOCKED</h4><div class="rwdname">${r.label}</div><div class="rwdelo">Reached ELO ${r.elo}</div>`;
   document.body.appendChild(t);setTimeout(()=>t.remove(),6000);
 }
 
@@ -1067,20 +1067,20 @@ function computeAIMove(opp){
 
 // ----- BOTS -----
 const BOTS={
-  baby:{name:'Baby Bot',elo:100,depth:0,tier:'noob',emoji:'👶',desc:'Barely knows the rules — totally random',behavior:'random'},
-  noob:{name:'Noob Newman',elo:200,depth:0,tier:'noob',emoji:'🤡',desc:'Plays completely random moves',behavior:'random'},
-  beginner:{name:'Beginner Bea',elo:400,depth:0,tier:'noob',emoji:'🐣',desc:'Likes grabbing free pieces',behavior:'capture'},
-  casual:{name:'Casual Carl',elo:700,depth:1,tier:'cas',emoji:'😎',desc:'Plays solid 1-ply moves',behavior:'normal'},
-  skilled:{name:'Skilled Sam',elo:1100,depth:1,tier:'cas',emoji:'🎯',desc:'Sees one move ahead',behavior:'normal'},
-  intermediate:{name:'Intermediate Ian',elo:1500,depth:2,tier:'cas',emoji:'🤓',desc:'Calculates 2 moves ahead',behavior:'positional'},
-  pro_magnus:{name:'Magnus Carlsen',elo:2882,depth:2,tier:'pro',emoji:'👑',desc:'World #1 — positional grinder',behavior:'positional'},
-  pro_hikaru:{name:'Hikaru Nakamura',elo:2802,depth:2,tier:'pro',emoji:'⚡',desc:'Blitz speedster — aggressive',behavior:'aggressive'},
-  pro_bobby:{name:'Bobby Fischer',elo:2785,depth:2,tier:'pro',emoji:'🧠',desc:'Precise endgame technique',behavior:'precise'},
-  pro_garry:{name:'Garry Kasparov',elo:2851,depth:2,tier:'pro',emoji:'🔥',desc:'Tactical bulldozer',behavior:'tactical'},
-  pro_fabi:{name:'Fabiano Caruana',elo:2820,depth:2,tier:'pro',emoji:'♟️',desc:'Opening preparation king',behavior:'solid'},
-  stockfish:{name:'Stockfish 3200',elo:3200,depth:3,tier:'pro',emoji:'🤖',desc:'Maximum strength — depth 3 search (slow, brutal)',behavior:'positional',locked:'stockfishMax'},
-  stockfish_max:{name:'Stockfish 3296',elo:3296,depth:3,tier:'pro',emoji:'🛸',desc:'Engine god — depth 3, never blunders',behavior:'positional',locked:'stockfishMax'},
-  stockfish_god:{name:'Stockfish 3400',elo:3400,depth:3,tier:'pro',emoji:'🌌',desc:'Beyond human — depth 3, flawless',behavior:'positional',locked:'stockfishMax'}
+  baby:{name:'Baby Bot',elo:100,depth:0,tier:'noob',emoji:'ðŸ‘¶',desc:'Barely knows the rules â€” totally random',behavior:'random'},
+  noob:{name:'Noob Newman',elo:200,depth:0,tier:'noob',emoji:'ðŸ¤¡',desc:'Plays completely random moves',behavior:'random'},
+  beginner:{name:'Beginner Bea',elo:400,depth:0,tier:'noob',emoji:'ðŸ£',desc:'Likes grabbing free pieces',behavior:'capture'},
+  casual:{name:'Casual Carl',elo:700,depth:1,tier:'cas',emoji:'ðŸ˜Ž',desc:'Plays solid 1-ply moves',behavior:'normal'},
+  skilled:{name:'Skilled Sam',elo:1100,depth:1,tier:'cas',emoji:'ðŸŽ¯',desc:'Sees one move ahead',behavior:'normal'},
+  intermediate:{name:'Intermediate Ian',elo:1500,depth:2,tier:'cas',emoji:'ðŸ¤“',desc:'Calculates 2 moves ahead',behavior:'positional'},
+  pro_magnus:{name:'Magnus Carlsen',elo:2882,depth:2,tier:'pro',emoji:'ðŸ‘‘',desc:'World #1 â€” positional grinder',behavior:'positional'},
+  pro_hikaru:{name:'Hikaru Nakamura',elo:2802,depth:2,tier:'pro',emoji:'âš¡',desc:'Blitz speedster â€” aggressive',behavior:'aggressive'},
+  pro_bobby:{name:'Bobby Fischer',elo:2785,depth:2,tier:'pro',emoji:'ðŸ§ ',desc:'Precise endgame technique',behavior:'precise'},
+  pro_garry:{name:'Garry Kasparov',elo:2851,depth:2,tier:'pro',emoji:'ðŸ”¥',desc:'Tactical bulldozer',behavior:'tactical'},
+  pro_fabi:{name:'Fabiano Caruana',elo:2820,depth:2,tier:'pro',emoji:'â™Ÿï¸',desc:'Opening preparation king',behavior:'solid'},
+  stockfish:{name:'Stockfish 3200',elo:3200,depth:3,tier:'pro',emoji:'ðŸ¤–',desc:'Maximum strength â€” depth 3 search (slow, brutal)',behavior:'positional',locked:'stockfishMax'},
+  stockfish_max:{name:'Stockfish 3296',elo:3296,depth:3,tier:'pro',emoji:'ðŸ›¸',desc:'Engine god â€” depth 3, never blunders',behavior:'positional',locked:'stockfishMax'},
+  stockfish_god:{name:'Stockfish 3400',elo:3400,depth:3,tier:'pro',emoji:'ðŸŒŒ',desc:'Beyond human â€” depth 3, flawless',behavior:'positional',locked:'stockfishMax'}
 };
 
 function renderBotList(){
@@ -1093,7 +1093,7 @@ function renderBotList(){
       const owned=M.upgradesPurchased&&M.upgradesPurchased[b.locked];
       if(!owned){
         const row=document.createElement('div');row.className='botrow';row.style.opacity='.5';row.style.cursor='not-allowed';
-        row.innerHTML=`<div class="botav pro">🔒</div><div class="botinfo"><div class="botname">${b.name}</div><div class="botelo">ELO ${b.elo}</div><div class="botdesc">Locked — buy the matching upgrade in ⚙️</div></div><div class="bottier t-pro">LOCKED</div>`;
+        row.innerHTML=`<div class="botav pro">ðŸ”’</div><div class="botinfo"><div class="botname">${b.name}</div><div class="botelo">ELO ${b.elo}</div><div class="botdesc">Locked â€” buy the matching upgrade in âš™ï¸</div></div><div class="bottier t-pro">LOCKED</div>`;
         el.appendChild(row);continue;
       }
     }
@@ -1123,7 +1123,7 @@ function resetToLocal(){
   if(G&&G.opponent&&G.opponent.type==='ai'&&!G.opponent._eloApplied&&G.status==='playing'){
     if(!confirm('Forfeit current game vs '+G.opponent.name+'? You will lose 16 ELO.'))return;
     M.elo=Math.max(100,M.elo-16);saveMeta();refreshUI();
-    showAnnouncement('💔 Forfeit: -16 ELO');
+    showAnnouncement('ðŸ’” Forfeit: -16 ELO');
   }
   userNewGame();
   G.opponent=null;
@@ -1220,7 +1220,7 @@ function maybeApplyElo(){
 function showEloToast(change,oppName,result,newElo){
   const t=document.createElement('div');
   const cls=result===1?'win':result===0?'loss':'draw';
-  const title=result===1?'🏆 Victory!':result===0?'💔 Defeat':'🤝 Draw';
+  const title=result===1?'ðŸ† Victory!':result===0?'ðŸ’” Defeat':'ðŸ¤ Draw';
   t.className='elotoast '+cls;
   t.innerHTML=`<h4>${title}</h4><div class="delta">${change>=0?'+':''}${change} ELO</div><div class="opp">vs ${oppName}<br>New ELO: ${newElo}</div>`;
   document.body.appendChild(t);setTimeout(()=>t.remove(),5000);
@@ -1259,7 +1259,7 @@ function copyFriendCode(){
   if(!M.account){showAnnouncement('Sign up first to get a friend code');return}
   const code=codeForName(M.account.username);
   try{navigator.clipboard&&navigator.clipboard.writeText(code)}catch(e){}
-  showAnnouncement('📋 Copied your code: '+code);
+  showAnnouncement('ðŸ“‹ Copied your code: '+code);
 }
 async function addByFriendCode(){
   if(!M.account){showAnnouncement('Sign up first to add friends');return}
@@ -1272,10 +1272,10 @@ async function addByFriendCode(){
     if(!M.friends.find(f=>f.name===r.added))M.friends.push({name:r.added,elo:r.elo||500,online:true});
     saveMeta();
     document.getElementById('frcodeinput').value='';
-    showAnnouncement('👥 Added '+r.added+' as friend!');
+    showAnnouncement('ðŸ‘¥ Added '+r.added+' as friend!');
     renderFriendsList();
   }else if(r&&r.err==='no such code'){
-    showAnnouncement('❌ No player found with that code (they must have signed up on the server)');
+    showAnnouncement('âŒ No player found with that code (they must have signed up on the server)');
   }else{
     showAnnouncement('Failed: '+((r&&r.err)||'server unreachable'));
   }
@@ -1295,7 +1295,7 @@ function searchFriends(){
     row.innerHTML=`<div class="frav">${name[0]}</div><div class="frinfo"><div class="frname">${name}</div><div class="frstat">ELO ${elo}</div></div>`;
     const acts=document.createElement('div');acts.className='fractions';
     const b=document.createElement('button');b.className='skinbtn';
-    if(isFr){b.textContent='✓ Added';b.disabled=true;b.classList.add('equipped')}
+    if(isFr){b.textContent='âœ“ Added';b.disabled=true;b.classList.add('equipped')}
     else{b.textContent='+ Add';b.onclick=()=>addFriend(name)}
     acts.appendChild(b);row.appendChild(acts);el.appendChild(row);
   }
@@ -1305,7 +1305,7 @@ function addFriend(name){
   M.friends=M.friends||[];
   if(!M.friends.find(f=>f.name===name)){
     M.friends.push({name,elo:nameToElo(name),online:Math.random()<0.6});
-    saveMeta();showAnnouncement('👥 Added '+name+' as friend');
+    saveMeta();showAnnouncement('ðŸ‘¥ Added '+name+' as friend');
   }
   searchFriends();
 }
@@ -1313,15 +1313,15 @@ function addFriend(name){
 function renderFriendsList(){
   const el=document.getElementById('frlist');
   const friends=M.friends||[];
-  if(friends.length===0){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No friends yet — click <b>Add Friend</b> to find players!</div>';return}
+  if(friends.length===0){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No friends yet â€” click <b>Add Friend</b> to find players!</div>';return}
   el.innerHTML='';
   for(const f of friends){
     const row=document.createElement('div');row.className='frrow';
-    row.innerHTML=`<div class="frav">${f.name[0]}</div><div class="frinfo"><div class="frname">${f.name}</div><div class="frstat">ELO ${f.elo} • <span class="${f.online?'fronline':'froffline'}">${f.online?'● Online':'○ Offline'}</span></div></div>`;
+    row.innerHTML=`<div class="frav">${f.name[0]}</div><div class="frinfo"><div class="frname">${f.name}</div><div class="frstat">ELO ${f.elo} â€¢ <span class="${f.online?'fronline':'froffline'}">${f.online?'â— Online':'â—‹ Offline'}</span></div></div>`;
     const acts=document.createElement('div');acts.className='fractions';
-    const chal=document.createElement('button');chal.className='skinbtn';chal.textContent='⚔️ Play';chal.disabled=!f.online;
+    const chal=document.createElement('button');chal.className='skinbtn';chal.textContent='âš”ï¸ Play';chal.disabled=!f.online;
     chal.onclick=()=>challengeFriend(f.name);
-    const rm=document.createElement('button');rm.className='skinbtn';rm.textContent='✕';rm.style.minWidth='auto';rm.style.padding='5px 10px';
+    const rm=document.createElement('button');rm.className='skinbtn';rm.textContent='âœ•';rm.style.minWidth='auto';rm.style.padding='5px 10px';
     rm.onclick=()=>removeFriend(f.name);
     acts.appendChild(chal);acts.appendChild(rm);row.appendChild(acts);el.appendChild(row);
   }
@@ -1346,7 +1346,7 @@ renderItems=function(){
   _origRenderItems();
   const el=document.getElementById('itemlist');
   const ps=document.createElement('div');ps.className='pskinsection';
-  ps.innerHTML='<div style="font-size:11px;font-weight:600;color:#5a7a9a;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">♟ Piece Skins</div><div style="font-size:11px;color:#888;margin-bottom:10px">Unlock via ELO milestones</div>';
+  ps.innerHTML='<div style="font-size:11px;font-weight:600;color:#5a7a9a;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">â™Ÿ Piece Skins</div><div style="font-size:11px;color:#888;margin-bottom:10px">Unlock via ELO milestones</div>';
   const grid=document.createElement('div');grid.className='pskingrid';
   for(const key in PIECE_SKINS){
     const sk=PIECE_SKINS[key];
@@ -1358,7 +1358,7 @@ renderItems=function(){
     if(sk.palette){
       prevStyle=`color:${sk.palette.w};text-shadow:-1px -1px 0 ${sk.palette.wo},1px -1px 0 ${sk.palette.wo},-1px 1px 0 ${sk.palette.wo},1px 1px 0 ${sk.palette.wo}`;
     }else{prevStyle='color:#ffd700;text-shadow:-1px -1px 0 #333,1px 1px 0 #333'}
-    chip.innerHTML=`<div class="pskinpreview" style="${prevStyle}">♚</div><div class="pskinname">${sk.name}</div><div class="pskinreq">${sk.req>0?'ELO '+sk.req:'Available'}</div>${unlocked?'':'<div class="pskinlock">🔒</div>'}`;
+    chip.innerHTML=`<div class="pskinpreview" style="${prevStyle}">â™š</div><div class="pskinname">${sk.name}</div><div class="pskinreq">${sk.req>0?'ELO '+sk.req:'Available'}</div>${unlocked?'':'<div class="pskinlock">ðŸ”’</div>'}`;
     if(unlocked)chip.onclick=()=>equipPieceSkin(key);
     grid.appendChild(chip);
   }
@@ -1376,7 +1376,7 @@ const PACKS=[
   {n:100,price:9635,label:'100 Godly Packs',desc:'Best value!',save:365}
 ];
 
-// Godly pack odds — guaranteed rare drop
+// Godly pack odds â€” guaranteed rare drop
 const GODLY_TABLE=[
   {skin:'realadmin',chance:0.01},
   {skin:'admin',chance:0.04},
@@ -1409,7 +1409,7 @@ function renderShop(){
   // Free pack card
   const fc=document.getElementById('freepackcard');
   const ready=yearlyFreeReady();
-  fc.innerHTML=`<div class="packicon">🎁</div><div class="packinfo"><div class="packname">Yearly Free Godly Pack</div><div class="packdesc">One free pack every 365 days</div>${ready?'':'<div class="yearcountdown">Next claim in: '+yearlyFreeRemaining()+'</div>'}</div><button class="packbuy free" ${ready?'':'disabled'} onclick="claimYearlyFree()">${ready?'🎉 CLAIM':'⏳ Locked'}</button>`;
+  fc.innerHTML=`<div class="packicon">ðŸŽ</div><div class="packinfo"><div class="packname">Yearly Free Godly Pack</div><div class="packdesc">One free pack every 365 days</div>${ready?'':'<div class="yearcountdown">Next claim in: '+yearlyFreeRemaining()+'</div>'}</div><button class="packbuy free" ${ready?'':'disabled'} onclick="claimYearlyFree()">${ready?'ðŸŽ‰ CLAIM':'â³ Locked'}</button>`;
   // Godly packs
   const gs=document.getElementById('godlyshop');gs.innerHTML='';
   for(const p of PACKS){
@@ -1417,20 +1417,20 @@ function renderShop(){
     const owned=M.godlyPacks||0;
     const can=M.money>=p.price;
     const priceLine=`<div class="packprice">${fmtMoney(p.price)}${p.save?` <span class="save">save ${fmtMoney(p.save)}</span>`:''}</div>`;
-    card.innerHTML=`<div class="packicon">✨</div><div class="packinfo"><div class="packname">${p.label}</div><div class="packdesc">${p.desc}</div>${priceLine}</div><button class="packbuy" ${can?'':'disabled'} onclick="buyPack(${p.n},${p.price})">Buy ×${p.n}</button>`;
+    card.innerHTML=`<div class="packicon">âœ¨</div><div class="packinfo"><div class="packname">${p.label}</div><div class="packdesc">${p.desc}</div>${priceLine}</div><button class="packbuy" ${can?'':'disabled'} onclick="buyPack(${p.n},${p.price})">Buy Ã—${p.n}</button>`;
     gs.appendChild(card);
   }
   // Show owned packs to open
   if((M.godlyPacks||0)>0){
     const openCard=document.createElement('div');openCard.className='packcard godly';
-    openCard.innerHTML=`<div class="packicon">📦</div><div class="packinfo"><div class="packname">You own ${M.godlyPacks} pack(s)</div><div class="packdesc">Open them all at once</div></div><button class="packbuy" onclick="openOwnedPacks()">📂 Open All</button>`;
+    openCard.innerHTML=`<div class="packicon">ðŸ“¦</div><div class="packinfo"><div class="packname">You own ${M.godlyPacks} pack(s)</div><div class="packdesc">Open them all at once</div></div><button class="packbuy" onclick="openOwnedPacks()">ðŸ“‚ Open All</button>`;
     gs.appendChild(openCard);
   }
   // Gamepasses
   const gp=document.getElementById('gamepassshop');gp.innerHTML='';
   const ngc=M.nothingGamepass||0;
   const ngCard=document.createElement('div');ngCard.className='packcard tiny';
-  ngCard.innerHTML=`<div class="packicon">🫥</div><div class="packinfo"><div class="packname">Nothing Gamepass ${ngc>0?'(owned: '+ngc+')':''}</div><div class="packdesc">Does literally nothing. Pure bragging rights.</div><div class="packprice">£0.01</div></div><button class="packbuy tiny" ${M.money>=1?'':'disabled'} onclick="buyNothing()">Buy 1p</button>`;
+  ngCard.innerHTML=`<div class="packicon">ðŸ«¥</div><div class="packinfo"><div class="packname">Nothing Gamepass ${ngc>0?'(owned: '+ngc+')':''}</div><div class="packdesc">Does literally nothing. Pure bragging rights.</div><div class="packprice">Â£0.01</div></div><button class="packbuy tiny" ${M.money>=1?'':'disabled'} onclick="buyNothing()">Buy 1p</button>`;
   gp.appendChild(ngCard);
 }
 
@@ -1447,7 +1447,7 @@ function buyPack(n,price){
   saveMeta();refreshUI();
   if(maybeAutoOpenPacks())return; // Auto-Open: open instantly instead of stockpiling
   renderShop();
-  showAnnouncement(`✨ +${n} Godly Pack${n>1?'s':''}!`);
+  showAnnouncement(`âœ¨ +${n} Godly Pack${n>1?'s':''}!`);
 }
 
 function buyNothing(){
@@ -1455,7 +1455,7 @@ function buyNothing(){
   M.money-=1;
   M.nothingGamepass=(Number(M.nothingGamepass)||0)+1;
   saveMeta();refreshUI();renderShop();
-  showAnnouncement('🫥 You bought... nothing. Congrats?');
+  showAnnouncement('ðŸ«¥ You bought... nothing. Congrats?');
 }
 
 function claimYearlyFree(){
@@ -1465,7 +1465,7 @@ function claimYearlyFree(){
   saveMeta();refreshUI();
   if(maybeAutoOpenPacks())return;
   renderShop();
-  showAnnouncement('🎁 Yearly free Godly Pack claimed!');
+  showAnnouncement('ðŸŽ Yearly free Godly Pack claimed!');
 }
 
 function openOwnedPacks(){
@@ -1501,7 +1501,7 @@ function showPackResults(results){
     applySkinPreview(prev,sk);
     card.appendChild(prev);
     const lbl=document.createElement('div');lbl.className='pgname';
-    lbl.textContent=`${SKINS[sk].name} ×${counts[sk]}`;
+    lbl.textContent=`${SKINS[sk].name} Ã—${counts[sk]}`;
     card.appendChild(lbl);
     grid.appendChild(card);
   }
@@ -1539,7 +1539,9 @@ const MUSIC_TRACKS=[
   {name:'Best Ever',file:'best_ever.mp3'},
   {name:'PASSO BEM SOLTO',file:'passo.mp3'},
   {name:'It\'s Raining Tacos',file:'tacos.mp3'},
-  {name:'ЛАВИНА (Steal the Brainrot)',file:'lavina.mp3'}
+  {name:'\u041B\u0410\u0412\u0418\u041D\u0410 (Steal the Brainrot)',file:'lavina.mp3'},
+  {name:'\u041F\u043E\u0447\u0432\u043E\u0432\u0435\u0434\u0435\u043D\u0438\u0435',file:'pochvo.mp3'},
+  {name:'\u0414\u043E\u043C\u0438\u043A\u0438',file:'domiki.mp3'}
 ];
 
 // Auto-play music on first interaction
@@ -1605,8 +1607,8 @@ function toggleMusic(){
   M.musicOn = _musicOn;
   saveMeta();
   const btn=document.getElementById('musicbtn');
-  if(_musicOn){btn.classList.add('playing');btn.textContent='🎶';_playLoop()}
-  else{btn.classList.remove('playing');btn.textContent='🎵';_musicTimers.forEach(t=>clearTimeout(t));_musicTimers=[];_stopFileAudio()}
+  if(_musicOn){btn.classList.add('playing');btn.textContent='ðŸŽ¶';_playLoop()}
+  else{btn.classList.remove('playing');btn.textContent='ðŸŽµ';_musicTimers.forEach(t=>clearTimeout(t));_musicTimers=[];_stopFileAudio()}
 }
 
 // ============================================================
@@ -1624,20 +1626,20 @@ const SKIN_RARITY={poo:1,gy:2,rainbow:3,sixtyseven:4,nothing:5,admin:6,secret:7,
 const RARITY_NAMES={1:'Garbage',2:'Common',3:'Rare',4:'Cosmic',5:'Cosmic',6:'Admin',7:'SECRET'};
 
 const UPGRADES=[
-  {id:'equip2',name:'Dual Equip',desc:'Mix two board skins (left/right halves)',cost:10000,icon:'🎨'},
-  {id:'luck2',name:'2x Luck',desc:'Doubles your roll luck',cost:50000,icon:'🍀',req:'equip2'},
-  {id:'luck4',name:'4x Luck',desc:'Quadruples roll luck',cost:200000,icon:'🍀🍀',req:'luck2'},
-  {id:'luck8',name:'8x Luck',desc:'8x roll luck',cost:800000,icon:'🌟',req:'luck4'},
-  {id:'stockfishMax',name:'Stockfish 3200',desc:'Unlocks max-strength bot (depth 3)',cost:1500000,icon:'🧠',req:'luck8'},
-  {id:'autoOpenPacks',name:'Auto-Open Packs',desc:'Packs open instantly when bought',cost:3000000,icon:'⚡',req:'stockfishMax'},
-  {id:'luck124',name:'124x Luck',desc:'Max luck upgrade',cost:9999900,icon:'🌈',req:'autoOpenPacks'}
+  {id:'equip2',name:'Dual Equip',desc:'Mix two board skins (left/right halves)',cost:10000,icon:'ðŸŽ¨'},
+  {id:'luck2',name:'2x Luck',desc:'Doubles your roll luck',cost:50000,icon:'ðŸ€',req:'equip2'},
+  {id:'luck4',name:'4x Luck',desc:'Quadruples roll luck',cost:200000,icon:'ðŸ€ðŸ€',req:'luck2'},
+  {id:'luck8',name:'8x Luck',desc:'8x roll luck',cost:800000,icon:'ðŸŒŸ',req:'luck4'},
+  {id:'stockfishMax',name:'Stockfish 3200',desc:'Unlocks max-strength bot (depth 3)',cost:1500000,icon:'ðŸ§ ',req:'luck8'},
+  {id:'autoOpenPacks',name:'Auto-Open Packs',desc:'Packs open instantly when bought',cost:3000000,icon:'âš¡',req:'stockfishMax'},
+  {id:'luck124',name:'124x Luck',desc:'Max luck upgrade',cost:9999900,icon:'ðŸŒˆ',req:'autoOpenPacks'}
 ];
 
 const MONEY_PACKS=[
-  {id:'small',price:99,pounds:10000,name:'Small Pack',desc:'+£100',icon:'💵'},
-  {id:'big',price:399,pounds:50000,name:'Big Pack',desc:'+£500',icon:'💸'},
-  {id:'mega',price:799,pounds:100000,name:'Mega Pack',desc:'+£1,000',icon:'💰'},
-  {id:'ultra',price:1999,pounds:500000,name:'Gigantic Ultra Pack',desc:'+£5,000',icon:'🎰'}
+  {id:'small',price:99,pounds:10000,name:'Small Pack',desc:'+Â£100',icon:'ðŸ’µ'},
+  {id:'big',price:399,pounds:50000,name:'Big Pack',desc:'+Â£500',icon:'ðŸ’¸'},
+  {id:'mega',price:799,pounds:100000,name:'Mega Pack',desc:'+Â£1,000',icon:'ðŸ’°'},
+  {id:'ultra',price:1999,pounds:500000,name:'Gigantic Ultra Pack',desc:'+Â£5,000',icon:'ðŸŽ°'}
 ];
 
 const SERVER_LUCK=[
@@ -1649,12 +1651,12 @@ const SERVER_LUCK=[
 ];
 
 const GAMEPASSES=[
-  {id:'money2x',name:'2x Money',desc:'Earn 2x cash on every roll',price:1000,icon:'💎'},
-  {id:'vip',name:'VIP',desc:'2x luck + unlocks NVP',price:900,icon:'⭐'},
-  {id:'nvp',name:'NVP',desc:'Magnus bot, 2x cash, 2x luck, 2x roll speed (requires VIP)',price:9900,icon:'👑',req:'vip'},
-  {id:'nvpPlus',name:'NVP+',desc:'Unlocks NVP++ (requires NVP)',price:99900,icon:'💜',req:'nvp'},
-  {id:'nvpPlusPlus',name:'NVP++',desc:'2x roll speed, 8x cash, 64x luck, VIP board+piece (requires NVP+)',price:999900,icon:'💠',req:'nvpPlus'},
-  {id:'nvpEquals',name:'🆕 NVP=+++++=======+++++======++++++++==',desc:'10× cash, 10× luck, 10× roll speed (requires NVP++)',price:300000000,icon:'♾️',req:'nvpPlusPlus'}
+  {id:'money2x',name:'2x Money',desc:'Earn 2x cash on every roll',price:1000,icon:'ðŸ’Ž'},
+  {id:'vip',name:'VIP',desc:'2x luck + unlocks NVP',price:900,icon:'â­'},
+  {id:'nvp',name:'NVP',desc:'Magnus bot, 2x cash, 2x luck, 2x roll speed (requires VIP)',price:9900,icon:'ðŸ‘‘',req:'vip'},
+  {id:'nvpPlus',name:'NVP+',desc:'Unlocks NVP++ (requires NVP)',price:99900,icon:'ðŸ’œ',req:'nvp'},
+  {id:'nvpPlusPlus',name:'NVP++',desc:'2x roll speed, 8x cash, 64x luck, VIP board+piece (requires NVP+)',price:999900,icon:'ðŸ’ ',req:'nvpPlus'},
+  {id:'nvpEquals',name:'ðŸ†• NVP=+++++=======+++++======++++++++==',desc:'10Ã— cash, 10Ã— luck, 10Ã— roll speed (requires NVP++)',price:300000000,icon:'â™¾ï¸',req:'nvpPlusPlus'}
 ];
 
 // ----- LUCK / MULTIPLIER CALC -----
@@ -1686,7 +1688,7 @@ doSpin=function(){
   M.rolls=(Number(M.rolls)||0)+1;
   const mm=getMoneyMult();
   M.money=(Number(M.money)||0)+100*mm;
-  flashMoneyToast('+£'+mm.toFixed(2));
+  flashMoneyToast('+Â£'+mm.toFixed(2));
   const luck=getLuck();
   // Jackpot 1/1,000,000,000,000 (1 trillion, scales with luck)
   if(Math.random()<luck/1e12){triggerJackpot();saveMeta();refreshUI();updateLuckChip();return}
@@ -1720,17 +1722,17 @@ function updateLuckChip(){
 
 // ----- JACKPOT WHEEL -----
 const JP_SEGMENTS=[
-  {label:'Rainbow ×3',skin:'rainbow',count:3,deg:45},
-  {label:'Nothing ×2',skin:'nothing',count:2,deg:135},
+  {label:'Rainbow Ã—3',skin:'rainbow',count:3,deg:45},
+  {label:'Nothing Ã—2',skin:'nothing',count:2,deg:135},
   {label:'Secret Admin',skin:'realadmin',count:1,deg:225},
-  {label:'Nothing ×3',skin:'nothing',count:3,deg:315}
+  {label:'Nothing Ã—3',skin:'nothing',count:3,deg:315}
 ];
 function triggerJackpot(){
   const sc=document.getElementById('jpscene');
   const wheel=document.getElementById('jpwheel');
   const res=document.getElementById('jpresult');
   const btn=document.getElementById('jpcloseBtn');
-  res.textContent='Spinning…';btn.style.display='none';sc.classList.remove('hidden');
+  res.textContent='Spinningâ€¦';btn.style.display='none';sc.classList.remove('hidden');
   // Pick random segment
   const idx=Math.floor(Math.random()*JP_SEGMENTS.length);
   const seg=JP_SEGMENTS[idx];
@@ -1743,7 +1745,7 @@ function triggerJackpot(){
     // Apply rewards
     for(let i=0;i<seg.count;i++)M.inventory[seg.skin]=(M.inventory[seg.skin]||0)+1;
     saveMeta();refreshUI();
-    res.innerHTML='🎉 You won <b style="color:#ffd700">'+seg.label+'</b>!';
+    res.innerHTML='ðŸŽ‰ You won <b style="color:#ffd700">'+seg.label+'</b>!';
     btn.style.display='inline-block';
   },5100);
 }
@@ -1765,11 +1767,11 @@ function renderUpgrades(){
     const card=document.createElement('div');
     card.className='upgcard'+(owned?' owned':'');
     const costTxt=owned?'OWNED':(u.rollCost?(u.rollCost.toLocaleString()+' rolls'):fmtMoney(u.cost));
-    card.innerHTML=`<div class="upgicon">${u.icon}</div><div class="upginfo"><div class="upgname">${u.name}</div><div class="upgdesc">${u.desc}${reqMissing?' — <span style="color:#ff8080">needs '+UPGRADES.find(x=>x.id===u.req).name+'</span>':''}</div><div class="upgcost">${costTxt}${u.rollCost&&!owned?' (you have '+(Number(M.rolls)||0).toLocaleString()+')':''}</div></div>`;
+    card.innerHTML=`<div class="upgicon">${u.icon}</div><div class="upginfo"><div class="upgname">${u.name}</div><div class="upgdesc">${u.desc}${reqMissing?' â€” <span style="color:#ff8080">needs '+UPGRADES.find(x=>x.id===u.req).name+'</span>':''}</div><div class="upgcost">${costTxt}${u.rollCost&&!owned?' (you have '+(Number(M.rolls)||0).toLocaleString()+')':''}</div></div>`;
     if(owned){
       // Owned: show a Stop button that refunds & removes the upgrade
       const stop=document.createElement('button');stop.className='upgbuy';
-      stop.textContent='✖ Stop';stop.style.background='linear-gradient(135deg,#aa4444,#5a1f1f)';
+      stop.textContent='âœ– Stop';stop.style.background='linear-gradient(135deg,#aa4444,#5a1f1f)';
       stop.onclick=()=>stopUpg(u);
       card.appendChild(stop);
     }else{
@@ -1787,14 +1789,14 @@ function buyUpg(u){
   else M.money-=u.cost;
   M.upgradesPurchased=M.upgradesPurchased||{};M.upgradesPurchased[u.id]=true;
   saveMeta();refreshUI();renderUpgrades();updateLuckChip();
-  showAnnouncement('✨ Unlocked: '+u.name);
+  showAnnouncement('âœ¨ Unlocked: '+u.name);
 }
 function stopUpg(u){
   if(!M.upgradesPurchased||!M.upgradesPurchased[u.id])return;
   delete M.upgradesPurchased[u.id];
   // Refund: rolls for roll-cost upgrades, money otherwise
-  if(u.rollCost){M.rolls=(Number(M.rolls)||0)+u.rollCost;showAnnouncement('✖ Stopped '+u.name+' — refunded '+u.rollCost.toLocaleString()+' rolls')}
-  else{M.money=(Number(M.money)||0)+(Number(u.cost)||0);showAnnouncement('✖ Stopped '+u.name+' — refunded '+fmtMoney(u.cost))}
+  if(u.rollCost){M.rolls=(Number(M.rolls)||0)+u.rollCost;showAnnouncement('âœ– Stopped '+u.name+' â€” refunded '+u.rollCost.toLocaleString()+' rolls')}
+  else{M.money=(Number(M.money)||0)+(Number(u.cost)||0);showAnnouncement('âœ– Stopped '+u.name+' â€” refunded '+fmtMoney(u.cost))}
   saveMeta();refreshUI();renderUpgrades();updateLuckChip();
   if(typeof applyInfiniteEquip==='function')applyInfiniteEquip();
 }
@@ -1840,7 +1842,7 @@ function claimIndex(sk){
   M.indexMultiplier *= 2; // Double for next time
   
   saveMeta();refreshUI();renderIndex();
-  showAnnouncement('📖 Claimed +£' + (reward/100) + ' for '+SKINS[sk].name + ' (Next claim: £' + (10*M.indexMultiplier) + ')');
+  showAnnouncement('ðŸ“– Claimed +Â£' + (reward/100) + ' for '+SKINS[sk].name + ' (Next claim: Â£' + (10*M.indexMultiplier) + ')');
 }
 
 // ----- SETTINGS -----
@@ -1911,7 +1913,7 @@ function renderSettings(){
   }
 }
 function applyQuality(){
-  // Fixed high quality (1000) — 72px squares
+  // Fixed high quality (1000) â€” 72px squares
   const px=72;
   const board=document.getElementById('board');
   if(board){
@@ -1927,8 +1929,8 @@ function copySaveCode(){
   const code=btoa(encodeURIComponent(JSON.stringify(M)));
   document.getElementById('savecode').textContent=code;
   document.getElementById('savecodebox').classList.remove('hidden');
-  try{navigator.clipboard&&navigator.clipboard.writeText(code);showAnnouncement('💾 Save code copied to clipboard')}
-  catch(e){showAnnouncement('💾 Save code shown below — copy manually')}
+  try{navigator.clipboard&&navigator.clipboard.writeText(code);showAnnouncement('ðŸ’¾ Save code copied to clipboard')}
+  catch(e){showAnnouncement('ðŸ’¾ Save code shown below â€” copy manually')}
 }
 function promptLoadCode(){
   const code=prompt('Paste your save code:');
@@ -1937,7 +1939,7 @@ function promptLoadCode(){
     const data=JSON.parse(decodeURIComponent(atob(code.trim())));
     if(!data||typeof data!=='object')throw new Error('Bad data');
     M=Object.assign(loadMeta(),data);saveMeta();refreshUI();updateLuckChip();applyQuality();
-    showAnnouncement('✅ Progress restored');
+    showAnnouncement('âœ… Progress restored');
   }catch(e){alert('Invalid save code')}
 }
 
@@ -1948,7 +1950,7 @@ function resetProgressFlow(){
     const p=prompt('First, set a password. You\'ll be asked to type it again to confirm reset.\n\nNew password:');
     if(!p)return;
     M.resetPassword=p;saveMeta();
-    document.getElementById('resetsub').textContent='Password set. Click "Reset…" again to confirm.';
+    document.getElementById('resetsub').textContent='Password set. Click "Resetâ€¦" again to confirm.';
     return;
   }
   // Step 2: show input
@@ -1966,12 +1968,12 @@ function cancelReset(){document.getElementById('resetinput').classList.add('hidd
 // ----- WIN MODAL -----
 function showWinModal(result,change,oppName){
   const m=document.getElementById('winmodal');m.classList.remove('hidden','loss','draw');
-  if(result===1){m.classList.add('winmodal');document.getElementById('winemoji').textContent='🏆 VICTORY';document.getElementById('winhead').innerHTML='You Win! <button class="mclose" onclick="closeModal(\'winmodal\')">✕</button>'}
-  else if(result===0){m.classList.add('loss');document.getElementById('winemoji').textContent='💔 DEFEAT';document.getElementById('winhead').innerHTML='You Lost <button class="mclose" onclick="closeModal(\'winmodal\')">✕</button>'}
-  else{m.classList.add('draw');document.getElementById('winemoji').textContent='🤝 DRAW';document.getElementById('winhead').innerHTML='Draw <button class="mclose" onclick="closeModal(\'winmodal\')">✕</button>'}
+  if(result===1){m.classList.add('winmodal');document.getElementById('winemoji').textContent='ðŸ† VICTORY';document.getElementById('winhead').innerHTML='You Win! <button class="mclose" onclick="closeModal(\'winmodal\')">âœ•</button>'}
+  else if(result===0){m.classList.add('loss');document.getElementById('winemoji').textContent='ðŸ’” DEFEAT';document.getElementById('winhead').innerHTML='You Lost <button class="mclose" onclick="closeModal(\'winmodal\')">âœ•</button>'}
+  else{m.classList.add('draw');document.getElementById('winemoji').textContent='ðŸ¤ DRAW';document.getElementById('winhead').innerHTML='Draw <button class="mclose" onclick="closeModal(\'winmodal\')">âœ•</button>'}
   const sub=document.getElementById('winsub');
   if(oppName)sub.innerHTML='vs <b>'+oppName+'</b><br>ELO change: <b>'+(change>=0?'+':'')+change+'</b><br>New ELO: <b>'+M.elo+'</b>';
-  else sub.innerHTML='Local game — no ELO change.';
+  else sub.innerHTML='Local game â€” no ELO change.';
 }
 
 // Hook into existing ELO toast to also show modal
@@ -2003,7 +2005,7 @@ function insufficientMaterial(b){
   return false;
 }
 function showDrawNotice(){
-  showAnnouncement('🤝 Draw: '+G.drawReason);
+  showAnnouncement('ðŸ¤ Draw: '+G.drawReason);
   if(G.opponent&&G.opponent.type==='ai'&&!G.opponent._eloApplied){G.opponent._eloApplied=true;showWinModal(0.5,0,G.opponent.name)}
   else showWinModal(0.5,0,null);
 }
@@ -2020,7 +2022,7 @@ function trackHiddenFreeShop(action){
   if(action==='shop'&&s.itemsC)s.shop=true;
   if(action==='shop_close'&&s.shop)s.shopC=true;
   if(action==='lb'&&s.shopC)s.lb=true;
-  if(action==='lb_close'&&s.lb){M.hiddenFreeShop=true;saveMeta();showAnnouncement('🎉 SECRET: Free shop unlocked!');renderShop()}
+  if(action==='lb_close'&&s.lb){M.hiddenFreeShop=true;saveMeta();showAnnouncement('ðŸŽ‰ SECRET: Free shop unlocked!');renderShop()}
 }
 function markHiddenLb(){trackHiddenFreeShop('lb')}
 
@@ -2052,7 +2054,7 @@ userNewGame=function(){
     M.inventory.nothing=(M.inventory.nothing||0)+1;
     M.inventory.admin=(M.inventory.admin||0)+1;
     saveMeta();refreshUI();
-    showAnnouncement('🎉 SECRET: 100 new games — Nothing + Admin skins granted!');
+    showAnnouncement('ðŸŽ‰ SECRET: 100 new games â€” Nothing + Admin skins granted!');
   }
 };
 
@@ -2062,7 +2064,7 @@ renderShop=function(){
   _origRenderShop();
   const gp=document.getElementById('gamepassshop');
   // Add money packs
-  const moneySec=document.createElement('div');moneySec.className='shopsection';moneySec.textContent='💵 Money Packs';
+  const moneySec=document.createElement('div');moneySec.className='shopsection';moneySec.textContent='ðŸ’µ Money Packs';
   gp.parentElement.insertBefore(moneySec,gp.nextSibling);
   for(const p of MONEY_PACKS){
     const card=document.createElement('div');card.className='packcard';
@@ -2073,7 +2075,7 @@ renderShop=function(){
     card.appendChild(b);gp.parentElement.insertBefore(card,moneySec.nextSibling);
   }
   // Add gamepasses
-  const gpSec=document.createElement('div');gpSec.className='shopsection';gpSec.textContent='🎟 Premium Gamepasses';
+  const gpSec=document.createElement('div');gpSec.className='shopsection';gpSec.textContent='ðŸŽŸ Premium Gamepasses';
   gp.parentElement.appendChild(gpSec);
   for(const g of GAMEPASSES){
     const owned=M.gamepasses&&M.gamepasses[g.id];
@@ -2081,15 +2083,15 @@ renderShop=function(){
     const card=document.createElement('div');
     card.className='packcard '+(g.id==='vip'?'vip':g.id==='nvp'?'nvp':g.id==='nvpPlus'?'nvp-plus':g.id==='nvpPlusPlus'?'nvp-plus-plus':'')+(!reqOk?' locked-pack':'');
     const free=M.hiddenFreeShop;
-    card.innerHTML=`<div class="packicon">${g.icon}</div><div class="packinfo"><div class="packname">${g.name}${owned?' ✓':''}</div><div class="packdesc">${g.desc}</div><div class="packprice">${free?'FREE':fmtMoney(g.price)}</div></div>`;
+    card.innerHTML=`<div class="packicon">${g.icon}</div><div class="packinfo"><div class="packname">${g.name}${owned?' âœ“':''}</div><div class="packdesc">${g.desc}</div><div class="packprice">${free?'FREE':fmtMoney(g.price)}</div></div>`;
     const b=document.createElement('button');b.className='packbuy';
     b.textContent=owned?'Owned':!reqOk?'Locked':'Buy';
     b.disabled=owned||!reqOk||(!free&&M.money<g.price);
-    b.onclick=()=>{const c=free?0:g.price;if(M.money<c)return;M.money-=c;M.gamepasses=M.gamepasses||{};M.gamepasses[g.id]=true;saveMeta();refreshUI();renderShop();updateLuckChip();showAnnouncement('🎉 '+g.name+' purchased!')};
+    b.onclick=()=>{const c=free?0:g.price;if(M.money<c)return;M.money-=c;M.gamepasses=M.gamepasses||{};M.gamepasses[g.id]=true;saveMeta();refreshUI();renderShop();updateLuckChip();showAnnouncement('ðŸŽ‰ '+g.name+' purchased!')};
     card.appendChild(b);gp.parentElement.appendChild(card);
   }
   // Server luck
-  const slSec=document.createElement('div');slSec.className='shopsection';slSec.textContent='🍀 Server Luck Boost';
+  const slSec=document.createElement('div');slSec.className='shopsection';slSec.textContent='ðŸ€ Server Luck Boost';
   gp.parentElement.appendChild(slSec);
   const slNote=document.createElement('div');slNote.style.cssText='font-size:11px;color:#aac;margin-bottom:8px';slNote.textContent='Each tier permanently multiplies your luck. Stacks with upgrades & gamepasses.';
   gp.parentElement.appendChild(slNote);
@@ -2099,21 +2101,21 @@ renderShop=function(){
     if(sl.mult<=curSL)continue;
     if(sl.mult>curSL*2)continue; // only show next 1-2 tiers to avoid spam
     const card=document.createElement('div');card.className='packcard';
-    card.innerHTML=`<div class="packicon">🍀</div><div class="packinfo"><div class="packname">${sl.mult}x Server Luck</div><div class="packdesc">Total: ${sl.mult}x luck multiplier</div><div class="packprice">${free?'FREE':fmtMoney(sl.price)}</div></div>`;
+    card.innerHTML=`<div class="packicon">ðŸ€</div><div class="packinfo"><div class="packname">${sl.mult}x Server Luck</div><div class="packdesc">Total: ${sl.mult}x luck multiplier</div><div class="packprice">${free?'FREE':fmtMoney(sl.price)}</div></div>`;
     const b=document.createElement('button');b.className='packbuy';b.textContent='Buy';b.disabled=!free&&M.money<sl.price;
-    b.onclick=()=>{const c=free?0:sl.price;if(M.money<c)return;M.money-=c;M.serverLuckMult=sl.mult;saveMeta();refreshUI();renderShop();updateLuckChip();showAnnouncement('🍀 Server luck → '+sl.mult+'x')};
+    b.onclick=()=>{const c=free?0:sl.price;if(M.money<c)return;M.money-=c;M.serverLuckMult=sl.mult;saveMeta();refreshUI();renderShop();updateLuckChip();showAnnouncement('ðŸ€ Server luck â†’ '+sl.mult+'x')};
     card.appendChild(b);gp.parentElement.appendChild(card);
   }
 };
 
 // ----- AUTO ROLL COST CHANGE -----
-// Override toggleAutoRoll to use 1000 fake money (£10)
+// Override toggleAutoRoll to use 1000 fake money (Â£10)
 const _origToggle=toggleAutoRoll;
 toggleAutoRoll=function(){
   if(!M.autoRollOwned){
-    if(M.money<1000){showAnnouncement('Need £10 to buy Auto Roll!');return}
+    if(M.money<1000){showAnnouncement('Need Â£10 to buy Auto Roll!');return}
     M.money-=1000;M.autoRollOwned=true;M.autoRollActive=true;
-    showAnnouncement('🎉 Auto Roll purchased!');saveMeta();refreshUI();startAutoRoll();return;
+    showAnnouncement('ðŸŽ‰ Auto Roll purchased!');saveMeta();refreshUI();startAutoRoll();return;
   }
   _origToggle();
 };
@@ -2122,7 +2124,7 @@ const _origRefresh=refreshUI;
 refreshUI=function(){
   _origRefresh();
   const arb=document.getElementById('autorollbtn');
-  if(arb&&!M.autoRollOwned)arb.textContent='Buy Auto Roll £10.00';
+  if(arb&&!M.autoRollOwned)arb.textContent='Buy Auto Roll Â£10.00';
 };
 
 // ----- AUTO ROLL SPEED RESPECTS GAMEPASSES -----
@@ -2156,31 +2158,31 @@ function v3MigrateMeta(){
 }
 
 // ============================================================
-// ACCOUNTS (local — username + password stored in browser)
+// ACCOUNTS (local â€” username + password stored in browser)
 // ============================================================
 let _acctTab='signup';
 function renderAccount(){
   const v=document.getElementById('acctview');
   const title=document.getElementById('accttitle');
   if(M.account){
-    title.innerHTML='👤 Account <button class="mclose" onclick="closeModal(\'acctmodal\')">✕</button>';
+    title.innerHTML='ðŸ‘¤ Account <button class="mclose" onclick="closeModal(\'acctmodal\')">âœ•</button>';
     const created=new Date(M.account.createdAt||Date.now()).toLocaleDateString();
     v.innerHTML=`
       <div class="accprofile">
         <div class="accav">${M.account.username[0].toUpperCase()}</div>
         <div class="accinfo">
           <div class="accname">${M.account.username}</div>
-          <div class="accmeta">Joined ${created} • ELO ${M.elo} • ${M.gamesPlayed||0} games</div>
+          <div class="accmeta">Joined ${created} â€¢ ELO ${M.elo} â€¢ ${M.gamesPlayed||0} games</div>
         </div>
       </div>
       <div style="font-size:12px;color:#aac;margin-bottom:12px">Your username shows up on the leaderboard.</div>
       <div style="background:#1a2a40;border-left:3px solid #4a80c0;padding:10px 12px;border-radius:0 6px 6px 0;font-size:12px;color:#aaccff;margin-bottom:12px;line-height:1.5">
-        🌐 <b>Multiplayer sync:</b> if you signed up before the multiplayer server was deployed, your account exists only in this browser.
+        ðŸŒ <b>Multiplayer sync:</b> if you signed up before the multiplayer server was deployed, your account exists only in this browser.
         Click below to register it on the server so friends & matchmaking work.
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="modebtn mode-vs" style="text-align:center" onclick="resyncAccountToServer()">🌐 Re-register on Server</button>
-        <button class="modebtn mode-mm" style="text-align:center" onclick="switchAccount()">🔄 Switch Account</button>
+        <button class="modebtn mode-vs" style="text-align:center" onclick="resyncAccountToServer()">ðŸŒ Re-register on Server</button>
+        <button class="modebtn mode-mm" style="text-align:center" onclick="switchAccount()">ðŸ”„ Switch Account</button>
         <button class="dangerbtn" onclick="logoutAccount()">Log out</button>
       </div>`;
     return;
@@ -2222,7 +2224,7 @@ function createAccount(){
   const lb=loadLb();const me=lb.find(e=>e.name==='You'||e.name===M.account.username);
   if(me)me.name=u;else lb.push({name:u,score:getScore()});
   saveLb(lb);
-  showAnnouncement('🎉 Welcome, '+u+'!');
+  showAnnouncement('ðŸŽ‰ Welcome, '+u+'!');
 }
 function loginAccount(){
   const u=document.getElementById('accusername').value.trim();
@@ -2234,7 +2236,7 @@ function loginAccount(){
   if(rec.password!==btoa(p)){err.textContent='Wrong password';return}
   M.account={username:rec.username,createdAt:rec.createdAt};
   saveMeta();renderAccount();refreshAccountBtn();
-  showAnnouncement('👋 Welcome back, '+rec.username+'!');
+  showAnnouncement('ðŸ‘‹ Welcome back, '+rec.username+'!');
 }
 function logoutAccount(){
   if(!confirm('Log out? Your progress stays saved on this device.'))return;
@@ -2247,12 +2249,12 @@ function switchAccount(){
   if(typeof refreshUI==='function')refreshUI();
   _acctTab='login';
   renderAccount();
-  showAnnouncement('🔄 Log in to a different account');
+  showAnnouncement('ðŸ”„ Log in to a different account');
 }
 function refreshAccountBtn(){
   const b=document.getElementById('acctbtn');if(!b)return;
-  if(M.account){b.textContent='👤 '+M.account.username;b.classList.add('loggedin')}
-  else{b.textContent='👤 Sign Up';b.classList.remove('loggedin')}
+  if(M.account){b.textContent='ðŸ‘¤ '+M.account.username;b.classList.add('loggedin')}
+  else{b.textContent='ðŸ‘¤ Sign Up';b.classList.remove('loggedin')}
 }
 
 // Hook account modal into openModal
@@ -2276,7 +2278,7 @@ syncLb=function(){
 
 // Boot V3
 // ============================================================
-// SERVER API — real multiplayer (leaderboard, friends, matchmaking, announcements)
+// SERVER API â€” real multiplayer (leaderboard, friends, matchmaking, announcements)
 // ============================================================
 window.API=(()=>{
   async function call(path,opts){
@@ -2343,7 +2345,7 @@ async function syncServerLeaderboard(){
     if(lbEl&&r.totalUsers===0){
       const hint=document.createElement('div');
       hint.style.cssText='margin-top:10px;padding:10px;background:#2a2a0d;border-left:3px solid #ffd700;border-radius:0 6px 6px 0;font-size:12px;color:#ffe080;line-height:1.5';
-      hint.innerHTML='⚠️ <b>No other real players on the server yet.</b><br>Share the URL with friends and ask them to sign up. If your account was made before multiplayer launched, click <b>👤</b> in the top bar → <b>Re-register on Server</b>.';
+      hint.innerHTML='âš ï¸ <b>No other real players on the server yet.</b><br>Share the URL with friends and ask them to sign up. If your account was made before multiplayer launched, click <b>ðŸ‘¤</b> in the top bar â†’ <b>Re-register on Server</b>.';
       lbEl.appendChild(hint);
     }
     console.log('[lb] server returned '+r.lb.length+' entries, '+r.totalUsers+' real users');
@@ -2365,8 +2367,8 @@ async function resyncAccountToServer(){
   }
   if(r&&r.ok){
     await API.elo(M.account.username,M.elo);
-    showAnnouncement('✅ Account synced to multiplayer server');
-    setTimeout(()=>showAnnouncement('🔓 You have unlocked Owner Commands!'), 1500);
+    showAnnouncement('âœ… Account synced to multiplayer server');
+    setTimeout(()=>showAnnouncement('ðŸ”“ You have unlocked Owner Commands!'), 1500);
     syncServerLeaderboard();
   }else{
     alert('Sync failed: '+((r&&r.err)||'server unreachable'));
@@ -2391,14 +2393,14 @@ createAccount=async function(){
   // Block duplicate local usernames
   const local=_localAccts();
   if(local[u.toLowerCase()]){err.textContent='Username already taken';return}
-  err.textContent='Creating account…';
+  err.textContent='Creating accountâ€¦';
   const r=await API.signup(u,p);
   // Save locally regardless so login always works after logout / server reset
   _localAcctSave(u,p);
   M.account={username:u,createdAt:Date.now()};
   saveMeta();renderAccount();refreshAccountBtn();
-  showAnnouncement('🎉 Welcome, '+u+'!'+(r&&r.ok?'':' (offline — saved on this device)'));
-  setTimeout(()=>showAnnouncement('🔓 You have unlocked Owner Commands!'), 1500);
+  showAnnouncement('ðŸŽ‰ Welcome, '+u+'!'+(r&&r.ok?'':' (offline â€” saved on this device)'));
+  setTimeout(()=>showAnnouncement('ðŸ”“ You have unlocked Owner Commands!'), 1500);
   syncServerLeaderboard();
   if(typeof refreshAdminStatus==='function')refreshAdminStatus();
 };
@@ -2407,7 +2409,7 @@ loginAccount=async function(){
   const u=document.getElementById('accusername').value.trim();
   const p=document.getElementById('accpassword').value;
   const err=document.getElementById('accerr');
-  err.textContent='Logging in…';
+  err.textContent='Logging inâ€¦';
   const r=await API.login(u,p);
   if(r&&r.ok){
     M.account={username:r.user.username,createdAt:Date.now()};
@@ -2415,18 +2417,18 @@ loginAccount=async function(){
     // Make sure it's saved locally too
     _localAcctSave(r.user.username,p);
     saveMeta();renderAccount();refreshAccountBtn();refreshUI();
-    showAnnouncement('👋 Welcome back, '+r.user.username+'!');
+    showAnnouncement('ðŸ‘‹ Welcome back, '+r.user.username+'!');
     syncServerLeaderboard();
     if(typeof refreshAdminStatus==='function')refreshAdminStatus();
     return;
   }
-  // Server says no / unreachable — try the LOCAL registry
+  // Server says no / unreachable â€” try the LOCAL registry
   const local=_localAccts();
   const rec=local[u.toLowerCase()];
   if(rec&&rec.password===btoa(p)){
     M.account={username:rec.username,createdAt:rec.createdAt||Date.now()};
     saveMeta();renderAccount();refreshAccountBtn();refreshUI();
-    showAnnouncement('👋 Welcome back, '+rec.username+'! (local)');
+    showAnnouncement('ðŸ‘‹ Welcome back, '+rec.username+'! (local)');
     // Re-register on the server in the background so multiplayer works again
     API.signup(rec.username,p).then(()=>{if(M.account)API.elo(M.account.username,M.elo)}).catch(()=>{});
     syncServerLeaderboard();
@@ -2441,7 +2443,7 @@ searchFriends=async function(){
   const q=document.getElementById('frsearch').value.toLowerCase().trim();
   const el=document.getElementById('frsearchres');
   if(!q){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Start typing to search real players...</div>';return}
-  el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Searching…</div>';
+  el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Searchingâ€¦</div>';
   const r=await API.searchUsers(q);
   if(!r.ok||!r.users){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Search failed</div>';return}
   if(r.users.length===0){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No players found</div>';return}
@@ -2449,10 +2451,10 @@ searchFriends=async function(){
   for(const u of r.users){
     const isFr=(M.friends||[]).find(f=>f.name===u.name);
     const row=document.createElement('div');row.className='frrow';
-    row.innerHTML=`<div class="frav">${u.name[0]}</div><div class="frinfo"><div class="frname">${u.name}</div><div class="frstat">ELO ${u.elo} • ${u.isAI?'🤖 AI':'👤 Player'}</div></div>`;
+    row.innerHTML=`<div class="frav">${u.name[0]}</div><div class="frinfo"><div class="frname">${u.name}</div><div class="frstat">ELO ${u.elo} â€¢ ${u.isAI?'ðŸ¤– AI':'ðŸ‘¤ Player'}</div></div>`;
     const acts=document.createElement('div');acts.className='fractions';
     const b=document.createElement('button');b.className='skinbtn';
-    if(isFr){b.textContent='✓ Added';b.disabled=true;b.classList.add('equipped')}
+    if(isFr){b.textContent='âœ“ Added';b.disabled=true;b.classList.add('equipped')}
     else{b.textContent='+ Add';b.onclick=async()=>{await addLbFriend(u.name,u.elo);searchFriends()}}
     acts.appendChild(b);row.appendChild(acts);el.appendChild(row);
   }
@@ -2466,7 +2468,7 @@ addLbFriend=async function(name,elo){
   M.friends.push({name,elo,online:true});
   saveMeta();
   if(M.account){try{await API.addFriend(M.account.username,name)}catch(e){}}
-  showAnnouncement('👥 Added '+name);
+  showAnnouncement('ðŸ‘¥ Added '+name);
   if(!document.getElementById('lbmodal').classList.contains('hidden'))renderLeaderboard();
   if(!document.getElementById('frmodal').classList.contains('hidden'))renderFriendsList();
 };
@@ -2474,7 +2476,7 @@ addLbFriend=async function(name,elo){
 // ----- Friends list pulls from server when logged in -----
 async function renderFriendsFromServer(){
   if(!M.account){
-    document.getElementById('frlist').innerHTML='<div style="color:#888;text-align:center;padding:20px">👤 Sign up to use friends across the multiplayer pool.<br>Click <b>👤 Sign Up</b> in the top bar.</div>';
+    document.getElementById('frlist').innerHTML='<div style="color:#888;text-align:center;padding:20px">ðŸ‘¤ Sign up to use friends across the multiplayer pool.<br>Click <b>ðŸ‘¤ Sign Up</b> in the top bar.</div>';
     return;
   }
   const r=await API.friends(M.account.username);
@@ -2494,14 +2496,14 @@ let _qPollTimer=null;
 const _origFindMatchAsync=findMatchAsync;
 findMatchAsync=async function(){
   if(!M.account){
-    showAnnouncement('🔒 Sign up to find real opponents (or playing AI fallback)');
+    showAnnouncement('ðŸ”’ Sign up to find real opponents (or playing AI fallback)');
     _origFindMatchAsync();return;
   }
   document.getElementById('myeloshow').textContent=M.elo;
   document.getElementById('mmsearching').classList.remove('hidden');
   document.getElementById('mmfound').classList.add('hidden');
   openModal('mmmodal');
-  document.querySelector('#mmsearching .mmsearchtext').textContent='Searching real players…';
+  document.querySelector('#mmsearching .mmsearchtext').textContent='Searching real playersâ€¦';
   const tryMatch=async()=>{
     const r=await API.queueJoin(M.account.username,M.elo);
     if(r&&r.ok&&r.matched&&r.opponent){
@@ -2522,8 +2524,8 @@ findMatchAsync=async function(){
   _qPollTimer=setInterval(async()=>{
     n++;
     const sub=document.querySelector('#mmsearching .mmsearchsub');
-    if(sub)sub.textContent='Searching… '+(n*3)+'s elapsed — real players only (no AI fallback)';
-    // No AI fallback — keep searching real players forever until user cancels
+    if(sub)sub.textContent='Searchingâ€¦ '+(n*3)+'s elapsed â€” real players only (no AI fallback)';
+    // No AI fallback â€” keep searching real players forever until user cancels
     if(await tryMatch()){clearInterval(_qPollTimer);_qPollTimer=null}
   },3000);
 };
@@ -2540,7 +2542,7 @@ adminAnnounce=async function(){
   if(!msg)return;
   const sender=(M.account&&M.account.username)||'Admin';
   const r=await API.announce(sender,msg);
-  if(r&&r.ok)showAnnouncement('📢 Broadcast sent to all players');
+  if(r&&r.ok)showAnnouncement('ðŸ“¢ Broadcast sent to all players');
   else showAnnouncement('Broadcast failed (server unreachable)');
 };
 
@@ -2645,7 +2647,7 @@ challengeFriend=async function(name){
   const r=await API.challengeSend(M.account.username,name);
   if(!r||!r.ok){
     closeModal('challengewaitmodal');
-    showAnnouncement('Challenge failed — server unreachable');
+    showAnnouncement('Challenge failed â€” server unreachable');
     return;
   }
   _pendingChallenge={from:M.account.username,to:name,opp:f};
@@ -2655,7 +2657,7 @@ challengeFriend=async function(name){
     if(attempts>20){
       clearInterval(_challengePollTimer);_challengePollTimer=null;
       closeModal('challengewaitmodal');
-      showAnnouncement('⏱ Challenge timed out');
+      showAnnouncement('â± Challenge timed out');
       _pendingChallenge=null;
       return;
     }
@@ -2665,12 +2667,12 @@ challengeFriend=async function(name){
         clearInterval(_challengePollTimer);_challengePollTimer=null;
         closeModal('challengewaitmodal');
         startGameVsBot({name:f.name,elo:f.elo,depth:f.elo<600?0:f.elo<1200?1:2,behavior:'normal'});
-        showAnnouncement('✓ '+name+' accepted — game on!');
+        showAnnouncement('âœ“ '+name+' accepted â€” game on!');
         _pendingChallenge=null;
       }else if(sr.challenge.status==='declined'){
         clearInterval(_challengePollTimer);_challengePollTimer=null;
         closeModal('challengewaitmodal');
-        showAnnouncement('💔 '+name+' declined your challenge');
+        showAnnouncement('ðŸ’” '+name+' declined your challenge');
         _pendingChallenge=null;
       }
     }
@@ -2707,7 +2709,7 @@ async function acceptChallenge(){
     const lbEntry=loadLb().find(e=>e.name===ch.from);
     const elo=lbEntry?lbEntry.elo:500;
     startGameVsBot({name:ch.from,elo,depth:elo<600?0:elo<1200?1:2,behavior:'normal'});
-    showAnnouncement('⚔️ Match started vs '+ch.from);
+    showAnnouncement('âš”ï¸ Match started vs '+ch.from);
   }else{
     showAnnouncement('Accept failed');
   }
@@ -2731,7 +2733,7 @@ async function declineChallenge(){
 function adminGiveLuck1000(){
   M.serverLuckMult=(Number(M.serverLuckMult)||1)*1000;
   saveMeta();refreshUI();updateLuckChip();
-  showAnnouncement('🍀 Luck ×1000 — total server luck now '+M.serverLuckMult+'x');
+  showAnnouncement('ðŸ€ Luck Ã—1000 â€” total server luck now '+M.serverLuckMult+'x');
 }
 
 // Override showWinModal to include the draw reason (stalemate / 50-move / 3-fold / insufficient material)
@@ -2742,12 +2744,12 @@ showWinModal=function(result,change,oppName){
     const sub=document.getElementById('winsub');
     const reason=(G&&G.drawReason)||(G&&G.status==='stalemate'?'Stalemate':'Draw');
     const reasonNice={
-      'Stalemate':'Stalemate — no legal moves and not in check',
-      '50-move rule':'50-move rule — 50 moves without a capture or pawn move',
-      '3-fold repetition':'Threefold repetition — same position 3 times (back-and-forth)',
-      'Insufficient material':'Insufficient material — neither side can force checkmate'
+      'Stalemate':'Stalemate â€” no legal moves and not in check',
+      '50-move rule':'50-move rule â€” 50 moves without a capture or pawn move',
+      '3-fold repetition':'Threefold repetition â€” same position 3 times (back-and-forth)',
+      'Insufficient material':'Insufficient material â€” neither side can force checkmate'
     }[reason]||reason;
-    sub.innerHTML='🤝 <b>'+reasonNice+'</b><br>'+(oppName?('vs '+oppName+'<br>ELO change: <b>'+(change>=0?'+':'')+change+'</b>'):'Local game — no ELO change.');
+    sub.innerHTML='ðŸ¤ <b>'+reasonNice+'</b><br>'+(oppName?('vs '+oppName+'<br>ELO change: <b>'+(change>=0?'+':'')+change+'</b>'):'Local game â€” no ELO change.');
   }
 };
 
@@ -2889,7 +2891,7 @@ function playBangs(){
 
 function fmtOdds(skin){
   const s=SKINS[skin];if(!s)return '?';
-  if(s.displayOdds)return '1 in '+s.displayOdds.slice(0,80)+(s.displayOdds.length>80?'…':'');
+  if(s.displayOdds)return '1 in '+s.displayOdds.slice(0,80)+(s.displayOdds.length>80?'â€¦':'');
   if(s.odds)return '1 in '+s.odds.toLocaleString();
   return '???';
 }
@@ -2943,7 +2945,7 @@ doSpin=function(){
     M.rolls=(Number(M.rolls)||0)+1;
     const mm=(typeof getMoneyMult==='function')?getMoneyMult():1;
     M.money=(Number(M.money)||0)+100*mm;
-    if(typeof flashMoneyToast==='function')flashMoneyToast('+£'+mm.toFixed(2));
+    if(typeof flashMoneyToast==='function')flashMoneyToast('+Â£'+mm.toFixed(2));
     M.inventory=M.inventory||{};
     M.inventory.omega=(M.inventory.omega||0)+1;
     M.lbReadyAfterRoll=true;
@@ -2968,7 +2970,7 @@ doSpin=function(){
 };
 
 // ============================================================
-// REAL-TIME PvP — moves sync between two real players via server
+// REAL-TIME PvP â€” moves sync between two real players via server
 // ============================================================
 let _matchPollTimer=null;
 
@@ -2992,7 +2994,7 @@ acceptMatch=async function(){
     };
     render();
     startMatchPoll();
-    showAnnouncement('🎮 Live match started vs '+opp.name+' (you are '+opp.mySide+')');
+    showAnnouncement('ðŸŽ® Live match started vs '+opp.name+' (you are '+opp.mySide+')');
     _pmatch=null;
     return;
   }
@@ -3078,7 +3080,7 @@ maybeApplyElo=function(){
 function adminGiveLuck10(){
   M.serverLuckMult=(Number(M.serverLuckMult)||1)*10;
   saveMeta();refreshUI();updateLuckChip();
-  showAnnouncement('🍀 Luck ×10 — total server luck now '+M.serverLuckMult+'x');
+  showAnnouncement('ðŸ€ Luck Ã—10 â€” total server luck now '+M.serverLuckMult+'x');
 }
 
 // (NVP=+++++ gamepass is declared up in the original GAMEPASSES array)
@@ -3141,7 +3143,7 @@ function showInfinityCs(skin){
   applySkinPreview(drop,skin);
   document.getElementById('infinitytitle').textContent=(SKINS[skin]&&SKINS[skin].name)||'INFINITY';
   const s=SKINS[skin];
-  const oddsText=s&&s.displayOdds?'1 in '+s.displayOdds.slice(0,120)+(s.displayOdds.length>120?'…':''):'1 in '+(s&&s.odds||'???');
+  const oddsText=s&&s.displayOdds?'1 in '+s.displayOdds.slice(0,120)+(s.displayOdds.length>120?'â€¦':''):'1 in '+(s&&s.odds||'???');
   document.getElementById('infinityodds').textContent=oddsText;
   cs.classList.remove('hidden');
   drop.style.animation='none';void drop.offsetWidth;drop.style.animation='';
@@ -3188,26 +3190,26 @@ doSpin=function(){
 // Reset functions
 async function adminResetPlayerElo(){
   const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
-  if(!isOwner){showAnnouncement('🚫 Owner only');return}
+  if(!isOwner){showAnnouncement('ðŸš« Owner only');return}
   let target = prompt('Enter EXACT username to reset to ELO 500:');
   if(!target)return;
   target = target.trim();
   if(!confirm(`Reset ELO for ${target} back to 500?`))return;
   const r=await API.eloResetPlayer(M.account.username, target);
   if(r&&r.ok){
-    showAnnouncement(`✅ Reset ${r.target} to ELO 500`);
+    showAnnouncement(`âœ… Reset ${r.target} to ELO 500`);
     if(typeof syncServerLeaderboard==='function')syncServerLeaderboard();
   }else showAnnouncement('Reset failed: '+((r&&r.err)||'server unreachable'));
 }
 
 async function adminResetAllElo(){
   const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
-  if(!isOwner){showAnnouncement('🔒 Owner only');return}
+  if(!isOwner){showAnnouncement('ðŸ”’ Owner only');return}
   if(!confirm('Reset ELO for ALL real players on the server back to 500?'))return;
   const r=await API.eloResetAll(M.account.username);
   if(r&&r.ok){
     // Owner's own ELO is NOT reset
-    showAnnouncement('⚖ Reset '+(r.reset||'all')+' players to ELO 500 (your ELO kept)');
+    showAnnouncement('âš– Reset '+(r.reset||'all')+' players to ELO 500 (your ELO kept)');
     if(typeof syncServerLeaderboard==='function')syncServerLeaderboard();
   }else showAnnouncement('Reset failed: '+(r&&r.err||'server unreachable'));
 }
@@ -3215,7 +3217,7 @@ function resetMyElo(){
   if(!confirm('Reset your ELO to 500?'))return;
   M.elo=500;saveMeta();refreshUI();updateLuckChip();
   if(M.account)API.elo(M.account.username,500).catch(()=>{});
-  showAnnouncement('⚖ Your ELO is now 500');
+  showAnnouncement('âš– Your ELO is now 500');
 }
 
 // London System easter egg: +100M ELO when clicked in admin
@@ -3227,7 +3229,7 @@ openTutorial=function(k){
     saveMeta();refreshUI();updateLuckChip();
     if(M.account)API.elo(M.account.username,M.elo).catch(()=>{});
     const e=document.getElementById('elodisp');if(e){e.classList.add('changed');setTimeout(()=>e.classList.remove('changed'),1000)}
-    showAnnouncement('🏰 +100,000,000 ELO for studying the London System!');
+    showAnnouncement('ðŸ° +100,000,000 ELO for studying the London System!');
   }
 };
 
@@ -3271,7 +3273,7 @@ SKINS.vip={name:'VIP',odds:null};
 SKIN_COLORS.vip=['linear-gradient(135deg,#00ffff,#0088ff,#ffffff)','linear-gradient(135deg,#001a33,#0044aa,#00ffff)'];
 if(!SKIN_ORDER.includes('vip'))SKIN_ORDER.push('vip');
 
-// OWNER skin: exclusive to the owner account — can't be rolled, bought, or given to others
+// OWNER skin: exclusive to the owner account â€” can't be rolled, bought, or given to others
 SKINS.owner={name:'OWNER',odds:null};
 SKIN_COLORS.owner=['linear-gradient(135deg,#ffd700,#fff8c0,#ffaa00)','linear-gradient(135deg,#1a1a1a,#3a2a00,#000)'];
 if(!SKIN_ORDER.includes('owner'))SKIN_ORDER.push('owner');
@@ -3295,7 +3297,7 @@ function grantVipSkinIfNvp(){
   }
 }
 
-const ROYAL_PRICE=100000000; // £1,000,000.00 in pence
+const ROYAL_PRICE=100000000; // Â£1,000,000.00 in pence
 const SVP_PRICE=2.0083199999999643e+51;
 
 // Add to the shop via a wrapper
@@ -3305,14 +3307,14 @@ renderShop=function(){
   const gp=document.getElementById('gamepassshop');if(!gp)return;
   // Avoid double-render: skip if already added in this open
   if(document.getElementById('royalshopcard'))return;
-  const sec=document.createElement('div');sec.className='shopsection';sec.textContent='👑 Premium Board Skins';
+  const sec=document.createElement('div');sec.className='shopsection';sec.textContent='ðŸ‘‘ Premium Board Skins';
   gp.parentElement.appendChild(sec);
   const free=M.hiddenFreeShop;
   
   const owned=(M.inventory&&M.inventory.royal)||0;
   const card=document.createElement('div');card.className='packcard';card.id='royalshopcard';
   card.style.borderColor='#ffd700';card.style.background='linear-gradient(135deg,#3a2400,#1a1a4a)';
-  card.innerHTML=`<div class="packicon">👑</div><div class="packinfo"><div class="packname">ROYAL Skin</div><div class="packdesc">Gold and crimson - premium board look</div><div class="packprice">${free?'FREE':fmtMoney(ROYAL_PRICE)}</div></div>`;
+  card.innerHTML=`<div class="packicon">ðŸ‘‘</div><div class="packinfo"><div class="packname">ROYAL Skin</div><div class="packdesc">Gold and crimson - premium board look</div><div class="packprice">${free?'FREE':fmtMoney(ROYAL_PRICE)}</div></div>`;
   const b=document.createElement('button');b.className='packbuy';
   b.textContent=owned?'Equip':'Buy';
   b.disabled=!owned && !free && M.money<ROYAL_PRICE;
@@ -3326,14 +3328,14 @@ renderShop=function(){
     equipSkin('royal', 1);
     saveMeta();refreshUI();renderShop();
     if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
-    showAnnouncement(owned?'👑 ROYAL skin equipped!':'👑 ROYAL skin purchased & equipped!');
+    showAnnouncement(owned?'ðŸ‘‘ ROYAL skin equipped!':'ðŸ‘‘ ROYAL skin purchased & equipped!');
   };
   card.appendChild(b);gp.parentElement.appendChild(card);
 
   const svpOwned=(M.inventory&&M.inventory.svp)||0;
   const svpCard=document.createElement('div');svpCard.className='packcard';svpCard.id='svpshopcard';
   svpCard.style.borderColor='#ff00ff';svpCard.style.background='linear-gradient(135deg,#220022,#000044)';
-  svpCard.innerHTML=`<div class="packicon">✨</div><div class="packinfo"><div class="packname">SVP Skin</div><div class="packdesc">Ultra premium SVP board</div><div class="packprice">${free?'FREE':fmtMoney(SVP_PRICE)}</div></div>`;
+  svpCard.innerHTML=`<div class="packicon">âœ¨</div><div class="packinfo"><div class="packname">SVP Skin</div><div class="packdesc">Ultra premium SVP board</div><div class="packprice">${free?'FREE':fmtMoney(SVP_PRICE)}</div></div>`;
   const svpBtn=document.createElement('button');svpBtn.className='packbuy';
   svpBtn.textContent=svpOwned?'Equip':'Buy';
   svpBtn.disabled=!svpOwned && !free && M.money<SVP_PRICE;
@@ -3347,17 +3349,17 @@ renderShop=function(){
     equipSkin('svp', 1);
     saveMeta();refreshUI();renderShop();
     if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
-    showAnnouncement(svpOwned?'✨ SVP skin equipped!':'✨ SVP skin purchased & equipped!');
+    showAnnouncement(svpOwned?'âœ¨ SVP skin equipped!':'âœ¨ SVP skin purchased & equipped!');
   };
   svpCard.appendChild(svpBtn);gp.parentElement.appendChild(svpCard);
 };
 
 // Triple Roll upgrade
-UPGRADES.push({id:'tripleRoll',name:'Triple Roll',desc:'Every spin rolls 3 times in a row',cost:50000000,icon:'🎲🎲🎲',req:'luck8'});
+UPGRADES.push({id:'tripleRoll',name:'Triple Roll',desc:'Every spin rolls 3 times in a row',cost:50000000,icon:'ðŸŽ²ðŸŽ²ðŸŽ²',req:'luck8'});
 
 // Cash God: costs 62,978 ROLLS, gives a 1,000,000,000x cash multiplier
 const CASHGOD_MULT=1000000000;
-UPGRADES.push({id:'cashGod',name:'CASH GOD',desc:'×1,000,000,000 cash on every roll (costs 62,978 rolls)',rollCost:62978,icon:'🤑'});
+UPGRADES.push({id:'cashGod',name:'CASH GOD',desc:'Ã—1,000,000,000 cash on every roll (costs 62,978 rolls)',rollCost:62978,icon:'ðŸ¤‘'});
 const _origGetMoneyMultCashGod=getMoneyMult;
 getMoneyMult=function(){
   let m=_origGetMoneyMultCashGod();
@@ -3367,7 +3369,7 @@ getMoneyMult=function(){
 
 // Infinite Equip: huge cash cost; paints each board rank with a DIFFERENT owned skin, cycling forever
 const INFINITE_EQUIP_COST=2.0083199999999643e+50;
-UPGRADES.push({id:'infiniteEquip',name:'INFINITE EQUIP',desc:'Wear every skin at once — each side of the board shows a different owned skin, forever',cost:INFINITE_EQUIP_COST,icon:'♾️🎨'});
+UPGRADES.push({id:'infiniteEquip',name:'INFINITE EQUIP',desc:'Wear every skin at once â€” each side of the board shows a different owned skin, forever',cost:INFINITE_EQUIP_COST,icon:'â™¾ï¸ðŸŽ¨'});
 
 function ownedBoardSkins(){
   const list=['classic'];
@@ -3397,8 +3399,8 @@ buyUpg=function(u){
     M.infiniteEquipActive = !M.infiniteEquipActive;
     saveMeta();
     applySkinToBoard();
-    if(M.infiniteEquipActive) showAnnouncement('🔄 Infinite Equip: ON');
-    else showAnnouncement('⏸️ Infinite Equip: OFF');
+    if(M.infiniteEquipActive) showAnnouncement('ðŸ”„ Infinite Equip: ON');
+    else showAnnouncement('â¸ï¸ Infinite Equip: OFF');
   }
 };
 
@@ -3419,30 +3421,30 @@ adminGiveAll=function(){
   for(const k of ['bronze','silver','gold','diamond'])M.unlockedPieceSkins[k]=true;
   saveMeta();refreshUI();
   if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
-  showAnnouncement('🎁 Granted ALL '+n+' board skins + all piece skins!');
+  showAnnouncement('ðŸŽ Granted ALL '+n+' board skins + all piece skins!');
 };
 
-// OWNER skin — owner only, separate command. Equipping it is also owner-gated.
+// OWNER skin â€” owner only, separate command. Equipping it is also owner-gated.
 function adminGiveOwnerSkin(){
   const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
-  if(!isOwner){showAnnouncement('🔒 Owner only');return}
+  if(!isOwner){showAnnouncement('ðŸ”’ Owner only');return}
   M.inventory=M.inventory||{};M.inventory.owner=(M.inventory.owner||0)+1;
   saveMeta();refreshUI();
   if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
-  showAnnouncement('👑 OWNER skin granted!');
+  showAnnouncement('ðŸ‘‘ OWNER skin granted!');
 }
 // Gate equip: only the owner can equip the owner skin
 const _origEquipSkin=equipSkin;
 equipSkin=function(sk, sl=1){
   if(sk==='owner'){
     const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
-    if(!isOwner){showAnnouncement('🔒 OWNER skin is owner only');return}
+    if(!isOwner){showAnnouncement('ðŸ”’ OWNER skin is owner only');return}
   }
   _origEquipSkin(sk, sl);
 };
 
 // ============================================================
-// GLOBAL LUCK — set by admins on the server, applied to EVERY player
+// GLOBAL LUCK â€” set by admins on the server, applied to EVERY player
 // ============================================================
 window._globalLuck=1;
 
@@ -3471,19 +3473,19 @@ adminGiveLuck10=async function(){
   if(r&&r.ok){
     window._globalLuck=r.globalLuck;
     updateLuckChip();
-    showAnnouncement('🌍 GLOBAL luck ×10 for everyone — now '+r.globalLuck+'x');
-    if(M.account)API.announce(M.account.username,'set GLOBAL luck to '+r.globalLuck+'x 🍀').catch(()=>{});
+    showAnnouncement('ðŸŒ GLOBAL luck Ã—10 for everyone â€” now '+r.globalLuck+'x');
+    if(M.account)API.announce(M.account.username,'set GLOBAL luck to '+r.globalLuck+'x ðŸ€').catch(()=>{});
   }else{
     // fallback to local if server down
     M.serverLuckMult=(Number(M.serverLuckMult)||1)*10;saveMeta();refreshUI();updateLuckChip();
-    showAnnouncement('🍀 Luck ×10 (local — server unreachable)');
+    showAnnouncement('ðŸ€ Luck Ã—10 (local â€” server unreachable)');
   }
 };
 // 1000x luck is LOCAL only (affects just you, not other players)
 adminGiveLuck1000=function(){
   M.serverLuckMult=(Number(M.serverLuckMult)||1)*1000;
   saveMeta();refreshUI();updateLuckChip();
-  showAnnouncement('🍀 +1000x luck (just you) — your server luck now '+M.serverLuckMult+'x');
+  showAnnouncement('ðŸ€ +1000x luck (just you) â€” your server luck now '+M.serverLuckMult+'x');
 };
 
 // ============================================================
@@ -3503,7 +3505,7 @@ function onMusicUpload(ev){
   document.getElementById('upmusicname').textContent='Loaded: '+file.name;
   document.getElementById('upmusicplay').disabled=false;
   document.getElementById('upmusicreq').disabled=false;
-  showAnnouncement('🎵 Loaded "'+file.name+'" — press ▶ Play');
+  showAnnouncement('ðŸŽµ Loaded "'+file.name+'" â€” press â–¶ Play');
 }
 
 function toggleUploadedMusic(){
@@ -3513,12 +3515,12 @@ function toggleUploadedMusic(){
   audio.volume=Math.min(1,vol); // <audio> caps at 1.0
   const btn=document.getElementById('upmusicplay');
   if(window._uploadedMusicPlaying){
-    audio.pause();window._uploadedMusicPlaying=false;btn.textContent='▶ Play';
+    audio.pause();window._uploadedMusicPlaying=false;btn.textContent='â–¶ Play';
   }else{
     // stop the synth music if it's playing so they don't overlap
     if(_musicOn)toggleMusic();
-    audio.play().catch(()=>showAnnouncement('Playback blocked — click again'));
-    window._uploadedMusicPlaying=true;btn.textContent='⏸ Pause';
+    audio.play().catch(()=>showAnnouncement('Playback blocked â€” click again'));
+    window._uploadedMusicPlaying=true;btn.textContent='â¸ Pause';
   }
 }
 
@@ -3536,7 +3538,7 @@ async function requestFeatureMusic(){
   );
   const gmailUrl='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(DEV_EMAIL)+'&su='+subject+'&body='+body;
   window.open(gmailUrl,'_blank');
-  showAnnouncement('✉ Opening Gmail to message the developer…');
+  showAnnouncement('âœ‰ Opening Gmail to message the developerâ€¦');
 }
 
 // ============================================================
@@ -3548,7 +3550,7 @@ function ownerAddElo10M(){
   const u=(M.account&&M.account.username||'').toLowerCase();
   if(!OWNER_NAMES.includes(u)){
     // Do NOT reveal which usernames are allowed
-    showAnnouncement('🚫 Access denied');
+    showAnnouncement('ðŸš« Access denied');
     return;
   }
   adminAddElo(10000000);
@@ -3575,10 +3577,10 @@ setInterval(refreshAdminStatus,15000);
 checkAdminUnlock=function(){/* removed: admin can only be granted by an existing admin */};
 trackHiddenFreeShop=(typeof trackHiddenFreeShop==='function')?trackHiddenFreeShop:function(){};
 
-// 👑 Owner button: everyone sees it, only the owner can open the admin panel
+// ðŸ‘‘ Owner button: everyone sees it, only the owner can open the admin panel
 function openOwnerAdmin(){
   const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
-  if(!isOwner){showAnnouncement('🔒 Owner only');return}
+  if(!isOwner){showAnnouncement('ðŸ”’ Owner only');return}
   openModal('ownermodal');
 }
 
@@ -3589,11 +3591,11 @@ async function adminRemoveAdmin(){
   if(!target||!target.trim())return;
   const r=await API.revokeAdmin(M.account.username,target.trim());
   if(r&&r.ok){
-    showAnnouncement('🚫 Removed admin from '+target.trim());
+    showAnnouncement('ðŸš« Removed admin from '+target.trim());
   }else if(r&&r.err==='only owner can revoke'){
-    showAnnouncement('🔒 Only the owner can remove admin');
+    showAnnouncement('ðŸ”’ Only the owner can remove admin');
   }else if(r&&r.err==='cannot revoke owner'){
-    showAnnouncement('❌ You cannot remove the owner');
+    showAnnouncement('âŒ You cannot remove the owner');
   }else{
     showAnnouncement('Failed: '+((r&&r.err)||'server unreachable'));
   }
@@ -3606,10 +3608,10 @@ async function adminGrantAdmin(){
   if(!target||!target.trim())return;
   const r=await API.grantAdmin(M.account.username,target.trim());
   if(r&&r.ok){
-    showAnnouncement('👮 Granted admin to '+target.trim());
+    showAnnouncement('ðŸ‘® Granted admin to '+target.trim());
     if(M.account)API.announce(M.account.username,'granted admin to '+target.trim()).catch(()=>{});
   }else if(r&&r.err==='not admin'){
-    showAnnouncement('🚫 Only an admin can grant admin');
+    showAnnouncement('ðŸš« Only an admin can grant admin');
   }else{
     showAnnouncement('Failed: '+((r&&r.err)||'server unreachable'));
   }
@@ -3655,16 +3657,16 @@ function wsSend(obj){if(_ws&&_ws.readyState===WebSocket.OPEN)_ws.send(JSON.strin
 function handleWsMessage(msg){
   if(msg.type==='queued'){
     const sub=document.querySelector('#mmsearching .mmsearchsub');
-    if(sub)sub.textContent='In queue — waiting for another real player…';
+    if(sub)sub.textContent='In queue â€” waiting for another real playerâ€¦';
   }else if(msg.type==='matched'){
     onWsMatched(msg);
   }else if(msg.type==='move'){
     onWsOpponentMove(msg);
   }else if(msg.type==='gameover'){
-    showAnnouncement('🏁 Opponent reported game over');
+    showAnnouncement('ðŸ Opponent reported game over');
   }else if(msg.type==='opponentLeft'){
     if(G&&G.opponent&&G.opponent.type==='wspvp'){
-      showAnnouncement('🚪 Opponent left the game');
+      showAnnouncement('ðŸšª Opponent left the game');
       if(typeof showWinModal==='function')showWinModal(1,0,G.opponent.name+' (left)');
     }
   }else if(msg.type==='challenge'){
@@ -3674,13 +3676,13 @@ function handleWsMessage(msg){
     document.getElementById('chalfromelo').textContent=msg.elo||'?';
     openModal('challengeincomingmodal');
   }else if(msg.type==='challengeSent'){
-    showAnnouncement('📨 Challenge sent to '+msg.to);
+    showAnnouncement('ðŸ“¨ Challenge sent to '+msg.to);
   }else if(msg.type==='challengeFailed'){
     closeModal('challengewaitmodal');
-    showAnnouncement('❌ '+msg.to+' is offline');
+    showAnnouncement('âŒ '+msg.to+' is offline');
   }else if(msg.type==='challengeDeclined'){
     closeModal('challengewaitmodal');
-    showAnnouncement('💔 '+msg.by+' declined your challenge');
+    showAnnouncement('ðŸ’” '+msg.by+' declined your challenge');
   }
 }
 let _wsIncomingChallenge=null;
@@ -3699,7 +3701,7 @@ function onWsMatched(msg){
     _eloApplied:false
   };
   render();
-  showAnnouncement('🎮 LIVE match vs '+msg.opponent.name+' — you are '+msg.side+'!');
+  showAnnouncement('ðŸŽ® LIVE match vs '+msg.opponent.name+' â€” you are '+msg.side+'!');
 }
 
 function onWsOpponentMove(msg){
@@ -3757,12 +3759,12 @@ findMatchAsync=function(){
   openModal('mmmodal');
   const sub=document.querySelector('#mmsearching .mmsearchsub');
   if(_wsReady){
-    if(sub)sub.textContent='Connecting to a real player…';
+    if(sub)sub.textContent='Connecting to a real playerâ€¦';
     // refresh identity (in case they logged in after connecting)
     wsSend({type:'hello',user:(M.account&&M.account.username)||('guest_'+Math.floor(Math.random()*100000)),elo:M.elo||500});
     wsSend({type:'queue',elo:M.elo||500});
   }else{
-    if(sub)sub.textContent='Connecting… (retrying)';
+    if(sub)sub.textContent='Connectingâ€¦ (retrying)';
     wsConnect();
     setTimeout(()=>{if(_wsReady){wsSend({type:'hello',user:(M.account&&M.account.username)||'guest',elo:M.elo||500});wsSend({type:'queue',elo:M.elo||500})}},1200);
   }
@@ -3777,7 +3779,7 @@ cancelMatch=function(){
 // ---- Friend challenges over WebSocket (real-time) ----
 challengeFriend=function(name){
   if(!M.account){showAnnouncement('Sign up first to challenge real players');return}
-  if(!_wsReady){showAnnouncement('Connecting… try again in a moment');wsConnect();return}
+  if(!_wsReady){showAnnouncement('Connectingâ€¦ try again in a moment');wsConnect();return}
   closeModal('frmodal');
   // refresh identity then send challenge
   wsSend({type:'hello',user:M.account.username,elo:M.elo||500});
@@ -3835,7 +3837,7 @@ wsConnect();
   };
 })();
 
-// Throttle the floating money toast — at most ~6/sec, otherwise it spawns
+// Throttle the floating money toast â€” at most ~6/sec, otherwise it spawns
 // dozens of DOM nodes per second during fast auto-roll.
 (function(){
   const realToast=flashMoneyToast;
@@ -3851,7 +3853,7 @@ document.addEventListener('keydown',e=>{
   if(!M||!M.autoRollOwned){if(M)showAnnouncement('Buy Auto Roll first (bottom-right)');return}
   M.autoRollActive=!M.autoRollActive;
   saveMeta();refreshUI();startAutoRoll();
-  showAnnouncement(M.autoRollActive?'⚡ Auto Roll: ON (press Z to stop)':'⏸ Auto Roll: OFF');
+  showAnnouncement(M.autoRollActive?'âš¡ Auto Roll: ON (press Z to stop)':'â¸ Auto Roll: OFF');
 });
 
 // ============================================================
@@ -3908,7 +3910,7 @@ openModal = function(id) {
   }
 };
 
-// (Auto re-register removed — persistence via the Railway Volume keeps accounts,
+// (Auto re-register removed â€” persistence via the Railway Volume keeps accounts,
 //  so we no longer spam /api/signup, which was flooding the console with 400s.)
 
 syncServerLeaderboard();
@@ -3924,7 +3926,7 @@ startAutoRoll();
 if(M.mobileMode) document.body.classList.add('mobile-mode');
 
 // ============================================================
-// PREMOVES — queue a move during the opponent's turn; auto-play it on your turn
+// PREMOVES â€” queue a move during the opponent's turn; auto-play it on your turn
 // ============================================================
 function _premoveMySide(){
   if(!G||!G.opponent)return null;
@@ -3946,7 +3948,7 @@ function _handlePremoveClick(r,c,my){
     G.premove={from:G.premoveSel,to:[r,c]};
     G.premoveSel=null;
     renderBoard();_paintPremove();
-    showAnnouncement('⚡ Premove queued');
+    showAnnouncement('âš¡ Premove queued');
   }else if(piece&&own(piece,my)){
     G.premoveSel=[r,c];
     renderBoard();_paintPremove();
@@ -3982,7 +3984,7 @@ render=function(){
 };
 
 // ============================================================
-// DO NOTHING BUTTON — counts clicks; 10000 = global MrBeast shoutout
+// DO NOTHING BUTTON â€” counts clicks; 10000 = global MrBeast shoutout
 // ============================================================
 function doNothingClick(){
   M.doNothingClicks=(Number(M.doNothingClicks)||0)+1;
@@ -3990,11 +3992,11 @@ function doNothingClick(){
   const n=M.doNothingClicks;
   if(n%10000===0){
     const who=(M.account&&M.account.username)||'Someone';
-    const msg='MrBeast shoutout! '+who+' clicked Do Nothing '+n.toLocaleString()+' times for literally nothing 🫥';
-    showAnnouncement('🎉 '+msg);
+    const msg='MrBeast shoutout! '+who+' clicked Do Nothing '+n.toLocaleString()+' times for literally nothing ðŸ«¥';
+    showAnnouncement('ðŸŽ‰ '+msg);
     if(typeof API!=='undefined'&&M.account){API.announce(who,msg).catch(()=>{})}
   }else{
-    showAnnouncement('🫥 Nothing happened. ('+n.toLocaleString()+' clicks — '+(10000-(n%10000))+' to a MrBeast shoutout)');
+    showAnnouncement('ðŸ«¥ Nothing happened. ('+n.toLocaleString()+' clicks â€” '+(10000-(n%10000))+' to a MrBeast shoutout)');
   }
 }
 
@@ -4002,11 +4004,11 @@ function doNothingClick(){
 // FIRST-VISIT TUTORIAL
 // ============================================================
 const WELCOME_STEPS=[
-  {icon:'♟️',title:'Welcome to Chess RNG!',text:'Play real chess <b>and</b> collect rare board & piece skins. Win games, climb the ELO ladder, and unlock godly rewards.'},
-  {icon:'🎰',title:'SPIN for skins',text:'Hit the <b>🎰 SPIN</b> button (top-left) to roll for skins. Rarer skins = lower odds. Buy <b>Auto Roll</b> (bottom-right) to roll automatically, or press <b>Z</b> to toggle it.'},
-  {icon:'🎒',title:'Items, Shop & Upgrades',text:'Open <b>🎒 Items</b> to equip skins and upgrade them. Visit the <b>🛒 Shop</b> for godly packs and gamepasses, and <b>⚙️ Upgrades</b> for permanent luck & cash boosts.'},
-  {icon:'🌍',title:'Play other people',text:'Use <b>Play vs Computer</b> for bots (including Magnus!), <b>🌍 Find Match</b> to battle a real player live, or <b>👥 Friends</b> to add friends by code and challenge them.'},
-  {icon:'🏆',title:'Climb & collect',text:'Winning raises your ELO and unlocks reward skins. Check the <b>🏆 Leaderboard</b> and the <b>📖 Skin Index</b> to track your collection. Have fun!'}
+  {icon:'â™Ÿï¸',title:'Welcome to Chess RNG!',text:'Play real chess <b>and</b> collect rare board & piece skins. Win games, climb the ELO ladder, and unlock godly rewards.'},
+  {icon:'ðŸŽ°',title:'SPIN for skins',text:'Hit the <b>ðŸŽ° SPIN</b> button (top-left) to roll for skins. Rarer skins = lower odds. Buy <b>Auto Roll</b> (bottom-right) to roll automatically, or press <b>Z</b> to toggle it.'},
+  {icon:'ðŸŽ’',title:'Items, Shop & Upgrades',text:'Open <b>ðŸŽ’ Items</b> to equip skins and upgrade them. Visit the <b>ðŸ›’ Shop</b> for godly packs and gamepasses, and <b>âš™ï¸ Upgrades</b> for permanent luck & cash boosts.'},
+  {icon:'ðŸŒ',title:'Play other people',text:'Use <b>Play vs Computer</b> for bots (including Magnus!), <b>ðŸŒ Find Match</b> to battle a real player live, or <b>ðŸ‘¥ Friends</b> to add friends by code and challenge them.'},
+  {icon:'ðŸ†',title:'Climb & collect',text:'Winning raises your ELO and unlocks reward skins. Check the <b>ðŸ† Leaderboard</b> and the <b>ðŸ“– Skin Index</b> to track your collection. Have fun!'}
 ];
 let _welcomeIdx=0;
 function showWelcome(){_welcomeIdx=0;renderWelcome();openModal('welcomemodal')}
@@ -4018,7 +4020,7 @@ function renderWelcome(){
     '<div style="font-size:14px;color:#ccd;line-height:1.6;text-align:center;padding:0 6px">'+s.text+'</div>';
   document.getElementById('welcomedots').textContent=(_welcomeIdx+1)+' / '+WELCOME_STEPS.length;
   document.getElementById('welcomeback').style.visibility=_welcomeIdx===0?'hidden':'visible';
-  document.getElementById('welcomenext').textContent=_welcomeIdx===WELCOME_STEPS.length-1?'Play! ✓':'Next ›';
+  document.getElementById('welcomenext').textContent=_welcomeIdx===WELCOME_STEPS.length-1?'Play! âœ“':'Next â€º';
 }
 function welcomeStep(dir){
   _welcomeIdx+=dir;
@@ -4515,7 +4517,7 @@ function submitBug() {
 
   document.getElementById('bugtext').value = '';
   closeModal('bugmodal');
-  showAnnouncement('✅ Opening Gmail to send report!');
+  showAnnouncement('âœ… Opening Gmail to send report!');
 }
 
 let _gameVersion = null;
