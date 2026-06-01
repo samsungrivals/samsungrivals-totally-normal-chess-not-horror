@@ -466,8 +466,7 @@ function syncLb(){
   lb=lb.filter(e=>e&&typeof e.name==='string'&&typeof e.elo==='number'&&e.elo>0);
   lb=lb.filter(e=>!LB_AI.some(ai=>ai.name===e.name));
   // ALWAYS ensure every LB_AI is present
-  const have=new Set(lb.map(e=>e.name));
-  for(const ai of LB_AI){if(!have.has(ai.name)){lb.push({name:ai.name,elo:ai.elo,upgrades:Math.floor(ai.elo/100)});have.add(ai.name)}}
+  // const have=new Set(lb.map(e=>e.name));`n  // for(const ai of LB_AI){if(!have.has(ai.name)){lb.push({name:ai.name,elo:ai.elo,upgrades:Math.floor(ai.elo/100)});have.add(ai.name)}}
   // User entry
   const myName=(M.account&&M.account.username)||'You';
   let me=lb.find(e=>e.self===true)||lb.find(e=>e.name===myName);

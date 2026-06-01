@@ -89,10 +89,10 @@ app.post('/api/login', (req, res) => {
 
 // --- Leaderboard ---
 app.get('/api/leaderboard', (req, res) => {
-  const realUsers = Object.values(db.users).filter(u => !u.isAI);
   const list = Object.values(db.users)
-    .map(u => ({ name: u.username, elo: u.elo, upgrades: u.upgrades||0, isAI: u.isAI }))
-  ok(res, { lb: list, totalUsers: realUsers.length });
+    .filter(u => !u.isAI)
+    .map(u => ({ name: u.username, elo: u.elo, upgrades: u.upgrades||0, isAI: false }))
+  ok(res, { lb: list, totalUsers: list.length });
 });
 
 // --- Update ELO ---
