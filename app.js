@@ -1426,7 +1426,13 @@ function buyPack(n,price){
   if(M.money<price){showAnnouncement('Not enough money!');return}
   M.money-=price;
   M.godlyPacks=(Number(M.godlyPacks)||0)+n;
-  saveMeta();refreshUI();renderShop();
+  saveMeta();refreshUI();
+  // Auto-Open Packs upgrade: open them immediately instead of stockpiling
+  if(M.upgradesPurchased&&M.upgradesPurchased.autoOpenPacks){
+    openOwnedPacks();
+    return;
+  }
+  renderShop();
   showAnnouncement(`✨ +${n} Godly Pack${n>1?'s':''}!`);
 }
 
