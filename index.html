@@ -15,6 +15,8 @@ function doCustomTranslate(langCode) {
     sel.value = langCode;
     sel.dispatchEvent(new Event('change'));
   }
+  document.body.style.transition = "margin-top 0.5s ease";
+  document.body.style.marginTop = langCode ? "200px" : "0px";
 }
 </script>
 <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
