@@ -2159,6 +2159,7 @@ function renderAccount(){
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="modebtn mode-vs" style="text-align:center" onclick="resyncAccountToServer()">🌐 Re-register on Server</button>
+        <button class="modebtn mode-mm" style="text-align:center" onclick="switchAccount()">🔄 Switch Account</button>
         <button class="dangerbtn" onclick="logoutAccount()">Log out</button>
       </div>`;
     return;
@@ -2218,6 +2219,14 @@ function logoutAccount(){
   if(!confirm('Log out? Your progress stays saved on this device.'))return;
   M.account=null;M.adminUnlocked=false;saveMeta();renderAccount();refreshAccountBtn();
   if(typeof refreshUI==='function')refreshUI();
+}
+// Sign out and jump straight to the Log In screen to switch to another account
+function switchAccount(){
+  M.account=null;M.adminUnlocked=false;saveMeta();refreshAccountBtn();
+  if(typeof refreshUI==='function')refreshUI();
+  _acctTab='login';
+  renderAccount();
+  showAnnouncement('🔄 Log in to a different account');
 }
 function refreshAccountBtn(){
   const b=document.getElementById('acctbtn');if(!b)return;
