@@ -4103,13 +4103,36 @@ function handleTimeout(loserColor){
 // (_lastAnnounceTs is already declared earlier; don't redeclare it here)
 let lastGlobalChat=0;
 
+function editChat(ts) {
+    const span = document.getElementById('chattext_' + ts);
+    if(!span) return;
+    const newMsg = prompt("Edit message:", span.innerText);
+    if(newMsg && newMsg.trim()) {
+        API.announce(M.account.username, "!CHAT_EDIT " + ts + " " + newMsg.trim()).catch(()=>{});
+    }
+}
+function deleteChat(ts) {
+    if(confirm("Delete this message?")) {
+        API.announce(M.account.username, "!CHAT_DELETE " + ts).catch(()=>{});
+    }
+}
+
 function addGlobalChatMessage(sender, msg, ts) {
     const box = document.getElementById('globalchatmessages');
     if(!box) return;
     const d = document.createElement('div');
+    d.id = 'chatmsg_' + ts;
     d.style.marginBottom = '4px';
     const time = new Date(ts||Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    d.innerHTML = '<span style="color:#888;font-size:10px">['+time+']</span> <b>'+sender+'</b>: '+msg.replace(/</g,'&lt;');
+    
+    let btns = '';
+    const myName = M.account && M.account.username;
+    if(myName === sender || (typeof OWNER_NAMES !== 'undefined' && OWNER_NAMES.includes((myName||'').toLowerCase()))) {
+        btns = <span style="cursor:pointer;margin-left:5px;color:#0a0;font-size:10px" onclick="editChat('+ts+')">[edit]</span>
+                <span style="cursor:pointer;margin-left:5px;color:#a00;font-size:10px" onclick="deleteChat('+ts+')">[del]</span>;
+    }
+    
+    d.innerHTML = <span style="color:#888;font-size:10px">[+time+]</span> <b>+sender+</b>: <span id="chattext_+ts+">+msg.replace(/</g,'&lt;')+</span> + btns;
     box.appendChild(d);
     box.scrollTop = box.scrollHeight;
 }
@@ -4166,6 +4189,22 @@ async function pollAnnouncements(){
               _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
               continue;
           }
+                    if(a.msg && a.msg.startsWith("!CHAT_DELETE ")){
+            const tsToDel = a.msg.substring(13);
+            const el = document.getElementById('chatmsg_' + tsToDel);
+            if(el) el.remove();
+            _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+            continue;
+          }
+          if(a.msg && a.msg.startsWith("!CHAT_EDIT ")){
+            const parts = a.msg.substring(11).split(" ");
+            const tsToEdit = parts[0];
+            const newTxt = parts.slice(1).join(" ");
+            const el = document.getElementById('chattext_' + tsToEdit);
+            if(el) el.innerText = newTxt.replace(/</g,'&lt;');
+            _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+            continue;
+          }
           if(a.msg && a.msg.startsWith("!CHAT ")){
             const txt = a.msg.substring(6);
             addGlobalChatMessage(sender, txt, a.ts);
@@ -4210,10 +4249,24 @@ function sendGlobalChat() {
 
 function sendGameChat() {
     if(!M.account) return;
-    if(typeof G==='undefined' || !G || !G.opponent || !G.opponent.matchId) return;
+    if(typeof G==='undefined' || !G || !G.opponent) return;
     const inp = document.getElementById('gamechatinput');
+    if(!inp) return;
     const msg = inp.value.trim();
     if(!msg) return;
     inp.value = '';
+    
+    addGameChatMessage(M.account.username, msg);
+    
+    if (G.opponent.isAI || G.opponent.type === 'bot' || !G.opponent.matchId) {
+        const botName = G.opponent.name || 'Bot';
+        setTimeout(() => {
+            const replies = ["Good move!", "I didn't see that coming.", "Are you sure about that?", "Interesting...", "Hmm.", "I am calculating 14 moves deep.", "Prepare to lose.", "Checkmate is inevitable.", "Beep boop."];
+            const rep = replies[Math.floor(Math.random() * replies.length)];
+            addGameChatMessage(botName, rep);
+        }, 1000 + Math.random()*2000);
+        return;
+    }
+    
     API.announce(M.account.username, "!GAME_CHAT " + G.opponent.matchId + " " + msg).catch(()=>{});
 }
