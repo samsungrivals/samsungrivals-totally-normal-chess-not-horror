@@ -500,3 +500,7 @@ body.mobile-mode .spinbtn{padding:8px 14px;font-size:14px}
 #board.skin-owner .light, .sq.skin-owner.light{background:linear-gradient(135deg,#ffd700,#fff8c0,#ffaa00,#ffd700);background-size:300% 300%;animation:ownerbg 5s ease infinite}
 #board.skin-owner .dark, .sq.skin-owner.dark{background:linear-gradient(135deg,#1a1a1a,#3a2a00,#000,#1a1a1a);background-size:300% 300%;animation:ownerbg 5s ease infinite}
 @keyframes ownerbg{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+
+/* Translate mode shifting */
+body.translated-mode .topbar, body.translated-mode .thinking { transform: translateY(40px); transition: transform 0.5s ease; }
+body.translated-mode .container { padding-top: 136px; transition: padding-top 0.5s ease; }

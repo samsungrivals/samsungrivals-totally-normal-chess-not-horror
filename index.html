@@ -15,10 +15,10 @@ function doCustomTranslate(langCode) {
     sel.value = langCode;
     sel.dispatchEvent(new Event('change'));
   }
-  var tb = document.querySelector('.topbar');
-  if(tb) {
-    tb.style.transition = "transform 0.5s ease";
-    tb.style.transform = langCode ? "translateY(200px)" : "translateY(0px)";
+  if(langCode) {
+    document.body.classList.add('translated-mode');
+  } else {
+    document.body.classList.remove('translated-mode');
   }
 }
 </script>
