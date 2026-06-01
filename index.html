@@ -9,6 +9,13 @@
 function googleTranslateElementInit() {
   new google.translate.TranslateElement({pageLanguage: 'en'}, 'google_translate_element');
 }
+function doCustomTranslate(langCode) {
+  var sel = document.querySelector('.goog-te-combo');
+  if(sel) {
+    sel.value = langCode;
+    sel.dispatchEvent(new Event('change'));
+  }
+}
 </script>
 <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 <style>
@@ -41,6 +48,9 @@ function googleTranslateElementInit() {
   .goog-te-gadget img {
     display: none !important;
   }
+  #google_translate_element {
+    display: none !important;
+  }
 </style>
 </head>
 <body>
@@ -68,7 +78,6 @@ function googleTranslateElementInit() {
   <div class="elo" id="elodisp"><span class="lbl">ELO</span><span class="val">500</span></div>
   <button class="tbbtn" id="ownerbtn" onclick="openOwnerAdmin()" style="background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a0a00;font-weight:bold">👑 Owner</button>
   <div class="tbright">
-    <div id="google_translate_element" style="display:inline-block; vertical-align:middle; margin-right:8px;"></div>
     <button class="accountbtn" id="acctbtn" onclick="openModal('acctmodal')">👤 Sign Up</button>
     <button class="topiconbtn" onclick="openModal('upgmodal')" title="Upgrades">⚙️</button>
     <button class="topiconbtn" onclick="openModal('indexmodal')" title="Skin Index">📖</button>
@@ -321,8 +330,28 @@ function googleTranslateElementInit() {
   <div class="mbox">
     <div class="mtitle">⚙ Settings <button class="mclose" onclick="closeModal('settingsmodal')">✕</button></div>
     <div class="settingrow">
-      <div><div class="settinglabel">🫥 Do Nothing</div><div class="settingsub">This button does absolutely nothing</div></div>
+      <div><div class="settinglabel">🛠️ Do Nothing</div><div class="settingsub">This button does absolutely nothing</div></div>
       <button class="settingchip" onclick="doNothingClick()">Do Nothing</button>
+    </div>
+    <div class="settingrow" style="background:#1a2333;border-color:#3a4a6a">
+      <div><div class="settinglabel">🌐 Language</div><div class="settingsub">Translate the game</div></div>
+      <select id="customlangsel" onchange="doCustomTranslate(this.value)" class="settingchip" style="background:#2a2a2a; border:1px solid #4a80f5; color:#fff; padding:6px; border-radius:4px; outline:none; cursor:pointer;">
+        <option value="">English (Default)</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+        <option value="de">Deutsch</option>
+        <option value="ru">Русский</option>
+        <option value="zh-CN">中文 (Simplified)</option>
+        <option value="ja">日本語</option>
+        <option value="ko">한국어</option>
+        <option value="pt">Português</option>
+        <option value="ar">العربية</option>
+        <option value="hi">हिन्दी</option>
+        <option value="it">Italiano</option>
+        <option value="tr">Türkçe</option>
+        <option value="pl">Polski</option>
+        <option value="nl">Nederlands</option>
+      </select>
     </div>
     <div class="settingrow" style="background:#1a2a2a;border-color:#3a5a5a">
       <div><div class="settinglabel">🎥 Skip Cutscenes</div><div class="settingsub">Rare-skin animations won't play</div></div>
@@ -484,7 +513,9 @@ function googleTranslateElementInit() {
   <div class="csodds" id="csodds"></div>
   <button class="csclose" onclick="closeCutscene()">Continue</button>
 </div>
-<script src="app.js?v=13"></script>
+<!-- Scripts -->
+<div id="google_translate_element" style="display:none"></div>
+<script src="app.js?v=2"></script>
 <!-- Global Chat -->
 <div id="globalchat" style="position:fixed;bottom:70px;left:20px;width:300px;height:250px;background:#222;border:1px solid #444;border-radius:8px;display:none;flex-direction:column;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.5);font-family:sans-serif;">
   <div style="display:flex;justify-content:space-between;align-items:center;background:#333;border-top-left-radius:8px;border-top-right-radius:8px;">
