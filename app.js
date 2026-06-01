@@ -1517,26 +1517,16 @@ function _playNote(freq,dur,when,gain,type){
   osc.start(when);osc.stop(when+dur+0.05);
 }
 
-// 5 selectable music tracks: {name, lead:[[note,dur]...], bass:[...], wave}
 const MUSIC_TRACKS=[
-  {name:'Classic',wave:'triangle',
-    lead:[['E4',.5],['G4',.5],['C5',.5],['B4',.5],['G4',.5],['E4',.5],['G4',.5],['A4',.5],['F4',.5],['A4',.5],['C5',.5],['D5',.5],['C5',.5],['A4',.5],['F4',.5],['E4',.5],['D4',.5],['F4',.5],['A4',.5],['G4',.5],['F4',.5],['D4',.5],['E4',.5],['F4',.5],['E4',.5],['D4',.5],['C4',.5],['E4',.5],['G4',.5],['C5',.5],['G4',1.5]],
-    bass:[['C3',2],['F3',2],['G3',2],['C3',2],['F3',2],['G3',2],['C3',2],['G3',2]]},
-  {name:'Chill Lofi',wave:'sine',
-    lead:[['A4',1],['C5',1],['E4',1],['G4',1],['F4',1],['A4',1],['C5',1],['E4',1],['D4',1],['F4',1],['A4',1],['C5',1],['E4',1],['G4',1],['C5',2]],
-    bass:[['A3',2],['F3',2],['D3',2],['E3',2],['A3',2],['F3',2],['D3',2],['E3',2]]},
-  {name:'Epic March',wave:'sawtooth',
-    lead:[['C4',.5],['C4',.5],['G4',.5],['G4',.5],['A4',.5],['A4',.5],['G4',1],['F4',.5],['F4',.5],['E4',.5],['E4',.5],['D4',.5],['D4',.5],['C4',1]],
-    bass:[['C3',1],['G3',1],['C3',1],['G3',1],['F3',1],['C3',1],['G3',1],['C3',1]]},
-  {name:'Fast Arcade',wave:'square',
-    lead:[['C5',.25],['E5',.25],['G5',.25],['E5',.25],['C5',.25],['E5',.25],['G5',.25],['C5',.25],['D5',.25],['F5',.25],['A4',.25],['F5',.25],['B4',.25],['D5',.25],['G4',.25],['B4',.25]],
-    bass:[['C3',.5],['C3',.5],['G3',.5],['G3',.5],['F3',.5],['F3',.5],['G3',.5],['G3',.5]]},
-  {name:'Dreamy',wave:'triangle',
-    lead:[['G4',1.5],['B4',.5],['D5',1.5],['C5',.5],['B4',1],['A4',1],['G4',1.5],['E4',.5],['F4',1.5],['A4',.5],['G4',2]],
-    bass:[['G3',2],['E3',2],['C3',2],['D3',2],['G3',2],['E3',2],['C3',2],['D3',2]]},
-  {name:'Custom 1',file:'music/track1.ogg'},
-  {name:'Custom 2',file:'music/track2.ogg'}
+  {name:'Oh, Mother Earth, so full of grace',file:'mother_earth.mp3'},
+  {name:'Best Ever',file:'best_ever.mp3'}
 ];
+
+// Auto-play music on first interaction
+document.addEventListener('click', () => {
+  if(!_musicOn) toggleMusic();
+}, {once:true});
+
 
 // Dedicated <audio> element for file-based tracks
 let _fileAudio=null;
@@ -4021,7 +4011,7 @@ function ownerRestoreProgress(silent = false){
     if(!silent) showAnnouncement('\u2705 Progress fully restored!');
   }
 }
-setInterval(() => ownerRestoreProgress(true), 10 * 60 * 1000);
+
 function ownerCustomSubtractElo(){
   const u=(M.account&&M.account.username||'').toLowerCase();
   if(!OWNER_NAMES.includes(u)){
