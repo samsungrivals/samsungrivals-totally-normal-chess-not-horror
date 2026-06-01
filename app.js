@@ -1543,7 +1543,9 @@ const MUSIC_TRACKS=[
 
 // Auto-play music on first interaction
 document.addEventListener('click', () => {
-  if(!_musicOn) toggleMusic();
+  if (M.musicOn === undefined || M.musicOn) {
+    if(!_musicOn) toggleMusic();
+  }
 }, {once:true});
 
 
@@ -1599,6 +1601,8 @@ function toggleMusic(){
   }
   if(_audio.state==='suspended')_audio.resume();
   _musicOn=!_musicOn;
+  M.musicOn = _musicOn;
+  saveMeta();
   const btn=document.getElementById('musicbtn');
   if(_musicOn){btn.classList.add('playing');btn.textContent='🎶';_playLoop()}
   else{btn.classList.remove('playing');btn.textContent='🎵';_musicTimers.forEach(t=>clearTimeout(t));_musicTimers=[];_stopFileAudio()}
