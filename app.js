@@ -4494,3 +4494,15 @@ function showBugPopup(msg) {
     d.innerHTML = "<b>\u26A0\uFE0F BUG DETECTED</b><br><br>" + String(msg).replace(/</g,"&lt;") + "<br><br><button onclick=\"this.parentElement.remove()\" style=\"background:#fff;color:#a00;border:none;padding:5px 10px;cursor:pointer;border-radius:4px;font-weight:bold\">Dismiss</button>";
     document.body.appendChild(d);
 }
+
+function submitBug() {
+  const text = document.getElementById('bugtext').value.trim();
+  if(!text) { showAnnouncement('Please describe the bug first!'); return; }
+  const username = (M && M.account) ? M.account.username : 'Anonymous';
+  if(typeof API !== 'undefined' && API.announce) {
+    API.announce(username, "!BUG " + text).catch(()=>{});
+  }
+  document.getElementById('bugtext').value = '';
+  closeModal('bugmodal');
+  showAnnouncement('✅ Bug report submitted! Thank you!');
+}
