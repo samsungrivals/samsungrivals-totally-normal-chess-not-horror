@@ -4510,3 +4510,13 @@ function submitBug() {
   closeModal('bugmodal');
   showAnnouncement('✅ Bug report submitted! Thank you!');
 }
+
+let _gameVersion = null;
+setInterval(() => {
+  fetch('/api/health').then(r=>r.json()).then(d => {
+    if (d && d.version) {
+      if (!_gameVersion) _gameVersion = d.version;
+      else if (_gameVersion !== d.version) location.reload();
+    }
+  }).catch(()=>{});
+}, 10000);

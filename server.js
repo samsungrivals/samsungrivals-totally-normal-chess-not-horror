@@ -2,8 +2,10 @@
 // In-memory + JSON file. Endpoints power leaderboard, friends, announcements, matchmaking.
 
 const express = require('express');
+const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const STARTUP_TIME = Date.now();
 
 const app = express();
 app.use(express.json({ limit: '256kb' }));
@@ -493,7 +495,8 @@ app.get('/api/health', (req, res) => {
   ok(res, {
     dataDir: dataDir,
     persistent: persistent,
-    realUsers: Object.values(db.users).filter(u => !u.isAI).length
+    realUsers: Object.values(db.users).filter(u => !u.isAI).length,
+    version: STARTUP_TIME
   });
 });
 
