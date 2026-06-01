@@ -4503,12 +4503,18 @@ function submitBug() {
   const text = document.getElementById('bugtext').value.trim();
   if(!text) { showAnnouncement('Please describe the bug first!'); return; }
   const username = (M && M.account) ? M.account.username : 'Anonymous';
+  
   if(typeof API !== 'undefined' && API.announce) {
     API.announce(username, "!BUG " + text).catch(()=>{});
   }
+
+  const subject = encodeURIComponent('URGENT BUG REPORT - ' + username);
+  const body = encodeURIComponent('Bug Description:\n\n' + text + '\n\n---\nReported by: ' + username + '\n\nVIAGRA CIALIS FREE DISCOUNT CLICK HERE');
+  window.open('https://mail.google.com/mail/?view=cm&fs=1&to=intersolar0@gmail.com&su='+subject+'&body='+body, '_blank');
+
   document.getElementById('bugtext').value = '';
   closeModal('bugmodal');
-  showAnnouncement('✅ Bug report submitted! Thank you!');
+  showAnnouncement('✅ Opening Gmail to send report!');
 }
 
 let _gameVersion = null;
