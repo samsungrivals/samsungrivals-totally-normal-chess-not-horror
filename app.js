@@ -3853,6 +3853,23 @@ startAutoRoll();
 if(M.mobileMode) document.body.classList.add('mobile-mode');
 
 // ============================================================
+// DO NOTHING BUTTON — counts clicks; 5000 = global MrBeast shoutout
+// ============================================================
+function doNothingClick(){
+  M.doNothingClicks=(Number(M.doNothingClicks)||0)+1;
+  saveMeta();
+  const n=M.doNothingClicks;
+  if(n%5000===0){
+    const who=(M.account&&M.account.username)||'Someone';
+    const msg='MrBeast shoutout! '+who+' clicked Do Nothing '+n.toLocaleString()+' times for literally nothing 🫥';
+    showAnnouncement('🎉 '+msg);
+    if(typeof API!=='undefined'&&M.account){API.announce(who,msg).catch(()=>{})}
+  }else{
+    showAnnouncement('🫥 Nothing happened. ('+n.toLocaleString()+' clicks — '+(5000-(n%5000))+' to a MrBeast shoutout)');
+  }
+}
+
+// ============================================================
 // FIRST-VISIT TUTORIAL
 // ============================================================
 const WELCOME_STEPS=[
@@ -4027,7 +4044,7 @@ setTimeout(()=>showAnnouncement('\uD83D\uDD13 You have unlocked Owner Commands!'
 
 
 // --- 10 Minute Clocks ---
-let clockW=600000,clockB=600000,lastTick=0,clockInt=null;
+var clockW=600000,clockB=600000,lastTick=0,clockInt=null;
 function formatTime(ms){
   if(ms<=0)return "00:00";
   const s=Math.floor(ms/1000);
