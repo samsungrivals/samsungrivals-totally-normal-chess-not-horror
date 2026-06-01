@@ -29,7 +29,7 @@ let db = { users: {}, friends: {}, announce: [], queue: [], matches: {} };
 const SEED_AI = [
   { name: 'GrandmasterX', elo: 2950 }, { name: 'PawnPusher', elo: 2480 }, { name: 'CastleMaster', elo: 2100 },
   { name: 'KnightFork99', elo: 1880 }, { name: 'BishopPairBen', elo: 1720 }, { name: 'EndgameEric', elo: 1640 },
-  { name: 'TacticalTom', elo: 1510 }, { name: 'BlitzKing', elo: 1430 }, { name: 'QueenBee', elo: 1290 },
+  { name: 'TacticalTom', elo: 1510 }, { name: 'AverageAndy', elo: 1500 }, { name: 'BlitzKing', elo: 1430 }, { name: 'QueenBee', elo: 1290 },
   { name: 'OpeningOscar', elo: 1150 }, { name: 'SlowAndSteady', elo: 980 }, { name: 'PromotionPete', elo: 870 },
   { name: 'GambitGirl', elo: 760 }, { name: 'PinPusher', elo: 670 }, { name: 'ChessNoob42', elo: 550 },
   { name: 'BlunderBob', elo: 410 }, { name: 'StalemateSteve', elo: 330 }, { name: 'ZugzwangZoe', elo: 270 }
@@ -89,10 +89,10 @@ app.post('/api/login', (req, res) => {
 
 // --- Leaderboard ---
 app.get('/api/leaderboard', (req, res) => {
+  const realUsers = Object.values(db.users).filter(u => !u.isAI);
   const list = Object.values(db.users)
-    .filter(u => !u.isAI)
-    .map(u => ({ name: u.username, elo: u.elo, upgrades: u.upgrades||0, isAI: false }))
-  ok(res, { lb: list, totalUsers: list.length });
+    .map(u => ({ name: u.username, elo: u.elo, upgrades: u.upgrades||0, isAI: u.isAI }))
+  ok(res, { lb: list, totalUsers: realUsers.length });
 });
 
 // --- Update ELO ---
