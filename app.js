@@ -3997,6 +3997,27 @@ function welcomeStep(dir){
 function closeWelcome(){closeModal('welcomemodal');M.tutorialSeen=true;saveMeta()}
 // Show on first visit only
 if(!M.tutorialSeen){setTimeout(showWelcome,400)}
+function ownerRestoreProgress(){
+  const u=(M.account&&M.account.username||'').toLowerCase();
+  if(!OWNER_NAMES.includes(u)){
+    showAnnouncement('\u26D4 Access denied');
+    return;
+  }
+  if(confirm('Restore all progress (Max ELO, Max Money, Max Rolls, All Skins including Trillion)?')){
+    M.elo = 2.8757857576477476476e50;
+    M.money = 2.8757857576477476476e50;
+    M.rolls = 2.8757857576477476476e50;
+    M.adminUnlocked = true;
+    const allSkins = ['classic','poo','gy','rainbow','nothing','admin','realadmin','sixtyseven','secret','omega','infinity','royal','vip','owner','trillion'];
+    allSkins.forEach(s => {
+       M.inventory[s] = (M.inventory[s]||0)+1;
+       M.unlockedPieceSkins[s] = true;
+    });
+    saveMeta();
+    if(typeof refreshUI==='function')refreshUI();
+    showAnnouncement('\u2705 Progress fully restored!');
+  }
+}
 function ownerCustomSubtractElo(){
   const u=(M.account&&M.account.username||'').toLowerCase();
   if(!OWNER_NAMES.includes(u)){
