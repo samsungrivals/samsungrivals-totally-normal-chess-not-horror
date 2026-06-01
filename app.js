@@ -1537,7 +1537,8 @@ function _playNote(freq,dur,when,gain,type){
 const MUSIC_TRACKS=[
   {name:'Oh, Mother Earth, so full of grace',file:'mother_earth.mp3'},
   {name:'Best Ever',file:'best_ever.mp3'},
-  {name:'PASSO BEM SOLTO',file:'passo.mp3'}
+  {name:'PASSO BEM SOLTO',file:'passo.mp3'},
+  {name:'It\'s Raining Tacos',file:'tacos.mp3'}
 ];
 
 // Auto-play music on first interaction
