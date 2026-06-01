@@ -2,7 +2,6 @@
 // In-memory + JSON file. Endpoints power leaderboard, friends, announcements, matchmaking.
 
 const express = require('express');
-const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const STARTUP_TIME = Date.now();
