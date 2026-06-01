@@ -28,7 +28,7 @@ function applyRandomColors(){
 
 let G; // game state
 
-function newGame(){
+function newGame(){ switchChatTab('game'); const gc = document.getElementById('globalchat'); if(gc && gc.style.display === 'none'){gc.style.display='flex'; const ob=document.getElementById('openchatbtn');if(ob)ob.style.display='none';}
   if(typeof stopClocks==='function')stopClocks(); // don't auto-run timers (was causing spurious "defeat on time")
   const pal=applyRandomColors();
   G={
@@ -1026,13 +1026,32 @@ function findMateInOne(b,ep,cr,turn){
   }
   return null;
 }
+function _allowsOpponentMate(b,ep,cr,turn,mv){
+  const res=apply(b,mv.from,mv.to,ep,cr);
+  return !!findMateInOne(res.board,res.ep,res.cr,flip(turn));
+}
 function computeAIMove(opp){
-  // Every bot, no matter how weak, always takes a mate-in-1 if one exists
-  const mate=findMateInOne(G.board,G.ep,G.cr,G.turn);
+  const b=G.board,ep=G.ep,cr=G.cr,turn=G.turn;
+  // Step 1: always take a mate-in-1 if one exists
+  const mate=findMateInOne(b,ep,cr,turn);
   if(mate)return mate;
-  if(opp.behavior==='random')return findAIMoveRandom(G.board,G.ep,G.cr,G.turn);
-  if(opp.behavior==='capture')return findAIMoveCapture(G.board,G.ep,G.cr,G.turn);
-  return findAIMoveStrong(G.board,G.ep,G.cr,G.turn,opp.depth||2);
+  // Step 2: pick the move per the bot's normal behavior
+  let mv;
+  if(opp.behavior==='random')mv=findAIMoveRandom(b,ep,cr,turn);
+  else if(opp.behavior==='capture')mv=findAIMoveCapture(b,ep,cr,turn);
+  else mv=findAIMoveStrong(b,ep,cr,turn,opp.depth||2);
+  // Step 3: defend - never walk into a mate-in-1 if a safe move exists
+  if(mv&&_allowsOpponentMate(b,ep,cr,turn,mv)){
+    const safe=allLegal(b,ep,cr,turn).filter(m=>!_allowsOpponentMate(b,ep,cr,turn,m));
+    if(safe.length){
+      // among safe moves, choose the one with the best position for the mover
+      const sign=turn==='white'?1:-1;
+      let best=safe[0],bs=-Infinity;
+      for(const m of safe){const r=apply(b,m.from,m.to,ep,cr);const sc=sign*evalBoard(r.board);if(sc>bs){bs=sc;best=m}}
+      return best;
+    }
+  }
+  return mv;
 }
 
 // ----- BOTS -----
@@ -4324,11 +4343,31 @@ function sendGlobalChat() {
     API.announce(M.account.username, "!CHAT " + msg).catch(()=>{});
 }
 
-function sendGameChat() {
+window._currentChatTab = 'global';
+function switchChatTab(tab) {
+  window._currentChatTab = tab;
+  document.getElementById('tabGlobal').style.background = tab === 'global' ? '#444' : '#333';
+  document.getElementById('tabGlobal').style.color = tab === 'global' ? '#fff' : '#888';
+  document.getElementById('tabGame').style.background = tab === 'game' ? '#444' : '#333';
+  document.getElementById('tabGame').style.color = tab === 'game' ? '#fff' : '#888';
+  document.getElementById('globalchatmessages').style.display = tab === 'global' ? 'block' : 'none';
+  document.getElementById('gamechatmessages').style.display = tab === 'game' ? 'block' : 'none';
+  if(tab === 'game') {
+     const gb = document.getElementById('gamechatmessages');
+     gb.scrollTop = gb.scrollHeight;
+  } else {
+     const gb = document.getElementById('globalchatmessages');
+     gb.scrollTop = gb.scrollHeight;
+  }
+}
+function sendChatInput() {
+  if (window._currentChatTab === 'global') {
+    sendGlobalChat();
+  } else {
+    // Game Chat
     if(!M.account) return;
     if(typeof G==='undefined' || !G || !G.opponent) return;
-    const inp = document.getElementById('gamechatinput');
-    if(!inp) return;
+    const inp = document.getElementById('globalchatinput');
     const msg = inp.value.trim();
     if(!msg) return;
     inp.value = '';
@@ -4341,11 +4380,19 @@ function sendGameChat() {
             const replies = ["Good move!", "I didn't see that coming.", "Are you sure about that?", "Interesting...", "Hmm.", "I am calculating 14 moves deep.", "Prepare to lose.", "Checkmate is inevitable.", "Beep boop."];
             const rep = replies[Math.floor(Math.random() * replies.length)];
             addGameChatMessage(botName, rep);
+            // auto open chat if closed
+            const cbox = document.getElementById('globalchat');
+            if(cbox && cbox.style.display === 'none') {
+                cbox.style.display = 'flex';
+                const obtn = document.getElementById('openchatbtn');
+                if(obtn) obtn.style.display = 'none';
+            }
         }, 1000 + Math.random()*2000);
         return;
     }
     
     API.announce(M.account.username, "!GAME_CHAT " + G.opponent.matchId + " " + msg).catch(()=>{});
+  }
 }
 window.onerror = function(msg, url, lineNo, columnNo, error) {
     showBugPopup(msg + " at line " + lineNo);
