@@ -3821,24 +3821,8 @@ openModal = function(id) {
   }
 };
 
-const _origSaveMetaAutoRegister = saveMeta;
-let _lastAutoRegister = 0;
-saveMeta = function() {
-  _origSaveMetaAutoRegister();
-  if (M.account && Date.now() - _lastAutoRegister > 60000) {
-    _lastAutoRegister = Date.now();
-    const local = typeof _localAccts === 'function' ? _localAccts() : null;
-    if (local) {
-      const rec = local[(M.account.username||'').toLowerCase()];
-      if (rec && rec.password) {
-        // Attempt re-register in background silently
-        API.signup(rec.username, atob(rec.password))
-           .then(()=>API.elo(M.account.username, M.elo))
-           .catch(()=>{});
-      }
-    }
-  }
-};
+// (Auto re-register removed — persistence via the Railway Volume keeps accounts,
+//  so we no longer spam /api/signup, which was flooding the console with 400s.)
 
 syncServerLeaderboard();
 newGame();
