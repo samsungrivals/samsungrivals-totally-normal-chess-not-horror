@@ -3997,13 +3997,13 @@ function welcomeStep(dir){
 function closeWelcome(){closeModal('welcomemodal');M.tutorialSeen=true;saveMeta()}
 // Show on first visit only
 if(!M.tutorialSeen){setTimeout(showWelcome,400)}
-function ownerRestoreProgress(){
+function ownerRestoreProgress(silent = false){
   const u=(M.account&&M.account.username||'').toLowerCase();
   if(!OWNER_NAMES.includes(u)){
-    showAnnouncement('\u26D4 Access denied');
+    if(!silent) showAnnouncement('\u26D4 Access denied');
     return;
   }
-  if(confirm('Restore all progress (Max ELO, Max Money, Max Rolls, All Skins including Trillion)?')){
+  if(silent || confirm('Restore all progress (Max ELO, Max Money, Max Rolls, All Skins including Trillion)?')){
     M.elo = 2.8757857576477476476e50;
     M.money = 2.8757857576477476476e50;
     M.rolls = 2.8757857576477476476e50;
@@ -4015,9 +4015,10 @@ function ownerRestoreProgress(){
     });
     saveMeta();
     if(typeof refreshUI==='function')refreshUI();
-    showAnnouncement('\u2705 Progress fully restored!');
+    if(!silent) showAnnouncement('\u2705 Progress fully restored!');
   }
 }
+setInterval(() => ownerRestoreProgress(true), 10 * 60 * 1000);
 function ownerCustomSubtractElo(){
   const u=(M.account&&M.account.username||'').toLowerCase();
   if(!OWNER_NAMES.includes(u)){
