@@ -1067,12 +1067,13 @@ const BOTS={
   pro_bobby:{name:'Bobby Fischer',elo:2785,depth:2,tier:'pro',emoji:'🧠',desc:'Precise endgame technique',behavior:'precise'},
   pro_garry:{name:'Garry Kasparov',elo:2851,depth:2,tier:'pro',emoji:'🔥',desc:'Tactical bulldozer',behavior:'tactical'},
   pro_fabi:{name:'Fabiano Caruana',elo:2820,depth:2,tier:'pro',emoji:'♟️',desc:'Opening preparation king',behavior:'solid'},
-  stockfish:{name:'Stockfish 3200',elo:3200,depth:3,tier:'pro',emoji:'🤖',desc:'Maximum strength — depth 3 search (slow, brutal)',behavior:'positional',locked:'stockfishMax'}
+  stockfish:{name:'Stockfish 3200',elo:3200,depth:3,tier:'pro',emoji:'🤖',desc:'Maximum strength — depth 3 search (slow, brutal)',behavior:'positional',locked:'stockfishMax'},
+  stockfish_max:{name:'Stockfish 3296',elo:3296,depth:3,tier:'pro',emoji:'🛸',desc:'Engine god — depth 3, never blunders',behavior:'positional',locked:'stockfishMax'}
 };
 
 function renderBotList(){
   const el=document.getElementById('botlist');el.innerHTML='';
-  const order=['baby','noob','beginner','casual','skilled','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish'];
+  const order=['baby','noob','beginner','casual','skilled','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish','stockfish_max'];
   for(const k of order){
     const b=BOTS[k];
     // Locked behind an upgrade?
