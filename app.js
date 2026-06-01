@@ -1117,7 +1117,8 @@ function startVsComputer(key){
 function startGameVsBot(bot){
   newGame();
   openGameChat();
-  if(typeof startClocks==='function')startClocks();
+  const cs=document.getElementById('clockstrip');
+  if(cs)cs.classList.add('hidden');
   G.opponent={type:'ai',name:bot.name,elo:bot.elo,side:'black',depth:bot.depth||1,behavior:bot.behavior||'normal',_eloApplied:false};
   render();
 }
