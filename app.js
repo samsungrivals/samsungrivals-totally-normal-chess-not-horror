@@ -1018,7 +1018,18 @@ function findAIMoveRandom(b,ep,cr,turn){
   return moves.length?moves[Math.floor(Math.random()*moves.length)]:null;
 }
 
+function findMateInOne(b,ep,cr,turn){
+  for(const mv of allLegal(b,ep,cr,turn)){
+    const res=apply(b,mv.from,mv.to,ep,cr);
+    // After our move, is the opponent checkmated?
+    if(gameStatus(res.board,res.ep,res.cr,flip(turn))==='checkmate')return mv;
+  }
+  return null;
+}
 function computeAIMove(opp){
+  // Every bot, no matter how weak, always takes a mate-in-1 if one exists
+  const mate=findMateInOne(G.board,G.ep,G.cr,G.turn);
+  if(mate)return mate;
   if(opp.behavior==='random')return findAIMoveRandom(G.board,G.ep,G.cr,G.turn);
   if(opp.behavior==='capture')return findAIMoveCapture(G.board,G.ep,G.cr,G.turn);
   return findAIMoveStrong(G.board,G.ep,G.cr,G.turn,opp.depth||2);
