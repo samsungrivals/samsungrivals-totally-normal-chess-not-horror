@@ -631,7 +631,7 @@ function openModal(id){
   if(id==='lbmodal'){syncLb();renderLeaderboard()}
   if(id==='vsmodal'&&typeof renderBotList==='function')renderBotList();
   if(id==='frmodal'&&typeof renderFriendsList==='function'){renderFriendsList();switchFrTab('list')}
-  if(id==='shopmodal'&&typeof renderShop==='function')renderShop();
+  if(id==='shopmodal'&&typeof renderShop==='function'){renderShop();if(typeof maybeAutoOpenPacks==='function')maybeAutoOpenPacks();}
 
 }
 function closeModal(id){document.getElementById(id).classList.add('hidden')}
@@ -829,7 +829,7 @@ function adminGiveRealAdmin(){M.inventory.realadmin=(M.inventory.realadmin||0)+1
 function adminGiveMoney(pounds){const amt=(pounds||10000)*100;M.money=(Number(M.money)||0)+amt;saveMeta();showAnnouncement('💰 +'+fmtMoney(amt));refreshUI()}
 function adminGiveAllPieceSkins(){M.unlockedPieceSkins=M.unlockedPieceSkins||{};for(const k of ['bronze','silver','gold','diamond'])M.unlockedPieceSkins[k]=true;saveMeta();showAnnouncement('♟ All piece skins unlocked!');if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems()}
 function adminAddElo(amt){M.elo=(Number(M.elo)||500)+amt;saveMeta();showAnnouncement('⬆️ +'+amt+' ELO  →  '+M.elo);refreshUI();checkEloRewards();const e=document.getElementById('elodisp');if(e){e.classList.add('changed');setTimeout(()=>e.classList.remove('changed'),1000)}if(M.account&&typeof API!=='undefined')API.elo(M.account.username,M.elo).catch(()=>{});}
-function adminGiveGodly(n){M.godlyPacks=(Number(M.godlyPacks)||0)+n;saveMeta();showAnnouncement('✨ +'+n+' Godly Packs');if(!document.getElementById('shopmodal').classList.contains('hidden'))renderShop()}
+function adminGiveGodly(n){M.godlyPacks=(Number(M.godlyPacks)||0)+n;saveMeta();showAnnouncement('✨ +'+n+' Godly Packs');if(typeof maybeAutoOpenPacks==='function'&&maybeAutoOpenPacks())return;if(!document.getElementById('shopmodal').classList.contains('hidden'))renderShop()}
 function adminAnnounce(){const msg=prompt('Global announcement text:');if(msg)showAnnouncement('📢 '+msg)}
 
 const TUTS={
@@ -1422,16 +1422,18 @@ function renderShop(){
   gp.appendChild(ngCard);
 }
 
+function hasAutoOpen(){return !!(M.upgradesPurchased&&M.upgradesPurchased.autoOpenPacks)}
+// If the Auto-Open upgrade is owned and any packs are stockpiled, open them all now.
+function maybeAutoOpenPacks(){
+  if(hasAutoOpen()&&(Number(M.godlyPacks)||0)>0){openOwnedPacks();return true}
+  return false;
+}
 function buyPack(n,price){
   if(M.money<price){showAnnouncement('Not enough money!');return}
   M.money-=price;
   M.godlyPacks=(Number(M.godlyPacks)||0)+n;
   saveMeta();refreshUI();
-  // Auto-Open Packs upgrade: open them immediately instead of stockpiling
-  if(M.upgradesPurchased&&M.upgradesPurchased.autoOpenPacks){
-    openOwnedPacks();
-    return;
-  }
+  if(maybeAutoOpenPacks())return; // Auto-Open: open instantly instead of stockpiling
   renderShop();
   showAnnouncement(`✨ +${n} Godly Pack${n>1?'s':''}!`);
 }
@@ -1448,7 +1450,9 @@ function claimYearlyFree(){
   if(!yearlyFreeReady())return;
   M.lastYearlyFree=Date.now();
   M.godlyPacks=(Number(M.godlyPacks)||0)+1;
-  saveMeta();refreshUI();renderShop();
+  saveMeta();refreshUI();
+  if(maybeAutoOpenPacks())return;
+  renderShop();
   showAnnouncement('🎁 Yearly free Godly Pack claimed!');
 }
 
