@@ -1550,21 +1550,57 @@ function renderShop(){
   ngCard.innerHTML=`<div class="packicon">🫥</div><div class="packinfo"><div class="packname">Nothing Gamepass ${ngc>0?'(owned: '+ngc+')':''}</div><div class="packdesc">Does literally nothing. Pure bragging rights.</div><div class="packprice">£0.01</div></div><button class="packbuy tiny" ${M.money>=1?'':'disabled'} onclick="buyNothing()">Buy 1p</button>`;
   gp.appendChild(ngCard);
 }
+let pendingCheckout = null;
+
+function buyPack(n,price){
+  // Start checkout flow for real money!
+  pendingCheckout = { type: 'pack', n: n, price: price };
+  const itemName = (n===1) ? '1 Godly Pack' : (n + ' Godly Packs');
+  const realPrice = (price / 10).toFixed(2); // simulate real money price like £10.00
+  
+  document.getElementById('checkout-item-name').textContent = itemName;
+  document.getElementById('checkout-item-price').textContent = "Total: £" + realPrice;
+  
+  const btn = document.getElementById('checkout-pay-btn');
+  btn.textContent = "Pay Now";
+  btn.style.background = "#28a745";
+  btn.disabled = false;
+  
+  closeModal('shopmodal');
+  openModal('checkoutmodal');
+}
+
+function processCheckout() {
+  const btn = document.getElementById('checkout-pay-btn');
+  btn.textContent = "Processing...";
+  btn.style.background = "#555";
+  btn.disabled = true;
+  
+  setTimeout(()=>{
+    btn.textContent = "Payment Successful!";
+    btn.style.background = "#28a745";
+    
+    setTimeout(()=>{
+      closeModal('checkoutmodal');
+      
+      if(pendingCheckout && pendingCheckout.type === 'pack') {
+         const n = pendingCheckout.n;
+         M.godlyPacks=(Number(M.godlyPacks)||0)+n;
+         saveMeta();refreshUI();
+         if(maybeAutoOpenPacks())return;
+         renderShop();
+         showAnnouncement(`✨ Payment Complete! +${n} Godly Pack${n>1?'s':''}!`);
+      }
+      pendingCheckout = null;
+    }, 1500);
+  }, 1500);
+}
 
 function hasAutoOpen(){return !!(M.upgradesPurchased&&M.upgradesPurchased.autoOpenPacks)}
 // If the Auto-Open upgrade is owned and any packs are stockpiled, open them all now.
 function maybeAutoOpenPacks(){
   if(hasAutoOpen()&&(Number(M.godlyPacks)||0)>0){openOwnedPacks();return true}
   return false;
-}
-function buyPack(n,price){
-  if(M.money<price){showAnnouncement('Not enough money!');return}
-  M.money-=price;
-  M.godlyPacks=(Number(M.godlyPacks)||0)+n;
-  saveMeta();refreshUI();
-  if(maybeAutoOpenPacks())return; // Auto-Open: open instantly instead of stockpiling
-  renderShop();
-  showAnnouncement(`✨ +${n} Godly Pack${n>1?'s':''}!`);
 }
 
 function buyNothing(){
