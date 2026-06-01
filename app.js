@@ -861,6 +861,7 @@ function openTutorial(k){
 function userNewGame(){
   M.newGameClicks++;saveMeta();checkAdminUnlock();refreshUI();
   newGame();
+  if(typeof startClocks==='function')startClocks();
 }
 
 // ============================================================
@@ -1096,6 +1097,7 @@ function startVsComputer(key){
 function startGameVsBot(bot){
   newGame();
   openGameChat();
+  if(typeof startClocks==='function')startClocks();
   G.opponent={type:'ai',name:bot.name,elo:bot.elo,side:'black',depth:bot.depth||1,behavior:bot.behavior||'normal',_eloApplied:false};
   render();
 }
@@ -2972,6 +2974,7 @@ acceptMatch=async function(){
 
 function startMatchPoll(){
   openGameChat();
+  if(typeof startClocks==='function')startClocks();
   if(_matchPollTimer){clearInterval(_matchPollTimer);_matchPollTimer=null}
   _matchPollTimer=setInterval(pollMatchMoves,1500);
   pollMatchMoves();
