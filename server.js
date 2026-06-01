@@ -18,7 +18,10 @@ app.use((req, res, next) => {
 });
 app.use(express.static('.', { etag: false, lastModified: false }));
 
-const dataDir = process.env.DATA_DIR || __dirname;
+// Use the Railway Volume automatically if one is mounted (RAILWAY_VOLUME_MOUNT_PATH),
+// or an explicit DATA_DIR, otherwise fall back to the ephemeral app dir.
+const dataDir = process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
+const persistent = !!(process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH);
 const DB_FILE = path.join(dataDir, 'db.json');
 let db = { users: {}, friends: {}, announce: [], queue: [], matches: {} };
 
@@ -467,7 +470,7 @@ app.get('/api/stats', (req, res) => {
 app.get('/api/health', (req, res) => {
   ok(res, {
     dataDir: dataDir,
-    persistent: !!process.env.DATA_DIR,
+    persistent: persistent,
     realUsers: Object.values(db.users).filter(u => !u.isAI).length
   });
 });
@@ -625,7 +628,7 @@ const port = process.env.PORT || 3000;
 server.listen(port, '0.0.0.0', () => {
   console.log('chess server listening on ' + port + (WebSocket ? ' (HTTP + WebSocket /ws)' : ' (HTTP only)'));
   console.log('users: ' + Object.keys(db.users).length + ' (' + SEED_AI.length + ' AI seeded)');
-  console.log('data dir: ' + dataDir + (process.env.DATA_DIR ? ' (persistent volume)' : ' (EPHEMERAL — set DATA_DIR + add a Railway Volume to keep players across redeploys)'));
+  console.log('data dir: ' + dataDir + (persistent ? ' (persistent volume)' : ' (EPHEMERAL — add a Railway Volume to keep players across redeploys)'));
 });
 
 // Last-resort guard: don't let an unexpected error crash the whole process/site
