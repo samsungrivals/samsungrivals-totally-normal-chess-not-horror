@@ -1,5 +1,23 @@
-const SYM={'K':'♚','Q':'♛','R':'♜','B':'♝','N':'♞','P':'♟','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟'};
+const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0};
+const OPENINGS = {
+  "e4 c5": "Sicilian Defense",
+  "e4 e5": "Open Game",
+  "e4 e5 Nf3 Nc6 Bb5": "Ruy Lopez",
+  "e4 e5 Nf3 Nc6 Bc4": "Italian Game",
+  "d4 d5 c4": "Queen's Gambit",
+  "e4 c6": "Caro-Kann Defense",
+  "e4 e6": "French Defense",
+  "e4 e5 Nf3 Nc6 d4": "Scotch Game",
+  "d4 Nf6 c4 g6 Nc3 Bg7": "King's Indian Defense",
+  "e4 d5": "Scandinavian Defense",
+  "f4": "Bird's Opening",
+  "b3": "Larsen's Opening",
+  "g3": "King's Fianchetto",
+  "c4": "English Opening",
+  "d4 Nf6": "Indian Defense",
+  "e4 e5 f4": "King's Gambit"
+};
 const PALETTES=[
   {wn:'White',bn:'Black',w:'#ffffff',wo:'#000000',b:'#111111',bo:'#ffffff'},
   {wn:'Gold',bn:'Purple',w:'#ffd54a',wo:'#3a2600',b:'#6a1b9a',bo:'#ffffff'},
@@ -236,9 +254,61 @@ function buildLabels(){
   for(const l of['a','b','c','d','e','f','g','h']){const d=document.createElement('div');d.className='flabel';d.textContent=l;fl.appendChild(d)}
 }
 
+function evalBoard(b){
+  let score = 0;
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p = b[r][c];
+    if(!p) continue;
+    const v = VAL[p.toLowerCase()];
+    if(isU(p)) score += v; else score -= v;
+  }
+  return score * 100;
+}
+
 function render(){
   renderBoard();updateStatus();updateCap();updateHistory();
   if(typeof renderModeBadge==='function')renderModeBadge();
+  
+  // OPENING AND EVAL BAR LOGIC
+  const ob = document.getElementById('opening-board');
+  const eb = document.getElementById('eval-bar-fill');
+  const es = document.getElementById('eval-score');
+  
+  if(G && ob && eb && es) {
+    let histStr = "";
+    for(const h of G.hist){
+      if(h.w) histStr += h.w.replace(/[+#]/g,'') + " ";
+      if(h.b) histStr += h.b.replace(/[+#]/g,'') + " ";
+    }
+    histStr = histStr.trim();
+    
+    let opName = "Starting Position";
+    if(G.status === 'checkmate') opName = "Checkmate!";
+    else if(G.status === 'stalemate') opName = "Stalemate";
+    else if(histStr.length > 0) {
+      let bestMatch = "";
+      for(let k in OPENINGS) {
+        if(histStr.startsWith(k) && k.length > bestMatch.length) {
+          bestMatch = k;
+        }
+      }
+      if(bestMatch) opName = OPENINGS[bestMatch];
+      else opName = "Custom Variation";
+    }
+    
+    ob.textContent = opName;
+    ob.style.opacity = '1';
+    
+    const ev = evalBoard(G.board);
+    // Score format: 1 pawn = 100.
+    const pawns = ev / 100;
+    es.textContent = (pawns > 0 ? "+" : "") + pawns.toFixed(1);
+    
+    // Eval bar height: 50% is 0. 100% is +500 (5 pawns).
+    const pct = Math.max(0, Math.min(100, 50 + (ev / 10)));
+    eb.style.height = pct + '%';
+    eb.style.background = (pct > 50) ? '#fff' : '#444';
+  }
 }
 
 function renderBoard(){
