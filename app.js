@@ -438,7 +438,7 @@ function loadMeta(){
 // Debounced save: keep M live in memory, but write to localStorage at most ~once/sec.
 // JSON.stringify + localStorage write is synchronous and was firing on every roll (huge lag).
 let _saveTimer=null,_saveDirty=false;
-function _saveNow(){_saveDirty=false;try{localStorage.setItem('chessmeta',JSON.stringify(M))}catch(e){}}
+function _saveNow(){_saveDirty=false;try{localStorage.setItem('chessmeta',JSON.stringify(M))}catch(e){}if(M&&M.account&&typeof window.API!=='undefined'){window.API.money(M.account.username,M.money||0).catch(()=>{});window.API.rolls(M.account.username,M.rolls||0).catch(()=>{});}}
 function saveMeta(){
   _saveDirty=true;
   if(_saveTimer)return;
@@ -767,16 +767,27 @@ function showAnnouncement(text){
 window._lbTab='elo';
 window.switchLbTab=function(tab){
   window._lbTab=tab;
-  const tElo=document.getElementById('tab-lb-elo'),tUpg=document.getElementById('tab-lb-upg');
-  if(tElo){tElo.classList.toggle('active',tab==='elo');tElo.style.borderBottomColor=tab==='elo'?'#4a80c0':'transparent';tElo.style.color=tab==='elo'?'#fff':'#888'}
-  if(tUpg){tUpg.classList.toggle('active',tab==='upg');tUpg.style.borderBottomColor=tab==='upg'?'#4a80c0':'transparent';tUpg.style.color=tab==='upg'?'#fff':'#888'}
+  const ids = ['elo', 'upg', 'rolls', 'money'];
+  for(const id of ids) {
+    const el = document.getElementById('tab-lb-' + id);
+    if(el) {
+      el.classList.toggle('active', tab === id);
+      el.style.borderBottomColor = tab === id ? '#4a80c0' : 'transparent';
+      el.style.color = tab === id ? '#fff' : '#888';
+    }
+  }
   renderLeaderboard();
 };
 
 function renderLeaderboard(){
   const lbAll=loadLb();
   const tab=window._lbTab||'elo';
-  const sorted=lbAll.sort((a,b)=>tab==='elo'?((Number(b.elo)||0)-(Number(a.elo)||0)):((Number(b.upgrades)||0)-(Number(a.upgrades)||0)));
+  const sorted=lbAll.sort((a,b)=>{
+    if(tab==='money') return (Number(b.money)||0)-(Number(a.money)||0);
+    if(tab==='rolls') return (Number(b.rolls)||0)-(Number(a.rolls)||0);
+    if(tab==='upg') return (Number(b.upgrades)||0)-(Number(a.upgrades)||0);
+    return (Number(b.elo)||0)-(Number(a.elo)||0);
+  });
   const top=sorted.slice(0,10);
   const el=document.getElementById('lblist');el.innerHTML='';
   const trophies=['🥇','🥈','🥉'];
@@ -792,7 +803,7 @@ function renderLeaderboard(){
         ?'<button class="skinbtn equipped" disabled>✓ Friend</button>'
         :'<button class="skinbtn" onclick="addLbFriend(\''+entry.name.replace(/'/g,"\\'")+'\','+(Number(entry.elo)||500)+')">+ Add</button>';
     }
-    const valStr=tab==='elo'?`${Number(entry.elo)||0} ELO`:`${Number(entry.upgrades)||0} Upg`;
+    const valStr=tab==='money'?`£${formatNumber(Number(entry.money)||0)}`:tab==='rolls'?`${formatNumber(Number(entry.rolls)||0)} Rolls`:tab==='upg'?`${Number(entry.upgrades)||0} Upg`:`${Number(entry.elo)||0} ELO`;
     row.innerHTML=`<div class="lbrank r${i+1}">${rankIcon}</div><div class="lbname">${entry.name}</div><div class="lbscore">${valStr}</div>${btnHtml?'<div style="margin-left:8px">'+btnHtml+'</div>':''}`;
     el.appendChild(row);
   });
@@ -1532,7 +1543,19 @@ document.addEventListener('click', () => {
 let _fileAudio=null;
 function _stopFileAudio(){if(_fileAudio){_fileAudio.pause();_fileAudio.currentTime=0}}
 function _playFileTrack(track){
-  if(!_fileAudio){_fileAudio=new Audio();_fileAudio.loop=true}
+  if(!_fileAudio){
+    _fileAudio=new Audio();
+    _fileAudio.addEventListener('ended', () => {
+      M.musicTrack = ((M.musicTrack||0) + 1) % MUSIC_TRACKS.length;
+      saveMeta();
+      if(document.getElementById('settingsmodal') && !document.getElementById('settingsmodal').classList.contains('hidden')) {
+        renderSettings();
+      }
+      const nextTrack = MUSIC_TRACKS[M.musicTrack];
+      _fileAudio.src = nextTrack.file;
+      _fileAudio.play().catch(()=>{});
+    });
+  }
   if(!_fileAudio.src.endsWith(track.file))_fileAudio.src=track.file;
   const vol=M&&M.musicVol!==undefined?M.musicVol:0.5;
   _fileAudio.volume=Math.min(1,vol);
@@ -1821,7 +1844,7 @@ function renderSettings(){
   const vs=[0,0.25,0.5,0.75,1,2,3];const curV=M.musicVol===undefined?0.5:M.musicVol;
   for(const v of vs){
     const b=document.createElement('button');b.className='settingchip'+(curV===v?' on':'');
-    b.textContent=Math.round(v*100)+'%';b.onclick=()=>{M.musicVol=v;saveMeta();renderSettings()};vc.appendChild(b);
+    b.textContent=Math.round(v*100)+'%';b.onclick=()=>{M.musicVol=v;saveMeta();if(typeof _fileAudio!=='undefined'&&_fileAudio)_fileAudio.volume=Math.min(1,v);renderSettings()};vc.appendChild(b);
   }
   // Music track
   const tc=document.getElementById('trackctrl');
@@ -2254,6 +2277,8 @@ window.API=(()=>{
     leaderboard:()=>call('/api/leaderboard'),
     elo:(u,e)=>call('/api/elo',{method:'POST',headers:j,body:JSON.stringify({username:u,elo:e})}),
     upgrades:(u,upg)=>call('/api/upgrades',{method:'POST',headers:j,body:JSON.stringify({username:u,upgrades:upg})}),
+    money:(u,money)=>call('/api/money',{method:'POST',headers:j,body:JSON.stringify({username:u,money:money})}),
+    rolls:(u,rolls)=>call('/api/rolls',{method:'POST',headers:j,body:JSON.stringify({username:u,rolls:rolls})}),
     searchUsers:q=>call('/api/users/search?q='+encodeURIComponent(q)),
     friends:u=>call('/api/friends?user='+encodeURIComponent(u)),
     addFriend:(u,f)=>call('/api/friends/add',{method:'POST',headers:j,body:JSON.stringify({user:u,friend:f})}),
@@ -2292,10 +2317,10 @@ async function syncServerLeaderboard(){
   const r=await API.leaderboard();
   if(r&&r.ok&&r.lb){
     const myName=M.account&&M.account.username;
-    const lb=r.lb.map(e=>({name:e.name,elo:e.elo,upgrades:e.upgrades||0,isAI:e.isAI,self:myName===e.name}));
+    const lb=r.lb.map(e=>({name:e.name,elo:e.elo,upgrades:e.upgrades||0,money:e.money||0,rolls:e.rolls||0,isAI:e.isAI,self:myName===e.name}));
     // Always include local user even if server doesn't know them yet
     if(myName&&!lb.find(e=>e.name===myName)){
-      lb.push({name:myName,elo:Number(M.elo)||500,upgrades:M.totalUpgrades||0,self:true,localOnly:true});
+      lb.push({name:myName,elo:Number(M.elo)||500,upgrades:M.totalUpgrades||0,money:M.money||0,rolls:M.rolls||0,self:true,localOnly:true});
       lb.sort((a,b)=>(Number(b.elo)||0)-(Number(a.elo)||0));
     }
     saveLb(lb);

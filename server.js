@@ -91,7 +91,7 @@ app.post('/api/login', (req, res) => {
 app.get('/api/leaderboard', (req, res) => {
   const list = Object.values(db.users)
     .filter(u => !u.isAI)
-    .map(u => ({ name: u.username, elo: u.elo, upgrades: u.upgrades||0, isAI: false }))
+    .map(u => ({ name: u.username, elo: u.elo, upgrades: u.upgrades||0, money: u.money||0, rolls: u.rolls||0, isAI: false }))
   ok(res, { lb: list, totalUsers: list.length });
 });
 
@@ -115,6 +115,28 @@ app.post('/api/upgrades', (req, res) => {
   u.upgrades = Math.max(0, Math.round(Number(upgrades) || 0));
   saveSoon();
   ok(res, { upgrades: u.upgrades });
+});
+
+// --- Update Money ---
+app.post('/api/money', (req, res) => {
+  const { username, money } = req.body || {};
+  const key = (username || '').toLowerCase();
+  const u = db.users[key];
+  if (!u) return bad(res, 404, 'no user');
+  u.money = Math.max(0, Number(money) || 0);
+  saveSoon();
+  ok(res, { money: u.money });
+});
+
+// --- Update Rolls ---
+app.post('/api/rolls', (req, res) => {
+  const { username, rolls } = req.body || {};
+  const key = (username || '').toLowerCase();
+  const u = db.users[key];
+  if (!u) return bad(res, 404, 'no user');
+  u.rolls = Math.max(0, Number(rolls) || 0);
+  saveSoon();
+  ok(res, { rolls: u.rolls });
 });
 
 // --- Search users (for adding friends) ---

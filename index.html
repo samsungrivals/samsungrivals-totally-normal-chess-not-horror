@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chess</title>
 <link rel="stylesheet" href="style.css?v=3">
+<script type="text/javascript">
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({pageLanguage: 'en'}, 'google_translate_element');
+}
+</script>
+<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </head>
 <body>
 <div class="topbar">
@@ -31,6 +37,7 @@
   <div class="elo" id="elodisp"><span class="lbl">ELO</span><span class="val">500</span></div>
   <button class="tbbtn" id="ownerbtn" onclick="openOwnerAdmin()" style="background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a0a00;font-weight:bold">👑 Owner</button>
   <div class="tbright">
+    <div id="google_translate_element" style="display:inline-block; vertical-align:middle; margin-right:8px;"></div>
     <button class="accountbtn" id="acctbtn" onclick="openModal('acctmodal')">👤 Sign Up</button>
     <button class="topiconbtn" onclick="openModal('upgmodal')" title="Upgrades">⚙️</button>
     <button class="topiconbtn" onclick="openModal('indexmodal')" title="Skin Index">📖</button>
@@ -113,6 +120,8 @@
     <div class="tabs" style="margin-bottom:14px;border-bottom:1px solid #1e3a5f;display:flex;gap:4px">
       <div class="tab active" id="tab-lb-elo" onclick="switchLbTab('elo')" style="padding:8px 14px;cursor:pointer;font-size:13px;border-bottom:2px solid #4a80c0;color:#fff">ELO</div>
       <div class="tab" id="tab-lb-upg" onclick="switchLbTab('upg')" style="padding:8px 14px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:#888">Upgrades</div>
+      <div class="tab" id="tab-lb-rolls" onclick="switchLbTab('rolls')" style="padding:8px 14px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:#888">Rolls</div>
+      <div class="tab" id="tab-lb-money" onclick="switchLbTab('money')" style="padding:8px 14px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:#888">Money</div>
     </div>
     <div id="lblist"></div>
     <div style="margin-top:14px;padding-top:12px;border-top:1px solid #1e3a5f;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#888"><span>Includes 18 AI rivals + you</span><button class="settingchip" onclick="resetLeaderboard()">🔄 Reset</button></div>
