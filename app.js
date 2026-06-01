@@ -4193,11 +4193,11 @@ function addGlobalChatMessage(sender, msg, ts) {
     let btns = '';
     const myName = M.account && M.account.username;
     if(myName === sender || (typeof OWNER_NAMES !== 'undefined' && OWNER_NAMES.includes((myName||'').toLowerCase()))) {
-        btns = <span style="cursor:pointer;margin-left:5px;color:#0a0;font-size:10px" onclick="editChat('+ts+')">[edit]</span>
-                <span style="cursor:pointer;margin-left:5px;color:#a00;font-size:10px" onclick="deleteChat('+ts+')">[del]</span>;
+        btns = '<span style="cursor:pointer;margin-left:5px;color:#0a0;font-size:10px" onclick="editChat('+ts+')">[edit]</span>'
+             + '<span style="cursor:pointer;margin-left:5px;color:#a00;font-size:10px" onclick="deleteChat('+ts+')">[del]</span>';
     }
-    
-    d.innerHTML = <span style="color:#888;font-size:10px">[+time+]</span> <b>+sender+</b>: <span id="chattext_+ts+">+msg.replace(/</g,'&lt;')+</span> + btns;
+
+    d.innerHTML = '<span style="color:#888;font-size:10px">['+time+']</span> <b>'+sender+'</b>: <span id="chattext_'+ts+'">'+msg.replace(/</g,'&lt;')+'</span>' + btns;
     box.appendChild(d);
     box.scrollTop = box.scrollHeight;
 }
