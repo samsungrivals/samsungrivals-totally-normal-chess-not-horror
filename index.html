@@ -137,6 +137,7 @@ function doCustomTranslate(langCode) {
       <div class="movelist" id="movelist"></div>
     </div>
     <button class="btn" onclick="userNewGame()">New Game</button>
+    <button class="btn" onclick="openModal('puzzlemodal')" style="background:linear-gradient(135deg, #9b59b6, #8e44ad);margin-top:10px;">🧩 Puzzles</button>
   </div>
 </div>
 <div id="promo" class="hidden">
@@ -533,6 +534,7 @@ function doCustomTranslate(langCode) {
 </div>
 <!-- Scripts -->
 <div id="google_translate_element" style="display:none"></div>
+<script src="puzzles.js"></script>
 <script src="app.js?v=2"></script>
 <!-- Global Chat -->
 <div id="globalchat" style="position:fixed;bottom:70px;left:20px;width:300px;height:250px;background:#222;border:1px solid #444;border-radius:8px;display:none;flex-direction:column;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.5);font-family:sans-serif;">
@@ -550,8 +552,21 @@ function doCustomTranslate(langCode) {
     <button onclick="sendChatInput()" style="background:#0a0;color:#fff;border:none;padding:6px 12px;margin-left:4px;border-radius:4px;cursor:pointer;font-weight:bold;">Send</button>
   </div>
 </div>
+<!-- Puzzle Mode Modal -->
+<div id="puzzlemodal" class="modal hidden">
+  <div class="mbox" style="width:400px;text-align:center">
+    <div class="mtitle">🧩 Puzzle Mode <button class="mclose" onclick="closeModal('puzzlemodal')">✕</button></div>
+    <div style="font-size:18px;margin-bottom:15px;color:#a89f91">Your Puzzle Rating: <span id="puzelo" style="font-weight:bold;color:#ffd700">1000</span> ELO</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="modebtn mode-vs" onclick="startDailyPuzzle()">Daily Puzzle</button>
+      <button class="modebtn mode-local" onclick="startRandomPuzzle()">Random Puzzle</button>
+    </div>
+    <div style="margin-top:20px">
+      <button class="settingchip" onclick="closeModal('puzzlemodal')">Close</button>
+    </div>
+  </div>
+</div>
 <!-- Chat Toggle Button -->
 <button id="openchatbtn" onclick="document.getElementById('globalchat').style.display='flex';this.style.display='none'" style="position:fixed;bottom:15px;left:560px;background:#007BFF;color:#fff;border:none;padding:10px 15px;border-radius:20px;cursor:pointer;z-index:9998;font-weight:bold;box-shadow:0 2px 8px rgba(0,0,0,0.5);">💬 Open Chat</button>
 </body>
 </html>
-

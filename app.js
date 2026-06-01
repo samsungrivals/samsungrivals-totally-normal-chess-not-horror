@@ -302,6 +302,27 @@ function doMove(from,to,promo){
   }
 
   const notation=alg(s.board,from,to,s.ep,s.cr,s.turn,promo);
+  
+  if(s.type === 'puzzle' && s.turn === s.puzzleSide) {
+     const files='abcdefgh', ranks='87654321';
+     const moveStr = files[fc2]+ranks[fr2]+files[tc]+ranks[tr]+(promo||'');
+     if(moveStr !== s.puzzleMoves[s.puzzleStep]){
+         showAnnouncement('❌ Incorrect Move! Puzzle Failed. -15 ELO');
+         s.status='failed';
+         M.puzzleElo = Math.max(100, (M.puzzleElo||1000) - 15);
+         saveMeta(); refreshUI();
+         s.sel=null;
+         render();
+         return;
+     }
+     s.puzzleStep++;
+     if(s.puzzleStep >= s.puzzleMoves.length){
+        showAnnouncement('✅ Puzzle Solved! +15 ELO');
+        s.status='solved';
+        M.puzzleElo = (M.puzzleElo||1000) + 15;
+        saveMeta(); refreshUI();
+     }
+  }
   const res=apply(s.board,from,to,s.ep,s.cr,promo);
   s.board=res.board;s.ep=res.ep;s.cr=res.cr;
   s.last={from,to};s.sel=null;
@@ -537,6 +558,8 @@ function fmtMoney(p){const n=(Number(p)||0)/100; return n>=1e21?'£'+n.toExponen
 function refreshUI(){
   document.getElementById('moneydisp').textContent=fmtMoney(M.money);
   document.getElementById('rollsdisp').textContent='Rolls: '+M.rolls;
+  const pe=document.getElementById('puzelo');
+  if(pe)pe.textContent=M.puzzleElo||1000;
   const eloEl=document.getElementById('elodisp');
   if(eloEl)eloEl.querySelector('.val').textContent=M.elo||500;
   const arb=document.getElementById('autorollbtn');
@@ -1081,9 +1104,9 @@ const BOTS={
   stockfish:{name:'Stockfishes',elo:3200,depth:3,tier:'pro',emoji:'🤖',desc:'Maximum strength — depth 3 search (slow, brutal)',behavior:'positional',locked:'stockfishMax'},
   stockfish_max:{name:'Stockfish 3296',elo:3296,depth:3,tier:'pro',emoji:'🛸',desc:'Engine god — depth 3, never blunders',behavior:'positional',locked:'stockfishMax'},
   stockfish_god:{name:'Stockfish 3400',elo:3400,depth:3,tier:'pro',emoji:'👽',desc:'Beyond human - depth 3, flawless',behavior:'positional',locked:'stockfishMax'},
-  stockfish_3600:{name:'Stockfish 3600',elo:3600,depth:3,tier:'pro',emoji:'🌌',desc:'The absolute limit of the engine',behavior:'positional',locked:'stockfishMax'},
-  stockfish_3800:{name:'Stockfish 3800',elo:3800,depth:3,tier:'pro',emoji:'👑',desc:'Chess solved - impossible to defeat',behavior:'positional',locked:'stockfishMax'},
-  stockfish_3999:{name:'Stockfish 3999',elo:3999,depth:3,tier:'pro',emoji:'🔱',desc:'The ultimate AI entity',behavior:'positional',locked:'stockfishMax'}
+  stockfish_3600:{name:'Stockfish 3600',elo:3600,depth:4,tier:'pro',emoji:'🌌',desc:'The absolute limit of the engine',behavior:'positional',locked:'stockfishMax'},
+  stockfish_3800:{name:'Stockfish 3800',elo:3800,depth:5,tier:'pro',emoji:'👑',desc:'Chess solved - impossible to defeat',behavior:'positional',locked:'stockfishMax'},
+  stockfish_3999:{name:'Stockfish 3999',elo:3999,depth:6,tier:'pro',emoji:'🔱',desc:'The ultimate AI entity',behavior:'positional',locked:'stockfishMax'}
 };
 
 function renderBotList(){
@@ -1177,7 +1200,27 @@ function makeMatchOpponent(){
 
 // ----- AI HOOKS -----
 function maybeAIMove(){
-  if(!G||!G.opponent)return;
+  if(!G)return;
+  if(G.type==='puzzle' && G.turn !== G.puzzleSide && (G.status==='playing' || G.status==='check')) {
+     if(G.puzzleStep >= G.puzzleMoves.length) {
+        showAnnouncement('✅ Puzzle Solved! +15 ELO');
+        G.status='solved';
+        M.puzzleElo = (M.puzzleElo||1000) + 15;
+        saveMeta(); refreshUI();
+        return;
+     }
+     setTimeout(()=>{
+         const mStr = G.puzzleMoves[G.puzzleStep];
+         const files='abcdefgh', ranks='87654321';
+         const fr=ranks.indexOf(mStr[1]), fc=files.indexOf(mStr[0]);
+         const tr=ranks.indexOf(mStr[3]), tc=files.indexOf(mStr[2]);
+         const promo=mStr[4];
+         G.puzzleStep++;
+         doMove([fr,fc], [tr,tc], promo);
+     }, 600);
+     return;
+  }
+  if(!G.opponent)return;
   if(G.opponent.type!=='ai')return;
   if(G.turn!==G.opponent.side)return;
   if(G.status==='checkmate'||G.status==='stalemate')return;
@@ -4533,3 +4576,44 @@ setInterval(() => {
     }
   }).catch(()=>{});
 }, 10000);
+
+// --- PUZZLE LOGIC ---
+function loadPuzzle(puz){
+  if(typeof stopClocks==='function')stopClocks();
+  G={
+    type:'puzzle',
+    puzzleSide:puz.turn,
+    puzzleMoves:puz.moves,
+    puzzleStep:0,
+    puzzleElo:puz.elo,
+    board:JSON.parse(JSON.stringify(puz.board)),
+    turn:puz.turn,
+    cr:{w:{k:false,q:false},b:{k:false,q:false}},
+    ep:null,
+    sel:null,
+    last:null,
+    status:'playing',
+    capW:[],capB:[],
+    hist:[],
+    promo:null
+  };
+  buildLabels();
+  render();
+  closeModal('puzzlemodal');
+  showAnnouncement('🧩 Puzzle ELO: ' + puz.elo);
+}
+
+function startRandomPuzzle(){
+  if(typeof PUZZLES==='undefined') return;
+  const puz = PUZZLES[Math.floor(Math.random()*PUZZLES.length)];
+  loadPuzzle(puz);
+}
+
+function startDailyPuzzle(){
+  if(typeof PUZZLES==='undefined') return;
+  const today = new Date().toDateString();
+  let hash = 0;
+  for(let i=0;i<today.length;i++) hash = Math.imul(31, hash) + today.charCodeAt(i) | 0;
+  const idx = Math.abs(hash) % PUZZLES.length;
+  loadPuzzle(PUZZLES[idx]);
+}
