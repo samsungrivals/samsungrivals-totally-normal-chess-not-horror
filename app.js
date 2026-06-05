@@ -230,6 +230,7 @@ function gameStatus(b,ep,cr,t){
     if(center.includes('K') || center.includes('k')) return 'checkmate';
   }
   const w=t==='white',chk=inCheck(b,w),has=allLegal(b,ep,cr,t).length>0;
+  if(M && M.currentVariant && M.currentVariant.firstCheck && chk) return 'checkmate';
   if(!has)return chk?'checkmate':'stalemate';
   return chk?'check':'playing';
 }
@@ -5339,6 +5340,16 @@ function drawArrows() {
 document.addEventListener("contextmenu", e => {
   if(e.target.closest && e.target.closest("#board")) e.preventDefault();
 });
+window.startCustomVariant = function() { closeModal('customvariantmodal'); M.currentVariant = { noCastling: document.getElementById('cv_nocastling').checked, koth: document.getElementById('cv_koth').checked, firstCheck: document.getElementById('cv_firstcheck') ? document.getElementById('cv_firstcheck').checked : false, antichess: false }; saveMeta(); userNewGame(); if(typeof showAnnouncement === 'function') showAnnouncement('🎮 Custom Variant Started!'); }
+
+window.playRematch = async function() {
+  if (typeof G !== 'undefined' && G && G.opponent && G.opponent.type === 'human') {
+    if (typeof showAnnouncement === 'function') showAnnouncement('⚔️ Rematch challenge sent to ' + G.opponent.name);
+    await API.challengeSend(M.account.username, G.opponent.name);
+  } else {
+    userNewGame();
+  }
+};
 document.addEventListener("mousedown", e => {
   if(e.button === 2 && e.target.closest && e.target.closest(".sq")) {
     const sq = e.target.closest(".sq");
