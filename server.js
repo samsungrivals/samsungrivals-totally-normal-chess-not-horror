@@ -93,7 +93,7 @@ app.post('/api/login', (req, res) => {
 // --- Leaderboard ---
 app.get('/api/leaderboard', (req, res) => {
   const list = Object.values(db.users)
-    .filter(u => !u.isAI)
+    .filter(u => !u.isAI && u.username && !u.isBot && !['GrandmasterX', 'PawnPusher', 'CastleMaster', 'KnightFork99', 'BishopPairBen', 'EndgameEric', 'TacticalTom', 'AverageAndy', 'BlitzKing', 'QueenBee', 'OpeningOscar', 'SlowAndSteady', 'PromotionPete', 'GambitGirl', 'PinPusher', 'ChessNoob42', 'BlunderBob', 'StalemateSteve', 'ZugzwangZoe', 'Bot1800', 'Bot1650', 'Bot1987', 'Bot2300'].includes(u.username))
     .map(u => ({ name: u.username, elo: u.elo, upgrades: u.upgrades||0, money: u.money||0, rolls: u.rolls||0, isAI: false }))
   ok(res, { lb: list, totalUsers: list.length });
 });
@@ -226,7 +226,18 @@ app.post('/api/friends/remove', (req, res) => {
 app.post('/api/announce', (req, res) => {
   const { user, msg, password } = req.body || {};
   if (!user || !msg) return bad(res, 400, 'missing');
-  const safe = String(msg).slice(0, 200);
+  let safe = String(msg).slice(0, 200);
+
+  // Language filter (English only)
+  if (!/^[\x20-\x7E]*$/.test(safe)) {
+    return bad(res, 400, 'Chat is restricted to English characters only.');
+  }
+
+  // Profanity filter
+  const badWords = /bloody|fuck|shit|bitch|asshole|cunt|nigger|faggot|puta|mierda|kurwa|cyka|blyat|merde/i;
+  if (badWords.test(safe)) {
+    safe = safe.replace(new RegExp(badWords.source, 'ig'), '***');
+  }
 
   // Security check for admin/chat commands
   if (safe.startsWith('!CHAT_DELETE') || safe.startsWith('!CHAT_EDIT') || safe.startsWith('!DELETE_SKIN') || safe.startsWith('!GIVE_SKIN') || safe.startsWith('!MUTE') || safe.startsWith('!BAN')) {
@@ -504,7 +515,7 @@ app.post('/api/challenge/respond', (req, res) => {
 app.get('/api/stats', (req, res) => {
   const now = Date.now();
   ok(res, {
-    users: Object.values(db.users).filter(u => !u.isAI).length,
+    users: Object.values(db.users)\.filter(u => !u.isAI && u.username && !u.isBot).length,
     online: Object.values(db.users).filter(u => !u.isAI && u.lastSeen && (now - u.lastSeen < 15000)).length,
     ai: Object.values(db.users).filter(u => u.isAI).length,
     queue: db.queue.length,
@@ -517,7 +528,7 @@ app.get('/api/health', (req, res) => {
   ok(res, {
     dataDir: dataDir,
     persistent: persistent,
-    realUsers: Object.values(db.users).filter(u => !u.isAI).length,
+    realUsers: Object.values(db.users)\.filter(u => !u.isAI && u.username && !u.isBot).length,
     version: STARTUP_TIME
   });
 });
