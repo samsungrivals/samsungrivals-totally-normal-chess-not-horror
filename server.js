@@ -228,11 +228,6 @@ app.post('/api/announce', (req, res) => {
   if (!user || !msg) return bad(res, 400, 'missing');
   let safe = String(msg).slice(0, 200);
 
-  // Language filter (English only)
-  if (!/^[\x20-\x7E]*$/.test(safe)) {
-    return bad(res, 400, 'Chat is restricted to English characters only.');
-  }
-
   // Profanity filter
   const badWords = /bloody|fuck|shit|bitch|asshole|cunt|nigger|faggot|puta|mierda|kurwa|cyka|blyat|merde/i;
   if (badWords.test(safe)) {
@@ -515,7 +510,7 @@ app.post('/api/challenge/respond', (req, res) => {
 app.get('/api/stats', (req, res) => {
   const now = Date.now();
   ok(res, {
-    users: Object.values(db.users)\.filter(u => !u.isAI && u.username && !u.isBot).length,
+    users: Object.values(db.users).filter(u => !u.isAI && u.username && !u.isBot).length,
     online: Object.values(db.users).filter(u => !u.isAI && u.lastSeen && (now - u.lastSeen < 15000)).length,
     ai: Object.values(db.users).filter(u => u.isAI).length,
     queue: db.queue.length,
@@ -528,7 +523,7 @@ app.get('/api/health', (req, res) => {
   ok(res, {
     dataDir: dataDir,
     persistent: persistent,
-    realUsers: Object.values(db.users)\.filter(u => !u.isAI && u.username && !u.isBot).length,
+    realUsers: Object.values(db.users).filter(u => !u.isAI && u.username && !u.isBot).length,
     version: STARTUP_TIME
   });
 });
