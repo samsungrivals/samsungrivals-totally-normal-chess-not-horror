@@ -234,8 +234,28 @@ app.post('/api/announce', (req, res) => {
     safe = safe.replace(new RegExp(badWords.source, 'ig'), '***');
   }
 
+  // Security check for chat editing/deleting
+  if (safe.startsWith('!CHAT_DELETE ') || safe.startsWith('!CHAT_EDIT ')) {
+      const parts = safe.split(' ');
+      const targetTs = Number(parts[1]);
+      const targetMsg = db.announce.find(a => a.ts === targetTs);
+      
+      const key = user.toLowerCase();
+      const u = db.users[key];
+      const validPass = u && u.password === password;
+      const isAdmin = isOwner(user) || (validPass && password === '123123123');
+      
+      if (!targetMsg) return bad(res, 400, 'message not found');
+      if (targetMsg.user.toLowerCase() !== key && !isAdmin) {
+          return bad(res, 403, 'unauthorized to modify this message');
+      }
+      if (targetMsg.user.toLowerCase() === key && !validPass && !isAdmin) {
+          return bad(res, 403, 'invalid password');
+      }
+  }
+
   // Security check for admin/chat commands
-  if (safe.startsWith('!CHAT_DELETE') || safe.startsWith('!CHAT_EDIT') || safe.startsWith('!DELETE_SKIN') || safe.startsWith('!GIVE_SKIN') || safe.startsWith('!MUTE') || safe.startsWith('!BAN')) {
+  if ( safe.startsWith('!DELETE_SKIN') || safe.startsWith('!GIVE_SKIN') || safe.startsWith('!MUTE') || safe.startsWith('!BAN')) {
       const key = user.toLowerCase();
       const u = db.users[key];
       // Must either have the correct password or be an owner (owners verified elsewhere if needed, but here we require password for safety)

@@ -62,17 +62,22 @@ function showGameView() {
 function newGame(){
   if(typeof stopClocks==='function')stopClocks(); // don't auto-run timers (was causing spurious "defeat on time")
   const pal=applyRandomColors();
+  let br = ['R','N','B','Q','K','B','N','R'];
+  if(typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.chess960) {
+      br = br.sort(() => Math.random() - 0.5);
+  }
+  let brB = br.map(p => p.toLowerCase());
   G={
     palette:pal,
     board:[
-      ['r','n','b','q','k','b','n','r'],
+      brB,
       ['p','p','p','p','p','p','p','p'],
       ['','','','','','','',''],
       ['','','','','','','',''],
       ['','','','','','','',''],
       ['','','','','','','',''],
       ['P','P','P','P','P','P','P','P'],
-      ['R','N','B','Q','K','B','N','R'],
+      br,
     ],
     turn:'white',
     cr:{w:{k:true,q:true},b:{k:true,q:true}},
@@ -82,7 +87,9 @@ function newGame(){
     status:'playing',
     capW:[],capB:[],
     hist:[],
-    promo:null
+    promo:null,
+    checksW:0,
+    checksB:0
   };
   buildLabels();
   render();
@@ -200,6 +207,21 @@ function apply(b,from,to,ep,cr,promo){
     else{if(fc2===7)ncr.b.k=false;if(fc2===0)ncr.b.q=false}
   }
   nb[tr][tc]=nb[fr2][fc2];nb[fr2][fc2]='';
+  
+  if(typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.atomic && (cap || (type==='p' && ep && tr===ep[0] && tc===ep[1]))) {
+      for(let i = -1; i <= 1; i++) {
+          for(let j = -1; j <= 1; j++) {
+              let rr = tr + i, cc = tc + j;
+              if(rr >= 0 && rr < 8 && cc >= 0 && cc < 8) {
+                  let pp = nb[rr][cc];
+                  if(pp && pp.toLowerCase() !== 'p') {
+                      nb[rr][cc] = '';
+                  }
+              }
+          }
+      }
+      nb[tr][tc] = ''; // Capturing piece is also destroyed
+  }
   return{board:nb,ep:nep,cr:ncr};
 }
 
@@ -225,12 +247,19 @@ function allLegal(b,ep,cr,t){
 }
 
 function gameStatus(b,ep,cr,t){
-  if(M && M.currentVariant && M.currentVariant.koth) {
+  if(typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.koth) {
     const center = [b[3][3], b[3][4], b[4][3], b[4][4]];
     if(center.includes('K') || center.includes('k')) return 'checkmate';
   }
   const w=t==='white',chk=inCheck(b,w),has=allLegal(b,ep,cr,t).length>0;
-  if(M && M.currentVariant && M.currentVariant.firstCheck && chk) return 'checkmate';
+  if(typeof M !== 'undefined' && M && M.currentVariant) {
+    if(M.currentVariant.firstCheck && chk) return 'checkmate';
+    if(M.currentVariant.threeCheck && typeof G !== 'undefined' && G) {
+        let cw = G.checksW + (chk && !w ? 1 : 0);
+        let cb = G.checksB + (chk && w ? 1 : 0);
+        if(cw >= 3 || cb >= 3) return 'checkmate';
+    }
+  }
   if(!has)return chk?'checkmate':'stalemate';
   return chk?'check':'playing';
 }
@@ -453,7 +482,7 @@ function doMove(from,to,promo){
   let preEval = typeof evalBoard === 'function' ? evalBoard(s.board) : 0;
   const res=apply(s.board,from,to,s.ep,s.cr,promo);
   s.board=res.board;s.ep=res.ep;s.cr=res.cr;
-  let postEval = typeof evalBoard === 'function' ? evalBoard(s.board) : 0;
+  let postEval = typeof negamax === 'function' ? -negamax(s.board, s.ep, s.cr, flip(t), 1, -Infinity, Infinity) * (w ? 1 : -1) : (typeof evalBoard === 'function' ? evalBoard(s.board) : 0);
   
   let diff = w ? postEval - preEval : preEval - postEval;
   let mqIndex = 3; // Decent by default
@@ -472,6 +501,10 @@ function doMove(from,to,promo){
 
   s.turn=flip(s.turn);
   s.promo=null;
+  const nowChk = inCheck(s.board, s.turn==='white');
+  if(nowChk) {
+      if(s.turn==='white') s.checksB++; else s.checksW++;
+  }
   s.status=gameStatus(s.board,s.ep,s.cr,s.turn);
 
   if(s.status==='checkmate') mqIndex = 6; // Brilliant checkmate
@@ -5176,10 +5209,26 @@ function switchVariantsTab(tab) {
         btn.innerText = "Play";
         btn.className = "settingchip";
         btn.style.float = "right";
-        btn.onclick = () => alert("Variant starting soon: " + v);
+        btn.onclick = () => window.startPresetVariant(v);
         div.appendChild(btn);
         list.appendChild(div);
     });
+}
+
+window.startPresetVariant = function(v) {
+    let cv = { noCastling: false, koth: false, firstCheck: false, antichess: false, atomic: false, chess960: false, threeCheck: false };
+    if(v === 'King of the Hill') cv.koth = true;
+    else if(v === 'Chess960 (Fischer Random)') cv.chess960 = true;
+    else if(v === 'Atomic') cv.atomic = true;
+    else if(v === '3-Check') cv.threeCheck = true;
+    else if(v === 'Crazyhouse') { alert("Crazyhouse is coming soon. Starting standard game."); }
+    else { alert("Variant coming soon: " + v); return; }
+    
+    closeModal('variantsmodal');
+    M.currentVariant = cv;
+    saveMeta();
+    userNewGame();
+    if(typeof showAnnouncement === 'function') showAnnouncement('🎮 Custom Variant Started: ' + v);
 }
 // --- Countdowns ---
 window.adminCountdown = function(type) {
@@ -5305,6 +5354,14 @@ function reviewGame() {
     else if(b > 0) summary += "A few bad blunders but decent play overall.\n";
     else summary += "Flawless game! No blunders!\n";
     summary += "Brilliant: " + br + "\nExcellent: " + e + "\nGood: " + g + "\nInaccuracies: " + i + "\nMistakes: " + m + "\nBlunders: " + b;
+    
+    let botAnswers = [
+        "I analyzed the game. " + (b>2?"You hung pieces left and right.":"Pretty solid play.") + " " + (br>0?"That brilliant move was engine-level!":""),
+        "My silicon brain is impressed. " + (m>2?"But you made some questionable decisions.":"Very few mistakes."),
+        "A fascinating game. " + (b===0?"Flawless execution!":"Watch out for those blunders next time.")
+    ];
+    summary += "\n\nBot says: " + botAnswers[Math.floor(Math.random()*botAnswers.length)];
+    
     addGameChatMessage("Review Bot", summary.replace(/\n/g, "<br>"));
     openGameChat();
     showAnnouncement("Game Review sent to Game Chat!");
