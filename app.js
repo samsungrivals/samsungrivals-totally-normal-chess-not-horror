@@ -1,3 +1,5 @@
+function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+
 const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0};
 const OPENINGS = {
@@ -938,44 +940,75 @@ window.switchLbTab=function(tab){
   renderLeaderboard();
 };
 
-function renderLeaderboard(){
-  const lbAll=loadLb();
-  const tab=window._lbTab||'elo';
-  const sorted=lbAll.sort((a,b)=>{
+async function renderLeaderboard(){
+  let lbAll = loadLb();
+  const el = document.getElementById('lblist');
+  el.innerHTML = '<div style="color:#888;text-align:center;padding:20px">Loading live leaderboard...</div>';
+
+  try {
+     const res = await fetch('/api/leaderboard');
+     if(res.ok) {
+         const data = await res.json();
+         if(data.lb) lbAll = data.lb;
+     }
+  } catch(e) {}
+
+  // ensure LB_AI is in lbAll if missing
+  const have = new Set(lbAll.map(e => e.name));
+  for(const ai of LB_AI) {
+      if(!have.has(ai.name)) {
+          lbAll.push({name: ai.name, elo: ai.elo, upgrades: Math.floor(ai.elo/100)});
+          have.add(ai.name);
+      }
+  }
+
+  const tab = window._lbTab || 'elo';
+  const myName = (M.account && M.account.username) || 'You';
+  
+  // add myself if missing or update myself
+  let me = lbAll.find(e => e.name === myName);
+  if(me) { 
+      me.elo = Math.max(me.elo, M.elo || 500); 
+      me.upgrades = Math.max(me.upgrades || 0, M.totalUpgrades || 0); 
+      me.self = true;
+  } else { 
+      lbAll.push({name: myName, elo: M.elo || 500, upgrades: M.totalUpgrades || 0, money: M.money || 0, rolls: M.rolls || 0, self: true}); 
+  }
+
+  const sorted = lbAll.sort((a,b) => {
     if(tab==='money') return (Number(b.money)||0)-(Number(a.money)||0);
     if(tab==='rolls') return (Number(b.rolls)||0)-(Number(a.rolls)||0);
     if(tab==='upg') return (Number(b.upgrades)||0)-(Number(a.upgrades)||0);
     return (Number(b.elo)||0)-(Number(a.elo)||0);
   });
-  const top=sorted.slice(0,10);
-  const el=document.getElementById('lblist');el.innerHTML='';
-  const trophies=['🥇','🥈','🥉'];
-  const myName=(M.account&&M.account.username)||'You';
-  top.forEach((entry,i)=>{
-    const isMe=entry.self||entry.name===myName;
-    const row=document.createElement('div');row.className='lbrow'+(isMe?' lbme':'');
-    const rankIcon=i<3?trophies[i]:('#'+(i+1));
-    const alreadyFr=(M.friends||[]).find(f=>f.name===entry.name);
-    let btnHtml='';
+  const top = sorted.slice(0, 10);
+  el.innerHTML = '';
+  const trophies = ['🥇','🥈','🥉'];
+  top.forEach((entry,i) => {
+    const isMe = entry.self || entry.name === myName;
+    const row = document.createElement('div'); row.className = 'lbrow' + (isMe ? ' lbme' : '');
+    const rankIcon = i < 3 ? trophies[i] : ('#' + (i+1));
+    const alreadyFr = (M.friends||[]).find(f => f.name === entry.name);
+    let btnHtml = '';
     if(!isMe){
-      btnHtml=alreadyFr
-        ?'<button class="skinbtn equipped" disabled>✓ Friend</button>'
-        :'<button class="skinbtn" onclick="addLbFriend(\''+entry.name.replace(/'/g,"\\'")+'\','+(Number(entry.elo)||500)+')">+ Add</button>';
+      btnHtml = alreadyFr
+        ? '<button class="skinbtn equipped" disabled>✓ Friend</button>'
+        : '<button class="skinbtn" onclick="addLbFriend(\'' + entry.name.replace(/'/g,"\\'") + '\',' + (Number(entry.elo)||500) + ')">+ Add</button>';
     }
-    const valStr=tab==='money'?`£${formatNumber(Number(entry.money)||0)}`:tab==='rolls'?`${formatNumber(Number(entry.rolls)||0)} Rolls`:tab==='upg'?`${Number(entry.upgrades)||0} Upg`:`${Number(entry.elo)||0} ELO`;
-    row.innerHTML=`<div class="lbrank r${i+1}">${rankIcon}</div><div class="lbname">${entry.name}</div><div class="lbscore">${valStr}</div>${btnHtml?'<div style="margin-left:8px">'+btnHtml+'</div>':''}`;
+    const valStr = tab === 'money' ? `£${formatNumber(Number(entry.money)||0)}` : tab === 'rolls' ? `${formatNumber(Number(entry.rolls)||0)} Rolls` : tab === 'upg' ? `${Number(entry.upgrades)||0} Upg` : `${Number(entry.elo)||0} ELO`;
+    row.innerHTML = `<div class="lbrank r${i+1}">${rankIcon}</div><div class="lbname">${entry.name}</div><div class="lbscore">${valStr}</div>${btnHtml ? '<div style="margin-left:8px">' + btnHtml + '</div>' : ''}`;
     el.appendChild(row);
   });
-  const meIdx=sorted.findIndex(e=>e.self||e.name===myName);
-  if(meIdx>=10){
-    const sep=document.createElement('div');sep.style.cssText='text-align:center;color:#666;padding:6px 0;font-size:12px';sep.textContent='⋯';
+  const meIdx = sorted.findIndex(e => e.self || e.name === myName);
+  if(meIdx >= 10){
+    const sep = document.createElement('div'); sep.style.cssText = 'text-align:center;color:#666;padding:6px 0;font-size:12px'; sep.textContent = '⋯';
     el.appendChild(sep);
-    const e=sorted[meIdx];const row=document.createElement('div');row.className='lbrow lbme';
-    const valStr=tab==='elo'?`${Number(e.elo)||0} ELO`:`${Number(e.upgrades)||0} Upg`;
-    row.innerHTML=`<div class="lbrank">#${meIdx+1}</div><div class="lbname">${e.name}</div><div class="lbscore">${valStr}</div>`;
+    const e = sorted[meIdx]; const row = document.createElement('div'); row.className = 'lbrow lbme';
+    const valStr = tab === 'money' ? `£${formatNumber(Number(e.money)||0)}` : tab === 'rolls' ? `${formatNumber(Number(e.rolls)||0)} Rolls` : tab === 'upg' ? `${Number(e.upgrades)||0} Upg` : `${Number(e.elo)||0} ELO`;
+    row.innerHTML = `<div class="lbrank">#${meIdx+1}</div><div class="lbname">${e.name}</div><div class="lbscore">${valStr}</div>`;
     el.appendChild(row);
   }
-  if(sorted.length===0)el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No scores yet — play games to climb!</div>';
+  if(sorted.length === 0) el.innerHTML = '<div style="color:#888;text-align:center;padding:20px">No scores yet — play games to climb!</div>';
 }
 
 function addLbFriend(name,elo){
@@ -1244,7 +1277,6 @@ function computeAIMove(opp){
 }
 
 // ----- BOTS -----
-function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
 const BOTS={
   worst:{name:'Worst Bot',elo:-1000,depth:1,tier:'noob',emoji:'🗑️',desc:'Plays the absolute worst move possible',behavior:'worst'},
@@ -1690,6 +1722,27 @@ function processCheckout() {
          M.nothingGamepass=(Number(M.nothingGamepass)||0)+1;
          saveMeta();refreshUI();renderShop();
          showAnnouncement('🫥 Payment Complete! You bought... nothing. Congrats?');
+      } else if (pendingCheckout && pendingCheckout.type === 'moneypack') {
+         M.money += pendingCheckout.pounds;
+         saveMeta();refreshUI();renderShop();
+         showAnnouncement('+'+fmtMoney(pendingCheckout.pounds));
+      } else if (pendingCheckout && pendingCheckout.type === 'gamepass') {
+         M.gamepasses=M.gamepasses||{};
+         M.gamepasses[pendingCheckout.id]=true;
+         saveMeta();refreshUI();renderShop();
+         if (typeof updateLuckChip === 'function') updateLuckChip();
+         showAnnouncement('🎉 '+pendingCheckout.name+' purchased!');
+      } else if (pendingCheckout && pendingCheckout.type === 'serverluck') {
+         M.serverLuckMult=pendingCheckout.mult;
+         M.serverLuckEndTime=Date.now()+45*60000;
+         saveMeta();refreshUI();renderShop();
+         if (typeof updateLuckChip === 'function') updateLuckChip();
+         showAnnouncement('🍀 Server luck '+pendingCheckout.mult+'x for 45m');
+      } else if (pendingCheckout && pendingCheckout.type === 'premiumskin') {
+         if (pendingCheckout.skin === 'royal') M.inventory.royal = (M.inventory.royal||0)+1;
+         if (pendingCheckout.skin === 'svp') M.inventory.svp = (M.inventory.svp||0)+1;
+         saveMeta();refreshUI();renderShop();
+         showAnnouncement('✨ Premium Skin Purchased!');
       }
       pendingCheckout = null;
     }, 1500);
@@ -2343,7 +2396,15 @@ renderShop=function(){
     const free=M.hiddenFreeShop;
     card.innerHTML=`<div class="packicon">${p.icon}</div><div class="packinfo"><div class="packname">${p.name}</div><div class="packdesc">${p.desc}</div><div class="packprice">${free?'FREE':fmtMoney(p.price)}</div></div>`;
     const b=document.createElement('button');b.className='packbuy';b.textContent='Buy';b.disabled=!free&&M.money<p.price;
-    b.onclick=()=>{const c=free?0:p.price;if(M.money<c)return;M.money-=c;M.money+=p.pounds;saveMeta();refreshUI();renderShop();showAnnouncement('+'+fmtMoney(p.pounds))};
+    b.onclick=()=>{
+      if(free){M.money+=p.pounds;saveMeta();refreshUI();renderShop();showAnnouncement('+'+fmtMoney(p.pounds));return;}
+      pendingCheckout = { type: 'moneypack', pounds: p.pounds, price: p.price };
+      document.getElementById('checkout-item-name').textContent = p.name;
+      document.getElementById('checkout-item-price').textContent = "Total: £" + (p.price/100).toFixed(2);
+      const btn = document.getElementById('checkout-pay-btn');
+      btn.textContent = "Pay Now"; btn.style.background = "#28a745"; btn.disabled = false;
+      closeModal('shopmodal'); openModal('checkoutmodal');
+    };
     card.appendChild(b);gp.parentElement.insertBefore(card,moneySec.nextSibling);
   }
   // Add gamepasses
@@ -2359,7 +2420,15 @@ renderShop=function(){
     const b=document.createElement('button');b.className='packbuy';
     b.textContent=owned?'Owned':!reqOk?'Locked':'Buy';
     b.disabled=owned||!reqOk||(!free&&M.money<g.price);
-    b.onclick=()=>{const c=free?0:g.price;if(M.money<c)return;M.money-=c;M.gamepasses=M.gamepasses||{};M.gamepasses[g.id]=true;saveMeta();refreshUI();renderShop();updateLuckChip();showAnnouncement('🎉 '+g.name+' purchased!')};
+    b.onclick=()=>{
+      if(free){M.gamepasses=M.gamepasses||{};M.gamepasses[g.id]=true;saveMeta();refreshUI();renderShop();updateLuckChip();showAnnouncement('🎉 '+g.name+' purchased!');return;}
+      pendingCheckout = { type: 'gamepass', id: g.id, name: g.name, price: g.price };
+      document.getElementById('checkout-item-name').textContent = g.name;
+      document.getElementById('checkout-item-price').textContent = "Total: £" + (g.price/100).toFixed(2);
+      const btn = document.getElementById('checkout-pay-btn');
+      btn.textContent = "Pay Now"; btn.style.background = "#28a745"; btn.disabled = false;
+      closeModal('shopmodal'); openModal('checkoutmodal');
+    };
     card.appendChild(b);gp.parentElement.appendChild(card);
   }
   // Server luck
@@ -2375,7 +2444,15 @@ renderShop=function(){
     const card=document.createElement('div');card.className='packcard';
     card.innerHTML=`<div class="packicon">🍀</div><div class="packinfo"><div class="packname">${sl.mult}x Server Luck</div><div class="packdesc">Total: ${sl.mult}x luck multiplier</div><div class="packprice">${free?'FREE':fmtMoney(sl.price)}</div></div>`;
     const b=document.createElement('button');b.className='packbuy';b.textContent='Buy';b.disabled=!free&&M.money<sl.price;
-    b.onclick=()=>{const c=free?0:sl.price;if(M.money<c)return;M.money-=c;M.serverLuckMult=sl.mult;M.serverLuckEndTime=Date.now()+45*60000;saveMeta();refreshUI();renderShop();updateLuckChip();showAnnouncement('🍀 Server luck '+sl.mult+'x for 45m')};
+    b.onclick=()=>{
+      if(free){M.serverLuckMult=sl.mult;M.serverLuckEndTime=Date.now()+45*60000;saveMeta();refreshUI();renderShop();updateLuckChip();showAnnouncement('🍀 Server luck '+sl.mult+'x for 45m');return;}
+      pendingCheckout = { type: 'serverluck', mult: sl.mult, price: sl.price };
+      document.getElementById('checkout-item-name').textContent = sl.mult+'x Server Luck';
+      document.getElementById('checkout-item-price').textContent = "Total: £" + (sl.price/100).toFixed(2);
+      const btn = document.getElementById('checkout-pay-btn');
+      btn.textContent = "Pay Now"; btn.style.background = "#28a745"; btn.disabled = false;
+      closeModal('shopmodal'); openModal('checkoutmodal');
+    };
     card.appendChild(b);gp.parentElement.appendChild(card);
   }
 };
@@ -3591,16 +3668,13 @@ renderShop=function(){
   b.textContent=owned?'Equip':'Buy';
   b.disabled=!owned && !free && M.money<ROYAL_PRICE;
   b.onclick=()=>{
-    if (!owned) {
-      const c=free?0:ROYAL_PRICE;
-      if(M.money<c)return;
-      M.money-=c;
-      M.inventory=M.inventory||{};M.inventory.royal=(M.inventory.royal||0)+1;
-    }
-    equipSkin('royal', 1);
-    saveMeta();refreshUI();renderShop();
-    if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems();
-    showAnnouncement(owned?'👑 ROYAL skin equipped!':'👑 ROYAL skin purchased & equipped!');
+    if(free){M.inventory.royal=(M.inventory.royal||0)+1;saveMeta();refreshUI();renderShop();showAnnouncement('✨ ROYAL Skin Purchased!');return;}
+    pendingCheckout = { type: 'premiumskin', skin: 'royal', price: ROYAL_PRICE };
+    document.getElementById('checkout-item-name').textContent = 'ROYAL Skin';
+    document.getElementById('checkout-item-price').textContent = "Total: £" + (ROYAL_PRICE/100).toFixed(2);
+    const btn = document.getElementById('checkout-pay-btn');
+    btn.textContent = "Pay Now"; btn.style.background = "#28a745"; btn.disabled = false;
+    closeModal('shopmodal'); openModal('checkoutmodal');
   };
   card.appendChild(b);gp.parentElement.appendChild(card);
 
