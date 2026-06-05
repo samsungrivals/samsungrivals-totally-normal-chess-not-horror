@@ -5286,27 +5286,28 @@ function loadPuzzle(puz) {
 }
 
 function reviewGame() {
-    if(!G || !G.hist || G.hist.length === 0) { showAnnouncement(" No moves to review!\); return; }
- let b = 0, m = 0, i = 0, g = 0, e = 0, br = 0;
- G.hist.forEach(h => {
- const checkQual = (note) => {
- if(note.includes(\??\)) b++;
- else if(note.includes(\?!\)) i++;
- else if(note.includes(\?\)) m++;
- else if(note.includes(\!!!\)) br++;
- else if(note.includes(\!!\)) e++;
- else if(note.includes(\!\)) g++;
- };
- checkQual(h.w); if(h.b) checkQual(h.b);
- });
- let summary = \Game Review Complete!\\n\;
- if(b > 3) summary += \You played very poorly. Stop hanging pieces.\\n\;
- else if(b > 0) summary += \A few bad blunders but decent play overall.\\n\;
- else summary += \Flawless game! No blunders!\\n\;
- summary += \Brilliant: \\nExcellent: \\nGood: \\nInaccuracies: \\nMistakes: \\nBlunders: \;
- addGameChatMessage(\Review Bot\, summary.replace(/\\n/g, \<br>\));
- openGameChat();
- showAnnouncement(\Game Review sent to Game Chat!\);
+    if(!G || !G.hist || G.hist.length === 0) { showAnnouncement("No moves to review!"); return; }
+    let b = 0, m = 0, i = 0, g = 0, e = 0, br = 0;
+    G.hist.forEach(h => {
+        const checkQual = (note) => {
+            if(!note) return;
+            if(note.includes("??")) b++;
+            else if(note.includes("?!")) i++;
+            else if(note.includes("?")) m++;
+            else if(note.includes("!!!")) br++;
+            else if(note.includes("!!")) e++;
+            else if(note.includes("!")) g++;
+        };
+        checkQual(h.w); if(h.b) checkQual(h.b);
+    });
+    let summary = "Game Review Complete!\n";
+    if(b > 3) summary += "You played very poorly. Stop hanging pieces.\n";
+    else if(b > 0) summary += "A few bad blunders but decent play overall.\n";
+    else summary += "Flawless game! No blunders!\n";
+    summary += "Brilliant: " + br + "\nExcellent: " + e + "\nGood: " + g + "\nInaccuracies: " + i + "\nMistakes: " + m + "\nBlunders: " + b;
+    addGameChatMessage("Review Bot", summary.replace(/\n/g, "<br>"));
+    openGameChat();
+    showAnnouncement("Game Review sent to Game Chat!");
 }
 // --- ARROW DRAWING ---
 let _arrowStart = null;
