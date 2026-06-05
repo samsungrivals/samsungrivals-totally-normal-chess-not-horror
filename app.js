@@ -59,12 +59,25 @@ function showGameView() {
   document.getElementById('main-game-container').classList.remove('hidden');
 }
 
+function generateChess960() {
+    let br = new Array(8).fill('');
+    br[[1,3,5,7][Math.floor(Math.random()*4)]] = 'B';
+    br[[0,2,4,6][Math.floor(Math.random()*4)]] = 'B';
+    let empty = () => { let a=[]; for(let i=0;i<8;i++) if(!br[i]) a.push(i); return a; };
+    br[empty()[Math.floor(Math.random()*empty().length)]] = 'Q';
+    br[empty()[Math.floor(Math.random()*empty().length)]] = 'N';
+    br[empty()[Math.floor(Math.random()*empty().length)]] = 'N';
+    let rem = empty();
+    br[rem[0]] = 'R'; br[rem[1]] = 'K'; br[rem[2]] = 'R';
+    return br;
+}
+
 function newGame(){
   if(typeof stopClocks==='function')stopClocks(); // don't auto-run timers (was causing spurious "defeat on time")
   const pal=applyRandomColors();
   let br = ['R','N','B','Q','K','B','N','R'];
   if(typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.chess960) {
-      br = br.sort(() => Math.random() - 0.5);
+      br = generateChess960();
   }
   let brB = br.map(p => p.toLowerCase());
   G={
@@ -145,7 +158,15 @@ function pseudo(b,r,c,ep,cr,atk=false){
   else if(type==='k'){
     for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]){
       const nr=r+dr,nc=c+dc;
-      if(inB(nr,nc)&&!own(b[nr][nc],t))ms.push([nr,nc]);
+      if(inB(nr,nc)){
+          const target = b[nr][nc];
+          if(!own(target,t)) {
+              if (target && typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.atomic) {
+                  continue; // Kings cannot capture in atomic chess
+              }
+              ms.push([nr,nc]);
+          }
+      }
     }
     if(!atk&&cr&&c===4 && (!M || !M.currentVariant || !M.currentVariant.noCastling)){
       const row=w?7:0,rts=w?cr.w:cr.b;
@@ -231,9 +252,15 @@ function legal(b,r,c,ep,cr,t){
   return pseudo(b,r,c,ep,cr).filter(([tr,tc])=>{
     if(type==='k'&&Math.abs(tc-c)===2){
       if(inCheck(b,w))return false;
-      if(attacked(b,r,tc===6?5:3,!w))return false;
+      if(tc===6&&attacked(b,r,5,!w))return false;
+      if(tc===2&&attacked(b,r,3,!w))return false;
     }
-    return!inCheck(apply(b,[r,c],[tr,tc],ep,cr).board,w);
+    const res=apply(b,[r,c],[tr,tc],ep,cr);
+    if(typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.atomic) {
+        if(!kingPos(res.board, w)) return false; // exploding own king is illegal
+        if(!kingPos(res.board, !w)) return true; // exploding opponent king ignores check!
+    }
+    return !inCheck(res.board,w);
   });
 }
 
@@ -251,6 +278,8 @@ function gameStatus(b,ep,cr,t){
     const center = [b[3][3], b[3][4], b[4][3], b[4][4]];
     if(center.includes('K') || center.includes('k')) return 'checkmate';
   }
+  if(!kingPos(b, true) || !kingPos(b, false)) return 'checkmate';
+  
   const w=t==='white',chk=inCheck(b,w),has=allLegal(b,ep,cr,t).length>0;
   if(typeof M !== 'undefined' && M && M.currentVariant) {
     if(M.currentVariant.firstCheck && chk) return 'checkmate';
@@ -5218,7 +5247,7 @@ function switchVariantsTab(tab) {
 window.startPresetVariant = function(v) {
     let cv = { noCastling: false, koth: false, firstCheck: false, antichess: false, atomic: false, chess960: false, threeCheck: false };
     if(v === 'King of the Hill') cv.koth = true;
-    else if(v === 'Chess960 (Fischer Random)') cv.chess960 = true;
+    else if(v === 'Chess960 (Fischer Random)') { cv.chess960 = true; cv.noCastling = true; }
     else if(v === 'Atomic') cv.atomic = true;
     else if(v === '3-Check') cv.threeCheck = true;
     else if(v === 'Crazyhouse') { alert("Crazyhouse is coming soon. Starting standard game."); }
