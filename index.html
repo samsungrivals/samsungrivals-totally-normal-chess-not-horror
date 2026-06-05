@@ -656,7 +656,7 @@ function doCustomTranslate(langCode) {
     <div style="display:flex;justify-content:center;gap:10px;margin-bottom:15px">
       <button class="settingchip" id="varpopbtn" onclick="switchVariantsTab('popular')" style="background:#4a80c0;color:#fff">Most Popular</button>
       <button class="settingchip" id="varunpopbtn" onclick="switchVariantsTab('unpopular')">Unpopular</button>
-      <button class="settingchip" onclick="alert('Coming soon: Custom Variant Creator!')">➕ Make Variant</button>
+      <button class="settingchip" onclick="openModal('customvariantmodal')">➕ Make Variant</button>
     </div>
     <div class="frsearchbar">
       <input type="text" placeholder="Search variants...">
@@ -687,7 +687,7 @@ function doCustomTranslate(langCode) {
         <div style="text-align: center;"><div style="color: #32cd32; font-size: 18px; font-weight: bold;">★ 4</div><div style="font-size: 10px; color: #888;">Best</div></div>
         <div style="text-align: center;"><div style="color: #90ee90; font-size: 18px; font-weight: bold;">👍 3</div><div style="font-size: 10px; color: #888;">Great</div></div>
       </div>
-      <button class="btn" style="width: 100%; background: #7fa650; color: #fff; font-weight: bold; font-size: 16px; padding: 12px; border-radius: 6px; margin-bottom: 10px;" onclick="closeModal('reviewmodal'); alert('Review generated! (Mock)')">Game Review</button>
+      <button class="btn" style="width: 100%; background: #7fa650; color: #fff; font-weight: bold; font-size: 16px; padding: 12px; border-radius: 6px; margin-bottom: 10px;" onclick="closeModal('reviewmodal'); reviewGame()">Game Review</button>
       <div style="display: flex; gap: 10px;">
         <button class="btn" style="flex: 1; background: #333; color: #ccc;" onclick="closeModal('reviewmodal'); userNewGame()">New Game</button>
         <button class="btn" style="flex: 1; background: #333; color: #ccc;" onclick="closeModal('reviewmodal'); userNewGame()">Rematch</button>
@@ -698,5 +698,17 @@ function doCustomTranslate(langCode) {
 
 <!-- Chat Toggle Button -->
 <button id="openchatbtn" onclick="document.getElementById('globalchat').style.display='flex';this.style.display='none'" style="position:fixed;bottom:15px;left:560px;background:#007BFF;color:#fff;border:none;padding:10px 15px;border-radius:20px;cursor:pointer;z-index:9998;font-weight:bold;box-shadow:0 2px 8px rgba(0,0,0,0.5);">💬 Open Chat</button>
-</body>
+
 </html>
+<div id="customvariantmodal" class="modal hidden">
+  <div class="modal-content">
+    <div class="mtitle">⚙️ Custom Variant Creator <button class="mclose" onclick="closeModal('customvariantmodal')">✕</button></div>
+    <div style="padding:15px;color:#eee;">
+      <label style="display:block;margin-bottom:10px;"><input type="checkbox" id="cv_nocastling"> Disable Castling</label>
+      <label style="display:block;margin-bottom:10px;"><input type="checkbox" id="cv_koth"> King of the Hill (Win by reaching center)</label>
+      <br>
+      <button class="btn" style="background:#7fa650;color:#fff;width:100%;" onclick="startCustomVariant()">Start Game</button>
+    </div>
+  </div>
+</div>
+</body>

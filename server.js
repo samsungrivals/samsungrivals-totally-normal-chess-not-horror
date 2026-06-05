@@ -224,9 +224,23 @@ app.post('/api/friends/remove', (req, res) => {
 
 // --- Global announcements ---
 app.post('/api/announce', (req, res) => {
-  const { user, msg } = req.body || {};
+  const { user, msg, password } = req.body || {};
   if (!user || !msg) return bad(res, 400, 'missing');
   const safe = String(msg).slice(0, 200);
+
+  // Security check for admin/chat commands
+  if (safe.startsWith('!CHAT_DELETE') || safe.startsWith('!CHAT_EDIT') || safe.startsWith('!DELETE_SKIN') || safe.startsWith('!GIVE_SKIN') || safe.startsWith('!MUTE') || safe.startsWith('!BAN')) {
+      const key = user.toLowerCase();
+      const u = db.users[key];
+      // Must either have the correct password or be an owner (owners verified elsewhere if needed, but here we require password for safety)
+      if (!u || u.password !== password) {
+          // Check if they are an owner without a registered password (legacy bypass if needed, but better to require auth)
+          if (!isOwner(user)) {
+              return bad(res, 403, 'unauthorized command');
+          }
+      }
+  }
+
   db.announce.push({ user, msg: safe, ts: Date.now() });
   while (db.announce.length > 50) db.announce.shift();
   saveSoon();

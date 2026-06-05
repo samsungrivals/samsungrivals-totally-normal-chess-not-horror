@@ -140,7 +140,7 @@ function pseudo(b,r,c,ep,cr,atk=false){
       const nr=r+dr,nc=c+dc;
       if(inB(nr,nc)&&!own(b[nr][nc],t))ms.push([nr,nc]);
     }
-    if(!atk&&cr&&c===4){
+    if(!atk&&cr&&c===4 && (!M || !M.currentVariant || !M.currentVariant.noCastling)){
       const row=w?7:0,rts=w?cr.w:cr.b;
       if(r===row){
         if(rts.k&&!b[row][5]&&!b[row][6]&&b[row][7]?.toLowerCase()==='r')ms.push([row,6]);
@@ -225,6 +225,10 @@ function allLegal(b,ep,cr,t){
 }
 
 function gameStatus(b,ep,cr,t){
+  if(M && M.currentVariant && M.currentVariant.koth) {
+    const center = [b[3][3], b[3][4], b[4][3], b[4][4]];
+    if(center.includes('K') || center.includes('k')) return 'checkmate';
+  }
   const w=t==='white',chk=inCheck(b,w),has=allLegal(b,ep,cr,t).length>0;
   if(!has)return chk?'checkmate':'stalemate';
   return chk?'check':'playing';
@@ -440,16 +444,25 @@ function doMove(from,to,promo){
         saveMeta(); refreshUI();
      }
   }
-  const res=apply(s.board,from,to,s.ep,s.cr,promo);
-  s.board=res.board;s.ep=res.ep;s.cr=res.cr;
-
-  // Move Quality Evaluation
+  // Real Move Quality Evaluation using evalBoard
   const qualities = ['Blunder', 'Bad Move', 'Inaccuracy', 'Decent', 'Good', 'Great', 'Brilliant', 'Only Move'];
   const colors = ['#ff4444', '#ff8844', '#ffcc00', '#aaaaaa', '#88cc88', '#44ff44', '#00ffff', '#cc88ff'];
   const symbols = ['??', '?', '?!', '', '!', '!!', '!!!', '★'];
   
-  let mqIndex = Math.floor(Math.random() * qualities.length);
-  if(cap && VAL[cap.toLowerCase()] > VAL[type]) mqIndex = 6; // Brilliant capture
+  let preEval = typeof evalBoard === 'function' ? evalBoard(s.board) : 0;
+  const res=apply(s.board,from,to,s.ep,s.cr,promo);
+  s.board=res.board;s.ep=res.ep;s.cr=res.cr;
+  let postEval = typeof evalBoard === 'function' ? evalBoard(s.board) : 0;
+  
+  let diff = w ? postEval - preEval : preEval - postEval;
+  let mqIndex = 3; // Decent by default
+  
+  if (diff < -300) mqIndex = 0; // Blunder
+  else if (diff < -150) mqIndex = 1; // Bad Move
+  else if (diff < -50) mqIndex = 2; // Inaccuracy
+  else if (diff > 300 && cap && VAL[cap.toLowerCase()] > VAL[type]) mqIndex = 6; // Brilliant
+  else if (diff > 150) mqIndex = 5; // Great
+  else if (diff > 50) mqIndex = 4; // Good
   
   s.last={from,to,mqIndex};s.sel=null;
 
@@ -2649,7 +2662,7 @@ window.API=(()=>{
     myFriendCode:u=>call('/api/friends/mycode?user='+encodeURIComponent(u)),
     addByCode:(u,code)=>call('/api/friends/addByCode',{method:'POST',headers:j,body:JSON.stringify({user:u,code})}),
     removeFriend:(u,f)=>call('/api/friends/remove',{method:'POST',headers:j,body:JSON.stringify({user:u,friend:f})}),
-    announce:(u,m)=>call('/api/announce',{method:'POST',headers:j,body:JSON.stringify({user:u,msg:m})}),
+    announce:(u,m)=>call('/api/announce',{method:'POST',headers:j,body:JSON.stringify({user:u,msg:m,password:M?.account?.password})}),
     announceSince:ts=>call('/api/announce/since?ts='+ts + (M&&M.account?'&user='+encodeURIComponent(M.account.username):'')),
     queueJoin:(u,e)=>call('/api/queue/join',{method:'POST',headers:j,body:JSON.stringify({user:u,elo:e})}),
     queueLeave:u=>call('/api/queue/leave',{method:'POST',headers:j,body:JSON.stringify({user:u})}),
@@ -4799,12 +4812,23 @@ async function pollStats() {
 setInterval(pollStats, 10000);
 pollStats();
 
-const BAD_WORDS = ['fuck', 'shit', 'bitch', 'ass', 'cunt', 'dick', 'pussy', 'nigger', 'faggot', 'whore', 'slut', 'bastard', 'damn', 'crap'];
+const BAD_WORDS = ['fuck', 'shit', 'bitch', 'ass', 'cunt', 'dick', 'pussy', 'nigger', 'faggot', 'whore', 'slut', 'bastard', 'damn', 'crap', 
+    'puta', 'mierda', 'cabron', 'joder', 'maricon', 'pendejo', // Spanish
+    'merde', 'putain', 'salope', 'connard', 'encule', // French
+    'scheisse', 'schlampe', 'fotze', 'arschloch', 'hurensohn', // German
+    'cazzo', 'stronzo', 'troia', 'puttana', 'vaffanculo', // Italian
+    'blyat', 'cyka', 'suka', 'pizdec', 'xuy', 'hui', // Russian (Latin char approximations)
+    'блядь', 'сука', 'пиздец', 'хуй', // Russian Cyrillic
+    'kurwa', 'jebac', 'spierdalaj', // Polish
+    'caralho', 'porra', 'buceta', 'fuder' // Portuguese
+];
 function filterChat(msg) {
     if(!msg) return msg;
     let filtered = msg;
     BAD_WORDS.forEach(w => {
-        const regex = new RegExp(w, 'gi');
+        // use word boundaries for English/Latin short words to avoid matching "assassin", but for cyrillic and longer words it might be safe
+        let pattern = w.length <= 4 && !w.match(/[а-яА-Я]/) ? '\\b' + w + '\\b' : w;
+        const regex = new RegExp(pattern, 'gi');
         filtered = filtered.replace(regex, '***');
     });
     return filtered;
@@ -5259,3 +5283,86 @@ function loadPuzzle(puz) {
     if(typeof showAnnouncement === 'function') showAnnouncement("🧩 Puzzle Mode: Find the best move!");
     render();
 }
+
+function reviewGame() {
+    if(!G || !G.hist || G.hist.length === 0) { showAnnouncement(" No moves to review!\); return; }
+ let b = 0, m = 0, i = 0, g = 0, e = 0, br = 0;
+ G.hist.forEach(h => {
+ const checkQual = (note) => {
+ if(note.includes(\??\)) b++;
+ else if(note.includes(\?!\)) i++;
+ else if(note.includes(\?\)) m++;
+ else if(note.includes(\!!!\)) br++;
+ else if(note.includes(\!!\)) e++;
+ else if(note.includes(\!\)) g++;
+ };
+ checkQual(h.w); if(h.b) checkQual(h.b);
+ });
+ let summary = \Game Review Complete!\\n\;
+ if(b > 3) summary += \You played very poorly. Stop hanging pieces.\\n\;
+ else if(b > 0) summary += \A few bad blunders but decent play overall.\\n\;
+ else summary += \Flawless game! No blunders!\\n\;
+ summary += \Brilliant: \\nExcellent: \\nGood: \\nInaccuracies: \\nMistakes: \\nBlunders: \;
+ addGameChatMessage(\Review Bot\, summary.replace(/\\n/g, \<br>\));
+ openGameChat();
+ showAnnouncement(\Game Review sent to Game Chat!\);
+}
+// --- ARROW DRAWING ---
+let _arrowStart = null;
+let _arrows = [];
+const _origRenderB = typeof renderBoard === "function" ? renderBoard : null;
+if(_origRenderB) {
+  renderBoard = function() {
+    _origRenderB();
+    const b = document.getElementById("board");
+    if(b) {
+      b.style.position = "relative";
+      let svg = document.getElementById("arrow-layer");
+      if(!svg) {
+        b.insertAdjacentHTML("beforeend", '<svg id="arrow-layer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:100;"><defs><marker id="arrowhead" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto"><polygon points="0 0, 4 2, 0 4" fill="rgba(255, 170, 0, 0.8)"/></marker></defs></svg>');
+      }
+      drawArrows();
+    }
+  };
+}
+function drawArrows() {
+  const svg = document.getElementById("arrow-layer");
+  if(!svg) return;
+  svg.innerHTML = '<defs><marker id="arrowhead" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto"><polygon points="0 0, 4 2, 0 4" fill="rgba(255, 170, 0, 0.8)"/></marker></defs>';
+  _arrows.forEach(a => {
+    const sqW = 100 / 8;
+    const x1 = a.c1 * sqW + sqW/2, y1 = a.r1 * sqW + sqW/2;
+    const x2 = a.c2 * sqW + sqW/2, y2 = a.r2 * sqW + sqW/2;
+    svg.innerHTML += `<line x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%" stroke="rgba(255, 170, 0, 0.8)" stroke-width="2%" marker-end="url(#arrowhead)" />`;
+  });
+}
+document.addEventListener("contextmenu", e => {
+  if(e.target.closest && e.target.closest("#board")) e.preventDefault();
+});
+document.addEventListener("mousedown", e => {
+  if(e.button === 2 && e.target.closest && e.target.closest(".sq")) {
+    const sq = e.target.closest(".sq");
+    _arrowStart = { r: parseInt(sq.dataset.r), c: parseInt(sq.dataset.c) };
+  } else if(e.button === 0) {
+    _arrows = [];
+    drawArrows();
+  }
+});
+document.addEventListener("mouseup", e => {
+  if(e.button === 2 && _arrowStart && e.target.closest && e.target.closest(".sq")) {
+    const sq = e.target.closest(".sq");
+    const r2 = parseInt(sq.dataset.r), c2 = parseInt(sq.dataset.c);
+    if(_arrowStart.r !== r2 || _arrowStart.c !== c2) {
+      const idx = _arrows.findIndex(a => a.r1===_arrowStart.r && a.c1===_arrowStart.c && a.r2===r2 && a.c2===c2);
+      if(idx > -1) _arrows.splice(idx, 1);
+      else _arrows.push({r1:_arrowStart.r, c1:_arrowStart.c, r2, c2});
+      drawArrows();
+    } else {
+      _arrows = [];
+      drawArrows();
+    }
+  }
+  _arrowStart = null;
+});
+
+window.startCustomVariant = function() { closeModal('customvariantmodal'); M.currentVariant = { noCastling: document.getElementById('cv_nocastling').checked, koth: document.getElementById('cv_koth').checked, antichess: document.getElementById('cv_antichess').checked }; saveMeta(); userNewGame(); if(typeof showAnnouncement === 'function') showAnnouncement('?? Custom Variant Started!'); }
