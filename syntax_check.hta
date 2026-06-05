@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<script>
+window.onerror = function(msg, url, line, col, err) {
+    try {
+        var fso = new ActiveXObject("Scripting.FileSystemObject");
+        var f = fso.CreateTextFile("syntax_error.txt", true);
+        f.WriteLine(msg + " at line " + line + ", col " + col);
+        if (err) f.WriteLine(err.stack);
+        f.Close();
+    } catch(e) {}
+    window.close();
+};
+</script>
+<script src="app.js"></script>
+<script>
+    try {
+        var fso = new ActiveXObject("Scripting.FileSystemObject");
+        var f = fso.CreateTextFile("syntax_error.txt", true);
+        f.WriteLine("OK! No syntax errors!");
+        f.Close();
+    } catch(e) {}
+    window.close();
+</script>
+</head>
+<body></body>
+</html>

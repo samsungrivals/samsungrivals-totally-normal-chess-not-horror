@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head><title>Test Syntax</title></head>
+<body>
+<div id="output">Loading...</div>
+<script>
+async function run() {
+  try {
+    const res = await fetch('app.js');
+    const text = await res.text();
+    const lines = text.split('\n');
+    let depth = 0;
+    let out = [];
+    
+    // simple state machine
+    let inString = false;
+    let strChar = '';
+    let inComment = false;
+    let inBlockComment = false;
+    
+    for (let i=0; i<text.length; i++) {
+        let char = text[i];
+        let nextChar = text[i+1];
+        
+        if (inString) {
+            if (char === '\\') i++;
+            else if (char === strChar) inString = false;
+            continue;
+        }
+        
+        if (inComment) {
+            if (char === '\n') inComment = false;
+            continue;
+        }
+        
+        if (inBlockComment) {
+            if (char === '*' && nextChar === '/') {
+                inBlockComment = false;
+                i++;
+            }
+            continue;
+        }
+        
+        if (char === '/' && nextChar === '/') {
+            inComment = true;
+            i++;
+            continue;
+        }
+        if (char === '/' && nextChar === '*') {
+            inBlockComment = true;
+            i++;
+            continue;
+        }
+        
+        if (char === '"' || char === "'" || char === "`") {
+            inString = true;
+            strChar = char;
+            continue;
+        }
+        
+        if (char === '{') depth++;
+        if (char === '}') depth--;
+    }
+    
+    document.getElementById('output').innerHTML = "Final depth: " + depth;
+    
+    // binary search for syntax error
+    let start = 1;
+    let end = lines.length;
+    let lastValid = 0;
+    
+    for (let i = 1; i <= lines.length; i++) {
+       let slice = lines.slice(0, i).join('\n');
+       try {
+          new Function(slice);
+       } catch (e) {
+          if (e.message.includes('Unexpected end of input')) {
+             // this is expected if incomplete
+          } else if (e.message.includes('Unexpected token')) {
+             out.push("Unexpected token at line " + i + ": " + e.message);
+             break;
+          }
+       }
+    }
+    document.getElementById('output').innerHTML += "<br>" + out.join("<br>");
+    
+  } catch(e) {
+    document.getElementById('output').innerHTML = e.toString();
+  }
+}
+run();
+</script>
+</body>
+</html>

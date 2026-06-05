@@ -5,6 +5,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const STARTUP_TIME = Date.now();
+const APP_VERSION = 3;
 
 const app = express();
 app.use(express.json({ limit: '256kb' }));
@@ -33,7 +34,8 @@ const SEED_AI = [
   { name: 'TacticalTom', elo: 1510 }, { name: 'AverageAndy', elo: 1500 }, { name: 'BlitzKing', elo: 1430 }, { name: 'QueenBee', elo: 1290 },
   { name: 'OpeningOscar', elo: 1150 }, { name: 'SlowAndSteady', elo: 980 }, { name: 'PromotionPete', elo: 870 },
   { name: 'GambitGirl', elo: 760 }, { name: 'PinPusher', elo: 670 }, { name: 'ChessNoob42', elo: 550 },
-  { name: 'BlunderBob', elo: 410 }, { name: 'StalemateSteve', elo: 330 }, { name: 'ZugzwangZoe', elo: 270 }
+  { name: 'BlunderBob', elo: 410 }, { name: 'StalemateSteve', elo: 330 }, { name: 'ZugzwangZoe', elo: 270 },
+  { name: 'Bot1800', elo: 1800 }, { name: 'Bot1650', elo: 1650 }, { name: 'Bot1987', elo: 1987 }, { name: 'Bot2300', elo: 2300 }
 ];
 
 try {
@@ -233,7 +235,12 @@ app.post('/api/announce', (req, res) => {
 
 app.get('/api/announce/since', (req, res) => {
   const since = Number(req.query.ts || 0);
-  ok(res, { announcements: db.announce.filter(a => a.ts > since) });
+  const user = req.query.user;
+  if(user) {
+    const key = user.toLowerCase();
+    if(db.users[key]) db.users[key].lastSeen = Date.now();
+  }
+  ok(res, { announcements: db.announce.filter(a => a.ts > since), appVersion: APP_VERSION });
 });
 
 // --- Matchmaking queue ---
@@ -481,8 +488,10 @@ app.post('/api/challenge/respond', (req, res) => {
 });
 
 app.get('/api/stats', (req, res) => {
+  const now = Date.now();
   ok(res, {
     users: Object.values(db.users).filter(u => !u.isAI).length,
+    online: Object.values(db.users).filter(u => !u.isAI && u.lastSeen && (now - u.lastSeen < 15000)).length,
     ai: Object.values(db.users).filter(u => u.isAI).length,
     queue: db.queue.length,
     announcements: db.announce.length

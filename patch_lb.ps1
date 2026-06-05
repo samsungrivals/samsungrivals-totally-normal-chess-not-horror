@@ -1,0 +1,3 @@
+$s = Get-Content server.js -Raw
+$s = $s -replace 'app.get\(''/api/leaderboard'', \(req, res\) => \{\s+const realUsers = Object.values\(db.users\)\.filter\(u => !u\.isAI\);\s+const list = Object.values\(db.users\)\s+\.map\(u => \(\{ name: u\.username, elo: u\.elo, upgrades: u\.upgrades\|\|0, isAI: u\.isAI \}\)\)\s+ok\(res, \{ lb: list, totalUsers: realUsers\.length \}\);\s+\}\);', "app.get('/api/leaderboard', (req, res) => {`n  const list = Object.values(db.users)`n    .filter(u => !u.isAI)`n    .map(u => ({ name: u.username, elo: u.elo, upgrades: u.upgrades||0, isAI: false }))`n  ok(res, { lb: list, totalUsers: list.length });`n});"
+Set-Content server.js $s -NoNewline

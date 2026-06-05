@@ -1,0 +1,21 @@
+<script>
+window.onerror = function(m,u,l,c,e) {
+    try {
+        var fso = new ActiveXObject("Scripting.FileSystemObject");
+        var f = fso.CreateTextFile("error.txt", true);
+        f.WriteLine(m + " at line " + l);
+        f.Close();
+    } catch(err) {}
+    window.close();
+};
+window.onload = function() {
+    try {
+        var fso = new ActiveXObject("Scripting.FileSystemObject");
+        var f = fso.CreateTextFile("error.txt", true);
+        f.WriteLine("NO ERROR");
+        f.Close();
+    } catch(err) {}
+    window.close();
+};
+</script>
+<script src="app.js"></script>

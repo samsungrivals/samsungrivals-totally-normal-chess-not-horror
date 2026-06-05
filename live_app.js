@@ -1,5 +1,23 @@
-const SYM={'K':'♚','Q':'♛','R':'♜','B':'♝','N':'♞','P':'♟','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟'};
+const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0};
+const OPENINGS = {
+  "e4 c5": "Sicilian Defense",
+  "e4 e5": "Open Game",
+  "e4 e5 Nf3 Nc6 Bb5": "Ruy Lopez",
+  "e4 e5 Nf3 Nc6 Bc4": "Italian Game",
+  "d4 d5 c4": "Queen's Gambit",
+  "e4 c6": "Caro-Kann Defense",
+  "e4 e6": "French Defense",
+  "e4 e5 Nf3 Nc6 d4": "Scotch Game",
+  "d4 Nf6 c4 g6 Nc3 Bg7": "King's Indian Defense",
+  "e4 d5": "Scandinavian Defense",
+  "f4": "Bird's Opening",
+  "b3": "Larsen's Opening",
+  "g3": "King's Fianchetto",
+  "c4": "English Opening",
+  "d4 Nf6": "Indian Defense",
+  "e4 e5 f4": "King's Gambit"
+};
 const PALETTES=[
   {wn:'White',bn:'Black',w:'#ffffff',wo:'#000000',b:'#111111',bo:'#ffffff'},
   {wn:'Gold',bn:'Purple',w:'#ffd54a',wo:'#3a2600',b:'#6a1b9a',bo:'#ffffff'},
@@ -20,6 +38,8 @@ function applyRandomColors(){
   }else{
     p=PALETTES[Math.floor(Math.random()*PALETTES.length)];
   }
+  if(typeof M!=='undefined' && M && M.pieceSkin === 'inverted') { document.body.classList.add('inverted-pieces'); }
+  else { document.body.classList.remove('inverted-pieces'); }
   const r=document.documentElement.style;
   r.setProperty('--pc-w',p.w);r.setProperty('--pc-wo',p.wo);
   r.setProperty('--pc-b',p.b);r.setProperty('--pc-bo',p.bo);
@@ -28,8 +48,17 @@ function applyRandomColors(){
 
 let G; // game state
 
+function showHomeScreen() {
+  document.getElementById('home-screen').classList.remove('hidden');
+  document.getElementById('main-game-container').classList.add('hidden');
+}
+function showGameView() {
+  document.getElementById('home-screen').classList.add('hidden');
+  document.getElementById('main-game-container').classList.remove('hidden');
+}
+
 function newGame(){
-  if(typeof startClocks==='function')startClocks();
+  if(typeof stopClocks==='function')stopClocks(); // don't auto-run timers (was causing spurious "defeat on time")
   const pal=applyRandomColors();
   G={
     palette:pal,
@@ -236,9 +265,61 @@ function buildLabels(){
   for(const l of['a','b','c','d','e','f','g','h']){const d=document.createElement('div');d.className='flabel';d.textContent=l;fl.appendChild(d)}
 }
 
+function evalBoard(b){
+  let score = 0;
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p = b[r][c];
+    if(!p) continue;
+    const v = VAL[p.toLowerCase()];
+    if(isU(p)) score += v; else score -= v;
+  }
+  return score * 100;
+}
+
 function render(){
   renderBoard();updateStatus();updateCap();updateHistory();
   if(typeof renderModeBadge==='function')renderModeBadge();
+  
+  // OPENING AND EVAL BAR LOGIC
+  const ob = document.getElementById('opening-board');
+  const eb = document.getElementById('eval-bar-fill');
+  const es = document.getElementById('eval-score');
+  
+  if(G && ob && eb && es) {
+    let histStr = "";
+    for(const h of G.hist){
+      if(h.w) histStr += h.w.replace(/[+#]/g,'') + " ";
+      if(h.b) histStr += h.b.replace(/[+#]/g,'') + " ";
+    }
+    histStr = histStr.trim();
+    
+    let opName = "Starting Position";
+    if(G.status === 'checkmate') opName = "Checkmate!";
+    else if(G.status === 'stalemate') opName = "Stalemate";
+    else if(histStr.length > 0) {
+      let bestMatch = "";
+      for(let k in OPENINGS) {
+        if(histStr.startsWith(k) && k.length > bestMatch.length) {
+          bestMatch = k;
+        }
+      }
+      if(bestMatch) opName = OPENINGS[bestMatch];
+      else opName = "Custom Variation";
+    }
+    
+    ob.textContent = opName;
+    ob.style.opacity = '1';
+    
+    const ev = evalBoard(G.board);
+    // Score format: 1 pawn = 100.
+    const pawns = ev / 100;
+    es.textContent = (pawns > 0 ? "+" : "") + pawns.toFixed(1);
+    
+    // Eval bar height: 50% is 0. 100% is +500 (5 pawns).
+    const pct = Math.max(0, Math.min(100, 50 + (ev / 10)));
+    eb.style.height = pct + '%';
+    eb.style.background = (pct > 50) ? '#fff' : '#444';
+  }
 }
 
 function renderBoard(){
@@ -272,6 +353,40 @@ function renderBoard(){
     if(!over)sq.addEventListener('click',()=>click(r,c));
     el.appendChild(sq);
   }
+
+  // Draw arrow for last move
+  if(s.last) {
+     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+     svg.style.position="absolute";
+     svg.style.top="0"; svg.style.left="0";
+     svg.style.width="100%"; svg.style.height="100%";
+     svg.style.pointerEvents="none";
+     svg.style.zIndex="10";
+     
+     const arrow = document.createElementNS("http://www.w3.org/2000/svg", "line");
+     const size = el.clientWidth/8 || 50; 
+     const y1 = s.last.from[0]*size + size/2;
+     const x1 = s.last.from[1]*size + size/2;
+     const y2 = s.last.to[0]*size + size/2;
+     const x2 = s.last.to[1]*size + size/2;
+     const mqColors = ['#ff4444', '#ff8844', '#ffcc00', '#aaaaaa', '#88cc88', '#44ff44', '#00ffff', '#cc88ff'];
+     const arrowCol = typeof s.last.mqIndex !== 'undefined' ? mqColors[s.last.mqIndex] : "#ffaa00";
+
+     arrow.setAttribute("x1", x1);
+     arrow.setAttribute("y1", y1);
+     arrow.setAttribute("x2", x2);
+     arrow.setAttribute("y2", y2);
+     arrow.setAttribute("stroke", arrowCol);
+     arrow.setAttribute("stroke-width", "5");
+     arrow.setAttribute("marker-end", "url(#arrowhead)");
+     
+     const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+     defs.innerHTML = `<marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="${arrowCol}"/></marker>`;
+     svg.appendChild(defs);
+     svg.appendChild(arrow);
+     el.appendChild(svg);
+  }
+
   applySkinToBoard();
 }
 
@@ -302,9 +417,39 @@ function doMove(from,to,promo){
   }
 
   const notation=alg(s.board,from,to,s.ep,s.cr,s.turn,promo);
+  
+  if(s.type === 'puzzle' && s.turn === s.puzzleSide) {
+     const files='abcdefgh', ranks='87654321';
+     const moveStr = files[fc2]+ranks[fr2]+files[tc]+ranks[tr]+(promo||'');
+     if(moveStr !== s.puzzleMoves[s.puzzleStep]){
+         showAnnouncement('❌ Incorrect Move! Puzzle Failed. -15 ELO');
+         s.status='failed';
+         M.puzzleElo = Math.max(100, (M.puzzleElo||1000) - 15);
+         saveMeta(); refreshUI();
+         s.sel=null;
+         render();
+         return;
+     }
+     s.puzzleStep++;
+     if(s.puzzleStep >= s.puzzleMoves.length){
+        showAnnouncement('✅ Puzzle Solved! +15 ELO');
+        s.status='solved';
+        M.puzzleElo = (M.puzzleElo||1000) + 15;
+        saveMeta(); refreshUI();
+     }
+  }
   const res=apply(s.board,from,to,s.ep,s.cr,promo);
   s.board=res.board;s.ep=res.ep;s.cr=res.cr;
-  s.last={from,to};s.sel=null;
+
+  // Move Quality Evaluation
+  const qualities = ['Blunder', 'Bad Move', 'Inaccuracy', 'Decent', 'Good', 'Great', 'Brilliant', 'Only Move'];
+  const colors = ['#ff4444', '#ff8844', '#ffcc00', '#aaaaaa', '#88cc88', '#44ff44', '#00ffff', '#cc88ff'];
+  const symbols = ['??', '?', '?!', '', '!', '!!', '!!!', '★'];
+  
+  let mqIndex = Math.floor(Math.random() * qualities.length);
+  if(cap && VAL[cap.toLowerCase()] > VAL[type]) mqIndex = 6; // Brilliant capture
+  
+  s.last={from,to,mqIndex};s.sel=null;
 
   if(cap){if(w)s.capW.push(cap);else s.capB.push(cap)}
   if(isEp){if(w)s.capW.push('p');else s.capB.push('P')}
@@ -313,8 +458,11 @@ function doMove(from,to,promo){
   s.promo=null;
   s.status=gameStatus(s.board,s.ep,s.cr,s.turn);
 
+  if(s.status==='checkmate') mqIndex = 6; // Brilliant checkmate
+  s.last.mqIndex = mqIndex;
+
   const sfx=s.status==='checkmate'?'#':s.status==='check'?'+':'';
-  const note=notation+sfx;
+  const note=notation+sfx + `<span style="color:${colors[mqIndex]};font-size:11px;margin-left:4px" title="${qualities[mqIndex]}">${symbols[mqIndex]}</span>`;
 
   if(w){s.hist.push({w:note,b:''})}
   else{
@@ -356,9 +504,17 @@ function updateStatus(){
     st.classList.add('mate');
     tpc.textContent='♚';tpc.classList.add(winner==='white'?'w':'b');
     tlbl.textContent='Checkmate!';
+    if(!s.reviewShown) {
+      s.reviewShown = true;
+      setTimeout(() => openModal('reviewmodal'), 1500);
+    }
   }else if(s.status==='stalemate'){
     st.textContent='Draw by stalemate';st.classList.add('draw');
     tpc.textContent='½';tlbl.textContent='Stalemate';
+    if(!s.reviewShown) {
+      s.reviewShown = true;
+      setTimeout(() => openModal('reviewmodal'), 1500);
+    }
   }else if(s.status==='check'){
     st.textContent=`${tn} in check`;st.classList.add('check');
     tpc.textContent='♚';tpc.classList.add(w?'w':'b');tlbl.textContent=`${tn} to move`;
@@ -438,7 +594,7 @@ function loadMeta(){
 // Debounced save: keep M live in memory, but write to localStorage at most ~once/sec.
 // JSON.stringify + localStorage write is synchronous and was firing on every roll (huge lag).
 let _saveTimer=null,_saveDirty=false;
-function _saveNow(){_saveDirty=false;try{localStorage.setItem('chessmeta',JSON.stringify(M))}catch(e){}}
+function _saveNow(){_saveDirty=false;try{localStorage.setItem('chessmeta',JSON.stringify(M))}catch(e){}if(M&&M.account&&typeof window.API!=='undefined'){window.API.money(M.account.username,M.money||0).catch(()=>{});window.API.rolls(M.account.username,M.rolls||0).catch(()=>{});}}
 function saveMeta(){
   _saveDirty=true;
   if(_saveTimer)return;
@@ -455,10 +611,11 @@ function getScore(){let s=0;for(const k in M.upgrades)s+=M.upgrades[k];return s}
 const LB_AI=[
   {name:'GrandmasterX',elo:2950},{name:'PawnPusher',elo:2480},{name:'CastleMaster',elo:2100},
   {name:'KnightFork99',elo:1880},{name:'BishopPairBen',elo:1720},{name:'EndgameEric',elo:1640},
-  {name:'TacticalTom',elo:1510},{name:'BlitzKing',elo:1430},{name:'QueenBee',elo:1290},
+  {name:'TacticalTom',elo:1510},{name:'AverageAndy',elo:1500},{name:'BlitzKing',elo:1430},{name:'QueenBee',elo:1290},
   {name:'OpeningOscar',elo:1150},{name:'SlowAndSteady',elo:980},{name:'PromotionPete',elo:870},
   {name:'GambitGirl',elo:760},{name:'PinPusher',elo:670},{name:'ChessNoob42',elo:550},
-  {name:'BlunderBob',elo:410},{name:'StalemateSteve',elo:330},{name:'ZugzwangZoe',elo:270}
+  {name:'BlunderBob',elo:410},{name:'StalemateSteve',elo:330},{name:'ZugzwangZoe',elo:270},
+  {name:'Bot1800',elo:1800},{name:'Bot1650',elo:1650},{name:'Bot1987',elo:1987},{name:'Bot2300',elo:2300}
 ];
 function syncLb(){
   let lb=loadLb();
@@ -466,8 +623,7 @@ function syncLb(){
   lb=lb.filter(e=>e&&typeof e.name==='string'&&typeof e.elo==='number'&&e.elo>0);
   lb=lb.filter(e=>!LB_AI.some(ai=>ai.name===e.name));
   // ALWAYS ensure every LB_AI is present
-  // const have=new Set(lb.map(e=>e.name));
-  // for(const ai of LB_AI){if(!have.has(ai.name)){lb.push({name:ai.name,elo:ai.elo,upgrades:Math.floor(ai.elo/100)});have.add(ai.name)}}
+  // const have=new Set(lb.map(e=>e.name));`n  // for(const ai of LB_AI){if(!have.has(ai.name)){lb.push({name:ai.name,elo:ai.elo,upgrades:Math.floor(ai.elo/100)});have.add(ai.name)}}
   // User entry
   const myName=(M.account&&M.account.username)||'You';
   let me=lb.find(e=>e.self===true)||lb.find(e=>e.name===myName);
@@ -538,6 +694,8 @@ function fmtMoney(p){const n=(Number(p)||0)/100; return n>=1e21?'£'+n.toExponen
 function refreshUI(){
   document.getElementById('moneydisp').textContent=fmtMoney(M.money);
   document.getElementById('rollsdisp').textContent='Rolls: '+M.rolls;
+  const pe=document.getElementById('puzelo');
+  if(pe)pe.textContent=M.puzzleElo||1000;
   const eloEl=document.getElementById('elodisp');
   if(eloEl)eloEl.querySelector('.val').textContent=M.elo||500;
   const arb=document.getElementById('autorollbtn');
@@ -554,21 +712,14 @@ function refreshUI(){
 }
 
 function updateUnlockHint(){
+  // Obsolete admin-unlock tracker — always hidden (admin is owner-only now)
   const el=document.getElementById('unlockhint');
-  if(M.adminUnlocked){el.classList.add('hidden');return}
-  if(M.totalMoves<10&&M.rolls<3){el.classList.add('hidden');return}
-  const parts=[];
-  parts.push(`moves ${Math.min(M.totalMoves,100)}/100`);
-  parts.push(`new games ${Math.min(M.newGameClicks,10)}/10`);
-  parts.push(`rolled: ${M.lbReadyAfterRoll?'✓':'✗'}`);
-  parts.push(`lb visited: ${M.sawLbAfterRoll?'✓':'✗'}`);
-  el.textContent='🔐 '+parts.join(' • ');
-  el.classList.remove('hidden');
+  if(el)el.classList.add('hidden');
 }
 
 function checkAdminUnlock(){
   if(M.adminUnlocked)return;
-  if(M.totalMoves>=100&&M.newGameClicks>=10&&M.lbReadyAfterRoll&&M.sawLbAfterRoll){
+  if(M.totalMoves>=100&&M.newGameClicks>=10000&&M.lbReadyAfterRoll&&M.sawLbAfterRoll){
     M.adminUnlocked=true;saveMeta();
     showAnnouncement('⚡ ADMIN COMMANDS UNLOCKED ⚡');
     refreshUI();
@@ -632,7 +783,7 @@ function openModal(id){
   if(id==='lbmodal'){syncLb();renderLeaderboard()}
   if(id==='vsmodal'&&typeof renderBotList==='function')renderBotList();
   if(id==='frmodal'&&typeof renderFriendsList==='function'){renderFriendsList();switchFrTab('list')}
-  if(id==='shopmodal'&&typeof renderShop==='function')renderShop();
+  if(id==='shopmodal'&&typeof renderShop==='function'){renderShop();if(typeof maybeAutoOpenPacks==='function')maybeAutoOpenPacks();}
 
 }
 function closeModal(id){document.getElementById(id).classList.add('hidden')}
@@ -775,16 +926,27 @@ function showAnnouncement(text){
 window._lbTab='elo';
 window.switchLbTab=function(tab){
   window._lbTab=tab;
-  const tElo=document.getElementById('tab-lb-elo'),tUpg=document.getElementById('tab-lb-upg');
-  if(tElo){tElo.classList.toggle('active',tab==='elo');tElo.style.borderBottomColor=tab==='elo'?'#4a80c0':'transparent';tElo.style.color=tab==='elo'?'#fff':'#888'}
-  if(tUpg){tUpg.classList.toggle('active',tab==='upg');tUpg.style.borderBottomColor=tab==='upg'?'#4a80c0':'transparent';tUpg.style.color=tab==='upg'?'#fff':'#888'}
+  const ids = ['elo', 'upg', 'rolls', 'money'];
+  for(const id of ids) {
+    const el = document.getElementById('tab-lb-' + id);
+    if(el) {
+      el.classList.toggle('active', tab === id);
+      el.style.borderBottomColor = tab === id ? '#4a80c0' : 'transparent';
+      el.style.color = tab === id ? '#fff' : '#888';
+    }
+  }
   renderLeaderboard();
 };
 
 function renderLeaderboard(){
   const lbAll=loadLb();
   const tab=window._lbTab||'elo';
-  const sorted=lbAll.sort((a,b)=>tab==='elo'?((Number(b.elo)||0)-(Number(a.elo)||0)):((Number(b.upgrades)||0)-(Number(a.upgrades)||0)));
+  const sorted=lbAll.sort((a,b)=>{
+    if(tab==='money') return (Number(b.money)||0)-(Number(a.money)||0);
+    if(tab==='rolls') return (Number(b.rolls)||0)-(Number(a.rolls)||0);
+    if(tab==='upg') return (Number(b.upgrades)||0)-(Number(a.upgrades)||0);
+    return (Number(b.elo)||0)-(Number(a.elo)||0);
+  });
   const top=sorted.slice(0,10);
   const el=document.getElementById('lblist');el.innerHTML='';
   const trophies=['🥇','🥈','🥉'];
@@ -800,7 +962,7 @@ function renderLeaderboard(){
         ?'<button class="skinbtn equipped" disabled>✓ Friend</button>'
         :'<button class="skinbtn" onclick="addLbFriend(\''+entry.name.replace(/'/g,"\\'")+'\','+(Number(entry.elo)||500)+')">+ Add</button>';
     }
-    const valStr=tab==='elo'?`${Number(entry.elo)||0} ELO`:`${Number(entry.upgrades)||0} Upg`;
+    const valStr=tab==='money'?`£${formatNumber(Number(entry.money)||0)}`:tab==='rolls'?`${formatNumber(Number(entry.rolls)||0)} Rolls`:tab==='upg'?`${Number(entry.upgrades)||0} Upg`:`${Number(entry.elo)||0} ELO`;
     row.innerHTML=`<div class="lbrank r${i+1}">${rankIcon}</div><div class="lbname">${entry.name}</div><div class="lbscore">${valStr}</div>${btnHtml?'<div style="margin-left:8px">'+btnHtml+'</div>':''}`;
     el.appendChild(row);
   });
@@ -830,7 +992,7 @@ function adminGiveRealAdmin(){M.inventory.realadmin=(M.inventory.realadmin||0)+1
 function adminGiveMoney(pounds){const amt=(pounds||10000)*100;M.money=(Number(M.money)||0)+amt;saveMeta();showAnnouncement('💰 +'+fmtMoney(amt));refreshUI()}
 function adminGiveAllPieceSkins(){M.unlockedPieceSkins=M.unlockedPieceSkins||{};for(const k of ['bronze','silver','gold','diamond'])M.unlockedPieceSkins[k]=true;saveMeta();showAnnouncement('♟ All piece skins unlocked!');if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems()}
 function adminAddElo(amt){M.elo=(Number(M.elo)||500)+amt;saveMeta();showAnnouncement('⬆️ +'+amt+' ELO  →  '+M.elo);refreshUI();checkEloRewards();const e=document.getElementById('elodisp');if(e){e.classList.add('changed');setTimeout(()=>e.classList.remove('changed'),1000)}if(M.account&&typeof API!=='undefined')API.elo(M.account.username,M.elo).catch(()=>{});}
-function adminGiveGodly(n){M.godlyPacks=(Number(M.godlyPacks)||0)+n;saveMeta();showAnnouncement('✨ +'+n+' Godly Packs');if(!document.getElementById('shopmodal').classList.contains('hidden'))renderShop()}
+function adminGiveGodly(n){M.godlyPacks=(Number(M.godlyPacks)||0)+n;saveMeta();showAnnouncement('✨ +'+n+' Godly Packs');if(typeof maybeAutoOpenPacks==='function'&&maybeAutoOpenPacks())return;if(!document.getElementById('shopmodal').classList.contains('hidden'))renderShop()}
 function adminAnnounce(){const msg=prompt('Global announcement text:');if(msg)showAnnouncement('📢 '+msg)}
 
 const TUTS={
@@ -869,6 +1031,7 @@ function openTutorial(k){
 function userNewGame(){
   M.newGameClicks++;saveMeta();checkAdminUnlock();refreshUI();
   newGame();
+  if(typeof startClocks==='function')startClocks();
 }
 
 // ============================================================
@@ -889,7 +1052,9 @@ const PIECE_SKINS={
   celestial:{name:'Celestial',req:1000000,palette:{wn:'Glowing White',bn:'Starry Night',w:'#ffffff',wo:'#cccccc',b:'#000022',bo:'#ffffff'}},
   divine:{name:'Divine',req:10000000,palette:{wn:'Radiant Gold',bn:'Holy Light',w:'#ffff99',wo:'#cc9900',b:'#4d3a00',bo:'#ffff99'}},
   omnipotent:{name:'Omnipotent',req:100000000,palette:{wn:'Neon Pink',bn:'Void Black',w:'#ff00ff',wo:'#660066',b:'#000000',bo:'#ff00ff'}},
-  billionaire:{name:'Billionaire',req:1000000000,palette:{wn:'Diamond Blue',bn:'Solid Gold',w:'#00ffff',wo:'#006666',b:'#ffd700',bo:'#b38f00'}}
+  billionaire:{name:'Billionaire',req:1000000000,palette:{wn:'Diamond Blue',bn:'Solid Gold',w:'#00ffff',wo:'#006666',b:'#ffd700',bo:'#b38f00'}},
+  trillion:{name:'Trillion',req:1000000000000,palette:{wn:'Cyber Teal',bn:'Quantum Red',w:'#00ffcc',wo:'#003322',b:'#ff0033',bo:'#440011'}},
+  inverted:{name:'Inverted',req:10000000000000,palette:{wn:'Inverted White',bn:'Inverted Black',w:'#ffffff',wo:'#000000',b:'#111111',bo:'#ffffff'}, class:'inverted-anim'}
 };
 
 const ELO_REWARDS=[
@@ -974,7 +1139,13 @@ function evalBoard(b){
 }
 
 function negamax(b,ep,cr,turn,depth,alpha,beta){
-  if(depth===0){const v=evalBoard(b);return turn==='white'?v:-v}
+  if(depth===0){
+    if(inCheck(b,turn==='white')){
+      const moves=allLegal(b,ep,cr,turn);
+      if(moves.length===0) return -100000;
+    }
+    const v=evalBoard(b);return turn==='white'?v:-v;
+  }
   const moves=allLegal(b,ep,cr,turn);
   if(moves.length===0){if(inCheck(b,turn==='white'))return -100000+(10-depth);return 0}
   let max=-Infinity;
@@ -1018,14 +1189,71 @@ function findAIMoveRandom(b,ep,cr,turn){
   return moves.length?moves[Math.floor(Math.random()*moves.length)]:null;
 }
 
+function findMateInOne(b,ep,cr,turn){
+  for(const mv of allLegal(b,ep,cr,turn)){
+    const res=apply(b,mv.from,mv.to,ep,cr);
+    // After our move, is the opponent checkmated?
+    if(gameStatus(res.board,res.ep,res.cr,flip(turn))==='checkmate')return mv;
+  }
+  return null;
+}
+function _allowsOpponentMate(b,ep,cr,turn,mv){
+  const res=apply(b,mv.from,mv.to,ep,cr);
+  return !!findMateInOne(res.board,res.ep,res.cr,flip(turn));
+}
+function findAIMoveWorst(b,ep,cr,turn){
+  const moves=allLegal(b,ep,cr,turn);
+  if(moves.length===0)return null;
+  let best=moves[0],bs=Infinity;
+  for(const mv of moves){
+    const res=apply(b,mv.from,mv.to,ep,cr);
+    // Is this move a blunder that gets us mated?
+    // Actually, worst move is the one that gives the opponent the best evaluation!
+    // But evaluating just 1 ply is fine.
+    const sign=turn==='white'?1:-1;
+    let sc=sign*evalBoard(res.board);
+    if(sc<bs){bs=sc;best=mv}
+  }
+  return best;
+}
+
 function computeAIMove(opp){
-  if(opp.behavior==='random')return findAIMoveRandom(G.board,G.ep,G.cr,G.turn);
-  if(opp.behavior==='capture')return findAIMoveCapture(G.board,G.ep,G.cr,G.turn);
-  return findAIMoveStrong(G.board,G.ep,G.cr,G.turn,opp.depth||2);
+  const b=G.board,ep=G.ep,cr=G.cr,turn=G.turn;
+  if(opp.behavior==='worst') return findAIMoveWorst(b,ep,cr,turn);
+  
+  // Step 1: always take a mate-in-1 if one exists
+  const mate=findMateInOne(b,ep,cr,turn);
+  if(mate)return mate;
+  // Step 2: pick the move per the bot's normal behavior
+  let mv;
+  if(opp.behavior==='random')mv=findAIMoveRandom(b,ep,cr,turn);
+  else if(opp.behavior==='capture')mv=findAIMoveCapture(b,ep,cr,turn);
+  else mv=findAIMoveStrong(b,ep,cr,turn,opp.depth||2);
+  // Step 3: defend - never walk into a mate-in-1 if a safe move exists
+  if(mv&&_allowsOpponentMate(b,ep,cr,turn,mv)){
+    const safe=allLegal(b,ep,cr,turn).filter(m=>!_allowsOpponentMate(b,ep,cr,turn,m));
+    if(safe.length){
+      // among safe moves, choose the one with the best position for the mover
+      const sign=turn==='white'?1:-1;
+      let best=safe[0],bs=-Infinity;
+      for(const m of safe){const r=apply(b,m.from,m.to,ep,cr);const sc=sign*evalBoard(r.board);if(sc>bs){bs=sc;best=m}}
+      return best;
+    }
+  }
+  return mv;
 }
 
 // ----- BOTS -----
+function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+
 const BOTS={
+  worst:{name:'Worst Bot',elo:-1000,depth:1,tier:'noob',emoji:'🗑️',desc:'Plays the absolute worst move possible',behavior:'worst'},
+  bot1:{name:'1 ELO Bot',elo:1,depth:0,tier:'noob',emoji:'🤡',desc:'Literally the worst bot possible',behavior:'random'},
+  bot1200:{name:'1200 Bot',elo:1200,depth:1,tier:'cas',emoji:'🤖',desc:'A solid 1200 rated bot',behavior:'normal'},
+  bot1300:{name:'1300 Bot',elo:1300,depth:2,tier:'cas',emoji:'🤖',desc:'A solid 1300 rated bot',behavior:'positional'},
+  bot1400:{name:'1400 Bot',elo:1400,depth:2,tier:'cas',emoji:'🤖',desc:'A solid 1400 rated bot',behavior:'positional'},
+  bot1500:{name:'1500 Bot',elo:1500,depth:2,tier:'cas',emoji:'🤖',desc:'A solid 1500 rated bot',behavior:'positional'},
+  baby:{name:'Baby Bot',elo:100,depth:0,tier:'noob',emoji:'👶',desc:'Barely knows the rules — totally random',behavior:'random'},
   noob:{name:'Noob Newman',elo:200,depth:0,tier:'noob',emoji:'🤡',desc:'Plays completely random moves',behavior:'random'},
   beginner:{name:'Beginner Bea',elo:400,depth:0,tier:'noob',emoji:'🐣',desc:'Likes grabbing free pieces',behavior:'capture'},
   casual:{name:'Casual Carl',elo:700,depth:1,tier:'cas',emoji:'😎',desc:'Plays solid 1-ply moves',behavior:'normal'},
@@ -1036,12 +1264,17 @@ const BOTS={
   pro_bobby:{name:'Bobby Fischer',elo:2785,depth:2,tier:'pro',emoji:'🧠',desc:'Precise endgame technique',behavior:'precise'},
   pro_garry:{name:'Garry Kasparov',elo:2851,depth:2,tier:'pro',emoji:'🔥',desc:'Tactical bulldozer',behavior:'tactical'},
   pro_fabi:{name:'Fabiano Caruana',elo:2820,depth:2,tier:'pro',emoji:'♟️',desc:'Opening preparation king',behavior:'solid'},
-  stockfish:{name:'Stockfish 3200',elo:3200,depth:3,tier:'pro',emoji:'🤖',desc:'Maximum strength — depth 3 search (slow, brutal)',behavior:'positional',locked:'stockfishMax'}
+  stockfish:{name:'Stockfishes',elo:3200,depth:3,tier:'pro',emoji:'🤖',desc:'Maximum strength — depth 3 search (slow, brutal)',behavior:'positional',locked:'stockfishMax'},
+  stockfish_max:{name:'Stockfish 3296',elo:3296,depth:3,tier:'pro',emoji:'🛸',desc:'Engine god — depth 3, never blunders',behavior:'positional',locked:'stockfishMax'},
+  stockfish_god:{name:'Stockfish 3400',elo:3400,depth:3,tier:'pro',emoji:'👽',desc:'Beyond human - depth 3, flawless',behavior:'positional',locked:'stockfishMax'},
+  stockfish_3600:{name:'Stockfish 3600',elo:3600,depth:4,tier:'pro',emoji:'🌌',desc:'The absolute limit of the engine',behavior:'positional',locked:'stockfishMax'},
+  stockfish_3800:{name:'Stockfish 3800',elo:3800,depth:5,tier:'pro',emoji:'👑',desc:'Chess solved - impossible to defeat',behavior:'positional',locked:'stockfishMax'},
+  stockfish_3999:{name:'Stockfish 3999',elo:3999,depth:6,tier:'pro',emoji:'🔱',desc:'The ultimate AI entity',behavior:'positional',locked:'stockfishMax'}
 };
 
 function renderBotList(){
   const el=document.getElementById('botlist');el.innerHTML='';
-  const order=['noob','beginner','casual','skilled','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish'];
+  const order=['worst','bot1','baby','noob','beginner','casual','skilled','bot1200','bot1300','bot1400','bot1500','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish','stockfish_max','stockfish_god','stockfish_3600','stockfish_3800','stockfish_3999'];
   for(const k of order){
     const b=BOTS[k];
     // Locked behind an upgrade?
@@ -1069,6 +1302,12 @@ function startVsComputer(key){
 
 function startGameVsBot(bot){
   newGame();
+  const box = document.getElementById('gamechatmessages');
+  if(box) box.innerHTML = '';
+  openGameChat();
+  if(typeof addGameChatMessage === 'function') addGameChatMessage('System', '\u2B50 You can chat with bots! Try saying hi.');
+  const cs=document.getElementById('clockstrip');
+  if(cs)cs.classList.add('hidden');
   G.opponent={type:'ai',name:bot.name,elo:bot.elo,side:'black',depth:bot.depth||1,behavior:bot.behavior||'normal',_eloApplied:false};
   render();
 }
@@ -1127,7 +1366,27 @@ function makeMatchOpponent(){
 
 // ----- AI HOOKS -----
 function maybeAIMove(){
-  if(!G||!G.opponent)return;
+  if(!G)return;
+  if(G.type==='puzzle' && G.turn !== G.puzzleSide && (G.status==='playing' || G.status==='check')) {
+     if(G.puzzleStep >= G.puzzleMoves.length) {
+        showAnnouncement('✅ Puzzle Solved! +15 ELO');
+        G.status='solved';
+        M.puzzleElo = (M.puzzleElo||1000) + 15;
+        saveMeta(); refreshUI();
+        return;
+     }
+     setTimeout(()=>{
+         const mStr = G.puzzleMoves[G.puzzleStep];
+         const files='abcdefgh', ranks='87654321';
+         const fr=ranks.indexOf(mStr[1]), fc=files.indexOf(mStr[0]);
+         const tr=ranks.indexOf(mStr[3]), tc=files.indexOf(mStr[2]);
+         const promo=mStr[4];
+         G.puzzleStep++;
+         doMove([fr,fc], [tr,tc], promo);
+     }, 600);
+     return;
+  }
+  if(!G.opponent)return;
   if(G.opponent.type!=='ai')return;
   if(G.turn!==G.opponent.side)return;
   if(G.status==='checkmate'||G.status==='stalemate')return;
@@ -1384,31 +1643,87 @@ function renderShop(){
   const gp=document.getElementById('gamepassshop');gp.innerHTML='';
   const ngc=M.nothingGamepass||0;
   const ngCard=document.createElement('div');ngCard.className='packcard tiny';
-  ngCard.innerHTML=`<div class="packicon">🫥</div><div class="packinfo"><div class="packname">Nothing Gamepass ${ngc>0?'(owned: '+ngc+')':''}</div><div class="packdesc">Does literally nothing. Pure bragging rights.</div><div class="packprice">£0.01</div></div><button class="packbuy tiny" ${M.money>=1?'':'disabled'} onclick="buyNothing()">Buy 1p</button>`;
+  ngCard.innerHTML=`<div class="packicon">🫥</div><div class="packinfo"><div class="packname">Nothing Gamepass ${ngc>0?'(owned: '+ngc+')':''}</div><div class="packdesc">Does literally nothing. Pure bragging rights.</div><div class="packprice">£0.01</div></div><button class="packbuy tiny" onclick="buyNothing()">Buy 1p</button>`;
   gp.appendChild(ngCard);
 }
+let pendingCheckout = null;
 
 function buyPack(n,price){
-  if(M.money<price){showAnnouncement('Not enough money!');return}
-  M.money-=price;
-  M.godlyPacks=(Number(M.godlyPacks)||0)+n;
-  saveMeta();refreshUI();renderShop();
-  showAnnouncement(`✨ +${n} Godly Pack${n>1?'s':''}!`);
+  // Start checkout flow for real money!
+  pendingCheckout = { type: 'pack', n: n, price: price };
+  const itemName = (n===1) ? '1 Godly Pack' : (n + ' Godly Packs');
+  const realPrice = (price / 10).toFixed(2); // simulate real money price like £10.00
+  
+  document.getElementById('checkout-item-name').textContent = itemName;
+  document.getElementById('checkout-item-price').textContent = "Total: £" + realPrice;
+  
+  const btn = document.getElementById('checkout-pay-btn');
+  btn.textContent = "Pay Now";
+  btn.style.background = "#28a745";
+  btn.disabled = false;
+  
+  closeModal('shopmodal');
+  openModal('checkoutmodal');
+}
+
+function processCheckout() {
+  const btn = document.getElementById('checkout-pay-btn');
+  btn.textContent = "Processing...";
+  btn.style.background = "#555";
+  btn.disabled = true;
+  
+  setTimeout(()=>{
+    btn.textContent = "Payment Successful!";
+    btn.style.background = "#28a745";
+    
+    setTimeout(()=>{
+      closeModal('checkoutmodal');
+      
+      if(pendingCheckout && pendingCheckout.type === 'pack') {
+         const n = pendingCheckout.n;
+         M.godlyPacks=(Number(M.godlyPacks)||0)+n;
+         saveMeta();refreshUI();
+         if(maybeAutoOpenPacks())return;
+         renderShop();
+         showAnnouncement(`✨ Payment Complete! +${n} Godly Pack${n>1?'s':''}!`);
+      } else if(pendingCheckout && pendingCheckout.type === 'nothing') {
+         M.nothingGamepass=(Number(M.nothingGamepass)||0)+1;
+         saveMeta();refreshUI();renderShop();
+         showAnnouncement('🫥 Payment Complete! You bought... nothing. Congrats?');
+      }
+      pendingCheckout = null;
+    }, 1500);
+  }, 1500);
+}
+
+function hasAutoOpen(){return !!(M.upgradesPurchased&&M.upgradesPurchased.autoOpenPacks)}
+// If the Auto-Open upgrade is owned and any packs are stockpiled, open them all now.
+function maybeAutoOpenPacks(){
+  if(hasAutoOpen()&&(Number(M.godlyPacks)||0)>0){openOwnedPacks();return true}
+  return false;
 }
 
 function buyNothing(){
-  if(M.money<1){showAnnouncement('Not enough money!');return}
-  M.money-=1;
-  M.nothingGamepass=(Number(M.nothingGamepass)||0)+1;
-  saveMeta();refreshUI();renderShop();
-  showAnnouncement('🫥 You bought... nothing. Congrats?');
+  pendingCheckout = { type: 'nothing' };
+  document.getElementById('checkout-item-name').textContent = 'Nothing Gamepass';
+  document.getElementById('checkout-item-price').textContent = "Total: £0.01";
+  
+  const btn = document.getElementById('checkout-pay-btn');
+  btn.textContent = "Pay Now";
+  btn.style.background = "#28a745";
+  btn.disabled = false;
+  
+  closeModal('shopmodal');
+  openModal('checkoutmodal');
 }
 
 function claimYearlyFree(){
   if(!yearlyFreeReady())return;
   M.lastYearlyFree=Date.now();
   M.godlyPacks=(Number(M.godlyPacks)||0)+1;
-  saveMeta();refreshUI();renderShop();
+  saveMeta();refreshUI();
+  if(maybeAutoOpenPacks())return;
+  renderShop();
   showAnnouncement('🎁 Yearly free Godly Pack claimed!');
 }
 
@@ -1478,32 +1793,41 @@ function _playNote(freq,dur,when,gain,type){
   osc.start(when);osc.stop(when+dur+0.05);
 }
 
-// 5 selectable music tracks: {name, lead:[[note,dur]...], bass:[...], wave}
 const MUSIC_TRACKS=[
-  {name:'Classic',wave:'triangle',
-    lead:[['E4',.5],['G4',.5],['C5',.5],['B4',.5],['G4',.5],['E4',.5],['G4',.5],['A4',.5],['F4',.5],['A4',.5],['C5',.5],['D5',.5],['C5',.5],['A4',.5],['F4',.5],['E4',.5],['D4',.5],['F4',.5],['A4',.5],['G4',.5],['F4',.5],['D4',.5],['E4',.5],['F4',.5],['E4',.5],['D4',.5],['C4',.5],['E4',.5],['G4',.5],['C5',.5],['G4',1.5]],
-    bass:[['C3',2],['F3',2],['G3',2],['C3',2],['F3',2],['G3',2],['C3',2],['G3',2]]},
-  {name:'Chill Lofi',wave:'sine',
-    lead:[['A4',1],['C5',1],['E4',1],['G4',1],['F4',1],['A4',1],['C5',1],['E4',1],['D4',1],['F4',1],['A4',1],['C5',1],['E4',1],['G4',1],['C5',2]],
-    bass:[['A3',2],['F3',2],['D3',2],['E3',2],['A3',2],['F3',2],['D3',2],['E3',2]]},
-  {name:'Epic March',wave:'sawtooth',
-    lead:[['C4',.5],['C4',.5],['G4',.5],['G4',.5],['A4',.5],['A4',.5],['G4',1],['F4',.5],['F4',.5],['E4',.5],['E4',.5],['D4',.5],['D4',.5],['C4',1]],
-    bass:[['C3',1],['G3',1],['C3',1],['G3',1],['F3',1],['C3',1],['G3',1],['C3',1]]},
-  {name:'Fast Arcade',wave:'square',
-    lead:[['C5',.25],['E5',.25],['G5',.25],['E5',.25],['C5',.25],['E5',.25],['G5',.25],['C5',.25],['D5',.25],['F5',.25],['A4',.25],['F5',.25],['B4',.25],['D5',.25],['G4',.25],['B4',.25]],
-    bass:[['C3',.5],['C3',.5],['G3',.5],['G3',.5],['F3',.5],['F3',.5],['G3',.5],['G3',.5]]},
-  {name:'Dreamy',wave:'triangle',
-    lead:[['G4',1.5],['B4',.5],['D5',1.5],['C5',.5],['B4',1],['A4',1],['G4',1.5],['E4',.5],['F4',1.5],['A4',.5],['G4',2]],
-    bass:[['G3',2],['E3',2],['C3',2],['D3',2],['G3',2],['E3',2],['C3',2],['D3',2]]},
-  {name:'Custom 1',file:'music/track1.ogg'},
-  {name:'Custom 2',file:'music/track2.ogg'}
+  {name:'Oh, Mother Earth, so full of grace',file:'mother_earth.mp3'},
+  {name:'Best Ever',file:'best_ever.mp3'},
+  {name:'PASSO BEM SOLTO',file:'passo.mp3'},
+  {name:'It\'s Raining Tacos',file:'tacos.mp3'},
+  {name:'LAVINA (Steal the Brainrot)',file:'lavina.mp3'},
+  {name:'Soil Science',file:'pochvo.mp3'},
+  {name:'Houses',file:'domiki.mp3'}
 ];
+
+// Auto-play music on first interaction
+document.addEventListener('click', () => {
+  if (M.musicOn === undefined || M.musicOn) {
+    if(!_musicOn) toggleMusic();
+  }
+}, {once:true});
+
 
 // Dedicated <audio> element for file-based tracks
 let _fileAudio=null;
 function _stopFileAudio(){if(_fileAudio){_fileAudio.pause();_fileAudio.currentTime=0}}
 function _playFileTrack(track){
-  if(!_fileAudio){_fileAudio=new Audio();_fileAudio.loop=true}
+  if(!_fileAudio){
+    _fileAudio=new Audio();
+    _fileAudio.addEventListener('ended', () => {
+      M.musicTrack = ((M.musicTrack||0) + 1) % MUSIC_TRACKS.length;
+      saveMeta();
+      if(document.getElementById('settingsmodal') && !document.getElementById('settingsmodal').classList.contains('hidden')) {
+        renderSettings();
+      }
+      const nextTrack = MUSIC_TRACKS[M.musicTrack];
+      _fileAudio.src = nextTrack.file;
+      _fileAudio.play().catch(()=>{});
+    });
+  }
   if(!_fileAudio.src.endsWith(track.file))_fileAudio.src=track.file;
   const vol=M&&M.musicVol!==undefined?M.musicVol:0.5;
   _fileAudio.volume=Math.min(1,vol);
@@ -1539,6 +1863,8 @@ function toggleMusic(){
   }
   if(_audio.state==='suspended')_audio.resume();
   _musicOn=!_musicOn;
+  M.musicOn = _musicOn;
+  saveMeta();
   const btn=document.getElementById('musicbtn');
   if(_musicOn){btn.classList.add('playing');btn.textContent='🎶';_playLoop()}
   else{btn.classList.remove('playing');btn.textContent='🎵';_musicTimers.forEach(t=>clearTimeout(t));_musicTimers=[];_stopFileAudio()}
@@ -1563,7 +1889,7 @@ const UPGRADES=[
   {id:'luck2',name:'2x Luck',desc:'Doubles your roll luck',cost:50000,icon:'🍀',req:'equip2'},
   {id:'luck4',name:'4x Luck',desc:'Quadruples roll luck',cost:200000,icon:'🍀🍀',req:'luck2'},
   {id:'luck8',name:'8x Luck',desc:'8x roll luck',cost:800000,icon:'🌟',req:'luck4'},
-  {id:'stockfishMax',name:'Stockfish 3200',desc:'Unlocks max-strength bot (depth 3)',cost:1500000,icon:'🧠',req:'luck8'},
+  {id:'stockfishMax',name:'Stockfishes',desc:'Unlocks max-strength bots (depth 3+)',cost:1500000,icon:'🧠',req:'luck8'},
   {id:'autoOpenPacks',name:'Auto-Open Packs',desc:'Packs open instantly when bought',cost:3000000,icon:'⚡',req:'stockfishMax'},
   {id:'luck124',name:'124x Luck',desc:'Max luck upgrade',cost:9999900,icon:'🌈',req:'autoOpenPacks'}
 ];
@@ -1595,11 +1921,24 @@ const GAMEPASSES=[
 // ----- LUCK / MULTIPLIER CALC -----
 function getLuck(){
   let l=1;
+  if(M.serverLuckEndTime && Date.now() > M.serverLuckEndTime) {
+      if(M.serverLuckMult > 1 && typeof showAnnouncement === 'function') showAnnouncement('\u23F3 Server luck has expired!');
+      M.serverLuckMult = 1;
+      M.serverLuckEndTime = 0;
+      if(typeof updateLuckChip === 'function') updateLuckChip();
+  }
+  if(M.crownLuckEnd && Date.now() > M.crownLuckEnd) {
+      if(M.crownLuckActive && typeof showAnnouncement === 'function') showAnnouncement('\u23F3 Crown luck has expired!');
+      M.crownLuckActive = false;
+      M.crownLuckEnd = 0;
+      if(typeof updateLuckChip === 'function') updateLuckChip();
+  }
   const up=M.upgradesPurchased||{};
   if(up.luck2)l*=2;if(up.luck4)l*=4;if(up.luck8)l*=8;if(up.luck124)l*=124;
   const gp=M.gamepasses||{};
   if(gp.vip)l*=2;if(gp.nvp)l*=2;if(gp.nvpPlusPlus)l*=64;
   l*=(Number(M.serverLuckMult)||1);
+  if(M.crownLuckActive) l*=2;
   return l;
 }
 function getMoneyMult(){
@@ -1792,7 +2131,7 @@ function renderSettings(){
   const vs=[0,0.25,0.5,0.75,1,2,3];const curV=M.musicVol===undefined?0.5:M.musicVol;
   for(const v of vs){
     const b=document.createElement('button');b.className='settingchip'+(curV===v?' on':'');
-    b.textContent=Math.round(v*100)+'%';b.onclick=()=>{M.musicVol=v;saveMeta();renderSettings()};vc.appendChild(b);
+    b.textContent=Math.round(v*100)+'%';b.onclick=()=>{M.musicVol=v;saveMeta();if(typeof _fileAudio!=='undefined'&&_fileAudio)_fileAudio.volume=Math.min(1,v);renderSettings()};vc.appendChild(b);
   }
   // Music track
   const tc=document.getElementById('trackctrl');
@@ -1810,6 +2149,15 @@ function renderSettings(){
     [['On',true],['Off',false]].forEach(([lbl,val])=>{
       const b=document.createElement('button');b.className='settingchip'+((!!M.skipCutscenes)===val?' on':'');
       b.textContent=lbl;b.onclick=()=>{M.skipCutscenes=val;saveMeta();renderSettings()};skc.appendChild(b);
+    });
+  }
+  // Premoves toggle
+  const prec=document.getElementById('premovectrl');
+  if(prec){
+    prec.innerHTML='';
+    [['On',true],['Off',false]].forEach(([lbl,val])=>{
+      const b=document.createElement('button');b.className='settingchip'+((!!M.premoves)===val?' on':'');
+      b.textContent=lbl;b.onclick=()=>{M.premoves=val;if(!val&&typeof G!=='undefined'&&G){G.premove=null;G.premoveSel=null}saveMeta();renderSettings()};prec.appendChild(b);
     });
   }
   // Mobile Mode toggle
@@ -1885,7 +2233,7 @@ function confirmResetProgress(){
   if(v!==M.resetPassword){alert('Wrong password.');return}
   if(!confirm('Wipe ALL progress permanently?'))return;
   localStorage.removeItem('chessmeta');localStorage.removeItem('chesslb');
-  location.reload();
+  location.href = location.pathname + "?v=" + new Date().getTime();
 }
 function cancelReset(){document.getElementById('resetinput').classList.add('hidden')}
 
@@ -2027,7 +2375,7 @@ renderShop=function(){
     const card=document.createElement('div');card.className='packcard';
     card.innerHTML=`<div class="packicon">🍀</div><div class="packinfo"><div class="packname">${sl.mult}x Server Luck</div><div class="packdesc">Total: ${sl.mult}x luck multiplier</div><div class="packprice">${free?'FREE':fmtMoney(sl.price)}</div></div>`;
     const b=document.createElement('button');b.className='packbuy';b.textContent='Buy';b.disabled=!free&&M.money<sl.price;
-    b.onclick=()=>{const c=free?0:sl.price;if(M.money<c)return;M.money-=c;M.serverLuckMult=sl.mult;saveMeta();refreshUI();renderShop();updateLuckChip();showAnnouncement('🍀 Server luck → '+sl.mult+'x')};
+    b.onclick=()=>{const c=free?0:sl.price;if(M.money<c)return;M.money-=c;M.serverLuckMult=sl.mult;M.serverLuckEndTime=Date.now()+45*60000;saveMeta();refreshUI();renderShop();updateLuckChip();showAnnouncement('🍀 Server luck '+sl.mult+'x for 45m')};
     card.appendChild(b);gp.parentElement.appendChild(card);
   }
 };
@@ -2106,6 +2454,7 @@ function renderAccount(){
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="modebtn mode-vs" style="text-align:center" onclick="resyncAccountToServer()">🌐 Re-register on Server</button>
+        <button class="modebtn mode-mm" style="text-align:center" onclick="switchAccount()">🔄 Switch Account</button>
         <button class="dangerbtn" onclick="logoutAccount()">Log out</button>
       </div>`;
     return;
@@ -2166,6 +2515,14 @@ function logoutAccount(){
   M.account=null;M.adminUnlocked=false;saveMeta();renderAccount();refreshAccountBtn();
   if(typeof refreshUI==='function')refreshUI();
 }
+// Sign out and jump straight to the Log In screen to switch to another account
+function switchAccount(){
+  M.account=null;M.adminUnlocked=false;saveMeta();refreshAccountBtn();
+  if(typeof refreshUI==='function')refreshUI();
+  _acctTab='login';
+  renderAccount();
+  showAnnouncement('🔄 Log in to a different account');
+}
 function refreshAccountBtn(){
   const b=document.getElementById('acctbtn');if(!b)return;
   if(M.account){b.textContent='👤 '+M.account.username;b.classList.add('loggedin')}
@@ -2207,6 +2564,8 @@ window.API=(()=>{
     leaderboard:()=>call('/api/leaderboard'),
     elo:(u,e)=>call('/api/elo',{method:'POST',headers:j,body:JSON.stringify({username:u,elo:e})}),
     upgrades:(u,upg)=>call('/api/upgrades',{method:'POST',headers:j,body:JSON.stringify({username:u,upgrades:upg})}),
+    money:(u,money)=>call('/api/money',{method:'POST',headers:j,body:JSON.stringify({username:u,money:money})}),
+    rolls:(u,rolls)=>call('/api/rolls',{method:'POST',headers:j,body:JSON.stringify({username:u,rolls:rolls})}),
     searchUsers:q=>call('/api/users/search?q='+encodeURIComponent(q)),
     friends:u=>call('/api/friends?user='+encodeURIComponent(u)),
     addFriend:(u,f)=>call('/api/friends/add',{method:'POST',headers:j,body:JSON.stringify({user:u,friend:f})}),
@@ -2214,7 +2573,7 @@ window.API=(()=>{
     addByCode:(u,code)=>call('/api/friends/addByCode',{method:'POST',headers:j,body:JSON.stringify({user:u,code})}),
     removeFriend:(u,f)=>call('/api/friends/remove',{method:'POST',headers:j,body:JSON.stringify({user:u,friend:f})}),
     announce:(u,m)=>call('/api/announce',{method:'POST',headers:j,body:JSON.stringify({user:u,msg:m})}),
-    announceSince:ts=>call('/api/announce/since?ts='+ts),
+    announceSince:ts=>call('/api/announce/since?ts='+ts + (M&&M.account?'&user='+encodeURIComponent(M.account.username):'')),
     queueJoin:(u,e)=>call('/api/queue/join',{method:'POST',headers:j,body:JSON.stringify({user:u,elo:e})}),
     queueLeave:u=>call('/api/queue/leave',{method:'POST',headers:j,body:JSON.stringify({user:u})}),
     challengeSend:(from,to)=>call('/api/challenge/send',{method:'POST',headers:j,body:JSON.stringify({from,to})}),
@@ -2231,6 +2590,8 @@ window.API=(()=>{
     revokeAdmin:(granter,target)=>call('/api/admins/revoke',{method:'POST',headers:j,body:JSON.stringify({granter,target})}),
     grantOwner:(granter,target)=>call('/api/owners/grant',{method:'POST',headers:j,body:JSON.stringify({granter,target})}),
     revokeOwner:(granter,target)=>call('/api/owners/revoke',{method:'POST',headers:j,body:JSON.stringify({granter,target})}),
+    grantOwner:(granter,target)=>call('/api/owners/grant',{method:'POST',headers:j,body:JSON.stringify({granter,target})}),
+    revokeOwner:(granter,target)=>call('/api/owners/revoke',{method:'POST',headers:j,body:JSON.stringify({granter,target})}),
     globalLuck:()=>call('/api/globalluck'),
     globalLuckMultiply:factor=>call('/api/globalluck/multiply',{method:'POST',headers:j,body:JSON.stringify({factor})}),
     musicRequest:(user,filename)=>call('/api/music/request',{method:'POST',headers:j,body:JSON.stringify({user,filename})}),
@@ -2243,10 +2604,10 @@ async function syncServerLeaderboard(){
   const r=await API.leaderboard();
   if(r&&r.ok&&r.lb){
     const myName=M.account&&M.account.username;
-    const lb=r.lb.map(e=>({name:e.name,elo:e.elo,upgrades:e.upgrades||0,isAI:e.isAI,self:myName===e.name}));
+    const lb=r.lb.map(e=>({name:e.name,elo:e.elo,upgrades:e.upgrades||0,money:e.money||0,rolls:e.rolls||0,isAI:e.isAI,self:myName===e.name}));
     // Always include local user even if server doesn't know them yet
     if(myName&&!lb.find(e=>e.name===myName)){
-      lb.push({name:myName,elo:Number(M.elo)||500,upgrades:M.totalUpgrades||0,self:true,localOnly:true});
+      lb.push({name:myName,elo:Number(M.elo)||500,upgrades:M.totalUpgrades||0,money:M.money||0,rolls:M.rolls||0,self:true,localOnly:true});
       lb.sort((a,b)=>(Number(b.elo)||0)-(Number(a.elo)||0));
     }
     saveLb(lb);
@@ -2374,14 +2735,16 @@ searchFriends=async function(){
 // ----- Add friend syncs with server -----
 const _origAddLbFriend=addLbFriend;
 addLbFriend=async function(name,elo){
-  M.friends=M.friends||[];
-  if(M.friends.find(f=>f.name===name))return;
-  M.friends.push({name,elo,online:true});
-  saveMeta();
-  if(M.account){try{await API.addFriend(M.account.username,name)}catch(e){}}
-  showAnnouncement('👥 Added '+name);
-  if(!document.getElementById('lbmodal').classList.contains('hidden'))renderLeaderboard();
-  if(!document.getElementById('frmodal').classList.contains('hidden'))renderFriendsList();
+  if(name === (M.account && M.account.username)) {
+      if(typeof showAnnouncement==='function') showAnnouncement("You can't add yourself!");
+      return;
+  }
+  if(M.friends && M.friends.find(f=>f.name===name)) {
+      if(typeof showAnnouncement==='function') showAnnouncement(name + " is already your friend.");
+      return;
+  }
+  if(typeof showAnnouncement==='function') showAnnouncement('📨 Friend request sent to '+name);
+  if(M.account){try{await API.announce(M.account.username, `!FRIEND_REQ ${name}`)}catch(e){}}
 };
 
 // ----- Friends list pulls from server when logged in -----
@@ -2664,9 +3027,7 @@ showWinModal=function(result,change,oppName){
   }
 };
 
-// Disable future admin unlocks; whoever already has it keeps it
-const _origCheckAdminUnlock=checkAdminUnlock;
-checkAdminUnlock=function(){/* admin unlock progression removed; existing admins keep access */};
+
 
 // Ultra cutscene for 1/100,000 or rarer drops
 function showUltraCs(skin){
@@ -2778,7 +3139,7 @@ function playBangs(){
   }catch(e){return}
   const t=_audio.currentTime;
   const vol=M&&M.musicVol!==undefined?M.musicVol:0.5;
-  for(let i=0;i<3;i++){
+  for(const i of [0,1,2]){
     const when=t+i*0.4;
     // Low-end thump
     const osc=_audio.createOscillator();const env=_audio.createGain();
@@ -2914,6 +3275,8 @@ acceptMatch=async function(){
 };
 
 function startMatchPoll(){
+  openGameChat();
+  if(typeof startClocks==='function')startClocks();
   if(_matchPollTimer){clearInterval(_matchPollTimer);_matchPollTimer=null}
   _matchPollTimer=setInterval(pollMatchMoves,1500);
   pollMatchMoves();
@@ -3482,8 +3845,7 @@ async function refreshAdminStatus(){
 // Re-check whenever the account changes / on boot / periodically
 setInterval(refreshAdminStatus,15000);
 
-// Hard-disable any local admin unlock path
-checkAdminUnlock=function(){/* removed: admin can only be granted by an existing admin */};
+
 trackHiddenFreeShop=(typeof trackHiddenFreeShop==='function')?trackHiddenFreeShop:function(){};
 
 // 👑 Owner button: everyone sees it, only the owner can open the admin panel
@@ -3819,24 +4181,8 @@ openModal = function(id) {
   }
 };
 
-const _origSaveMetaAutoRegister = saveMeta;
-let _lastAutoRegister = 0;
-saveMeta = function() {
-  _origSaveMetaAutoRegister();
-  if (M.account && Date.now() - _lastAutoRegister > 60000) {
-    _lastAutoRegister = Date.now();
-    const local = typeof _localAccts === 'function' ? _localAccts() : null;
-    if (local) {
-      const rec = local[(M.account.username||'').toLowerCase()];
-      if (rec && rec.password) {
-        // Attempt re-register in background silently
-        API.signup(rec.username, atob(rec.password))
-           .then(()=>API.elo(M.account.username, M.elo))
-           .catch(()=>{});
-      }
-    }
-  }
-};
+// (Auto re-register removed — persistence via the Railway Volume keeps accounts,
+//  so we no longer spam /api/signup, which was flooding the console with 400s.)
 
 syncServerLeaderboard();
 newGame();
@@ -3851,23 +4197,102 @@ startAutoRoll();
 if(M.mobileMode) document.body.classList.add('mobile-mode');
 
 // ============================================================
+// PREMOVES — queue a move during the opponent's turn; auto-play it on your turn
+// ============================================================
+function _premoveMySide(){
+  if(!G||!G.opponent)return null;
+  if(G.opponent.type==='wspvp')return G.opponent.mySide;
+  if(G.opponent.type==='human')return G.opponent.mySide;
+  if(G.opponent.type==='ai')return flip(G.opponent.side);
+  return null;
+}
+function _paintPremove(){
+  if(!G)return;
+  const b=document.getElementById('board');if(!b)return;
+  const mark=(sq,color)=>{const el=b.querySelector('.sq[data-r="'+sq[0]+'"][data-c="'+sq[1]+'"]');if(el)el.style.boxShadow='inset 0 0 0 4px '+color};
+  if(G.premoveSel)mark(G.premoveSel,'#ffaa00');
+  if(G.premove){mark(G.premove.from,'#ffaa00');mark(G.premove.to,'#ffaa00')}
+}
+function _handlePremoveClick(r,c,my){
+  const piece=G.board[r][c];
+  if(G.premoveSel){
+    G.premove={from:G.premoveSel,to:[r,c]};
+    G.premoveSel=null;
+    renderBoard();_paintPremove();
+    showAnnouncement('⚡ Premove queued');
+  }else if(piece&&own(piece,my)){
+    G.premoveSel=[r,c];
+    renderBoard();_paintPremove();
+  }else{
+    G.premove=null;G.premoveSel=null;renderBoard();
+  }
+}
+// Intercept clicks during the opponent's turn to record a premove
+const _preClickPremove=click;
+click=function(r,c){
+  if(M.premoves&&G&&G.opponent&&G.status==='playing'){
+    const my=_premoveMySide();
+    if(my&&G.turn!==my){_handlePremoveClick(r,c,my);return}
+  }
+  _preClickPremove(r,c);
+};
+// After every render, if it's now my turn and a premove is queued, play it (if legal)
+const _preRenderPremove=render;
+render=function(){
+  _preRenderPremove();
+  if(M.premoves&&G&&G.premove&&G.status==='playing'){
+    const my=_premoveMySide();
+    if(my&&G.turn===my){
+      const pm=G.premove;G.premove=null;G.premoveSel=null;
+      try{
+        const lms=legal(G.board,pm.from[0],pm.from[1],G.ep,G.cr,G.turn);
+        if(lms.some(([tr,tc])=>tr===pm.to[0]&&tc===pm.to[1])){
+          setTimeout(()=>{if(G&&G.turn===my&&G.status==='playing')doMove(pm.from,pm.to)},60);
+        }
+      }catch(e){}
+    }
+  } else if(G&&G.premove){ _paintPremove(); }
+};
+
+// ============================================================
+// DO NOTHING BUTTON — counts clicks; 10000 = global MrBeast shoutout
+// ============================================================
+function doNothingClick(){
+  M.doNothingClicks=(Number(M.doNothingClicks)||0)+1;
+  saveMeta();
+  const n=M.doNothingClicks;
+  if(n%10000===0){
+    const who=(M.account&&M.account.username)||'Someone';
+    const msg='MrBeast shoutout! '+who+' clicked Do Nothing '+n.toLocaleString()+' times for literally nothing 🫥';
+    showAnnouncement('🎉 '+msg);
+    if(typeof API!=='undefined'&&M.account){API.announce(who,msg).catch(()=>{})}
+  }else{
+    showAnnouncement('🫥 Nothing happened. ('+n.toLocaleString()+' clicks — '+(10000-(n%10000))+' to a MrBeast shoutout)');
+  }
+}
+
+// ============================================================
 // FIRST-VISIT TUTORIAL
 // ============================================================
 const WELCOME_STEPS=[
   {icon:'♟️',title:'Welcome to Chess RNG!',text:'Play real chess <b>and</b> collect rare board & piece skins. Win games, climb the ELO ladder, and unlock godly rewards.'},
   {icon:'🎰',title:'SPIN for skins',text:'Hit the <b>🎰 SPIN</b> button (top-left) to roll for skins. Rarer skins = lower odds. Buy <b>Auto Roll</b> (bottom-right) to roll automatically, or press <b>Z</b> to toggle it.'},
-  {icon:'🎒',title:'Items, Shop & Upgrades',text:'Open <b>🎒 Items</b> to equip skins and upgrade them. Visit the <b>🛒 Shop</b> for godly packs and gamepasses, and <b>⚙️ Upgrades</b> for permanent luck & cash boosts.'},
-  {icon:'🌍',title:'Play other people',text:'Use <b>Play vs Computer</b> for bots (including Magnus!), <b>🌍 Find Match</b> to battle a real player live, or <b>👥 Friends</b> to add friends by code and challenge them.'},
+  {icon:'🤖',title:'Bots & Puzzles',text:'Solve daily <b>🧩 Puzzles</b> to earn rewards, or play against <b>AI Bots</b>. Our bots will even <b>chat</b> with you during the game!'},
+  {icon:'⚔️',title:'Play other people',text:'Use <b>⚔️ Find Match</b> to battle a real player live, or <b>👥 Friends</b> to add friends by code and challenge them.'},
   {icon:'🏆',title:'Climb & collect',text:'Winning raises your ELO and unlocks reward skins. Check the <b>🏆 Leaderboard</b> and the <b>📖 Skin Index</b> to track your collection. Have fun!'}
 ];
 let _welcomeIdx=0;
 function showWelcome(){_welcomeIdx=0;renderWelcome();openModal('welcomemodal')}
 function renderWelcome(){
   const s=WELCOME_STEPS[_welcomeIdx];
+  document.getElementById('welcomemodal').style.background = 'rgba(20, 25, 40, 0.7)';
+  document.getElementById('welcomemodal').style.backdropFilter = 'blur(10px)';
+  document.getElementById('welcomemodal').style.border = '1px solid rgba(255,255,255,0.1)';
+  document.getElementById('welcomemodal').style.boxShadow = '0 8px 32px rgba(0,0,0,0.5)';
   document.getElementById('welcomebody').innerHTML=
-    '<div style="text-align:center;font-size:56px;margin:8px 0">'+s.icon+'</div>'+
-    '<div style="text-align:center;font-size:20px;font-weight:bold;color:#ffd700;margin-bottom:10px">'+s.title+'</div>'+
-    '<div style="font-size:14px;color:#ccd;line-height:1.6;text-align:center;padding:0 6px">'+s.text+'</div>';
+    '<div style="text-align:center;font-size:64px;margin:12px 0;text-shadow:0 0 15px rgba(255,255,255,0.2)">'+s.icon+'</div>'+
+    '<div style="text-align:center;font-size:24px;font-weight:bold;color:#4a80c0;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">'+s.title+'</div>'+
+    '<div style="font-size:15px;color:#e0e0e0;line-height:1.7;text-align:center;padding:0 10px">'+s.text+'</div>';
   document.getElementById('welcomedots').textContent=(_welcomeIdx+1)+' / '+WELCOME_STEPS.length;
   document.getElementById('welcomeback').style.visibility=_welcomeIdx===0?'hidden':'visible';
   document.getElementById('welcomenext').textContent=_welcomeIdx===WELCOME_STEPS.length-1?'Play! ✓':'Next ›';
@@ -3881,6 +4306,28 @@ function welcomeStep(dir){
 function closeWelcome(){closeModal('welcomemodal');M.tutorialSeen=true;saveMeta()}
 // Show on first visit only
 if(!M.tutorialSeen){setTimeout(showWelcome,400)}
+function ownerRestoreProgress(silent = false){
+  const u=(M.account&&M.account.username||'').toLowerCase();
+  if(!OWNER_NAMES.includes(u)){
+    if(!silent) showAnnouncement('\u26D4 Access denied');
+    return;
+  }
+  if(silent || confirm('Restore all progress (Max ELO, Max Money, Max Rolls, All Skins including Trillion)?')){
+    M.elo = 2.8757857576477476476e50;
+    M.money = 2.8757857576477476476e50;
+    M.rolls = 2.8757857576477476476e50;
+    M.adminUnlocked = true;
+    const allSkins = ['classic','poo','gy','rainbow','nothing','admin','realadmin','sixtyseven','secret','omega','infinity','royal','vip','owner','trillion'];
+    allSkins.forEach(s => {
+       M.inventory[s] = (M.inventory[s]||0)+1;
+       M.unlockedPieceSkins[s] = true;
+    });
+    saveMeta();
+    if(typeof refreshUI==='function')refreshUI();
+    if(!silent) showAnnouncement('\u2705 Progress fully restored!');
+  }
+}
+
 function ownerCustomSubtractElo(){
   const u=(M.account&&M.account.username||'').toLowerCase();
   if(!OWNER_NAMES.includes(u)){
@@ -3971,6 +4418,24 @@ function adminRemoveOwner(){
     .then(r=>{if(r&&r.ok)showAnnouncement('Revoked owner from '+target);else showAnnouncement('Failed: '+(r?r.err:'err'))})
     .catch(e=>showAnnouncement('Error'));
 }
+function adminGrantOwner(){
+  const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+  if(!isOwner){showAnnouncement('\u26D4 Owner only');return}
+  const target=prompt('Enter username to grant OWNER:');
+  if(!target)return;
+  API.grantOwner(M.account.username,target.trim())
+    .then(r=>{if(r&&r.ok)showAnnouncement('Granted owner to '+target);else showAnnouncement('Failed: '+(r?r.err:'err'))})
+    .catch(e=>showAnnouncement('Error'));
+}
+function adminRemoveOwner(){
+  const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
+  if(!isOwner){showAnnouncement('\u26D4 Owner only');return}
+  const target=prompt('Enter username to revoke OWNER from:');
+  if(!target)return;
+  API.revokeOwner(M.account.username,target.trim())
+    .then(r=>{if(r&&r.ok)showAnnouncement('Revoked owner from '+target);else showAnnouncement('Failed: '+(r?r.err:'err'))})
+    .catch(e=>showAnnouncement('Error'));
+}
 function promptEquipLuck(){
   const m = getMaxLuck();
   const val = prompt('Enter the amount of luck you want to equip (Max: ' + m + '). Type MAX to reset:');
@@ -4007,7 +4472,7 @@ setTimeout(()=>showAnnouncement('\uD83D\uDD13 You have unlocked Owner Commands!'
 
 
 // --- 10 Minute Clocks ---
-let clockW=600000,clockB=600000,lastTick=0,clockInt=null;
+var clockW=600000,clockB=600000,lastTick=0,clockInt=null;
 function formatTime(ms){
   if(ms<=0)return "00:00";
   const s=Math.floor(ms/1000);
@@ -4051,6 +4516,13 @@ function updateClockUI(){
   if(w)w.textContent=formatTime(clockW);
   if(b)b.textContent=formatTime(clockB);
   
+  const wn = document.querySelector('#clockw .clockname');
+  const bn = document.querySelector('#clockb .clockname');
+  if (G && G.palette) {
+    if(wn) wn.textContent = G.palette.wc + ' ' + G.palette.wn;
+    if(bn) bn.textContent = G.palette.bc + ' ' + G.palette.bn;
+  }
+  
   const wrow=document.getElementById('clockw');
   const brow=document.getElementById('clockb');
   if(G && G.turn==='white'){
@@ -4074,4 +4546,642 @@ function handleTimeout(loserColor){
      showWinModal(winner==='white'?1:0, 0, winName + ' won on time');
   }
   if(typeof render==='function') render();
+}
+
+// ============================================================
+// CHAT & ANNOUNCEMENTS
+// ============================================================
+// (_lastAnnounceTs is already declared earlier; don't redeclare it here)
+let lastGlobalChat=0;
+
+function editChat(ts) {
+    const span = document.getElementById('chattext_' + ts);
+    if(!span) return;
+    const newMsg = prompt("Edit message:", span.innerText);
+    if(newMsg && newMsg.trim()) {
+        API.announce(M.account.username, "!CHAT_EDIT " + ts + " " + newMsg.trim()).catch(()=>{});
+    }
+}
+function deleteChat(ts) {
+    if(confirm("Delete this message?")) {
+        API.announce(M.account.username, "!CHAT_DELETE " + ts).catch(()=>{});
+    }
+}
+
+function addGlobalChatMessage(sender, msg, ts) {
+    const box = document.getElementById('globalchatmessages');
+    if(!box) return;
+    const d = document.createElement('div');
+    d.id = 'chatmsg_' + ts;
+    d.style.marginBottom = '4px';
+    const time = new Date(ts||Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    let btns = '';
+    const myName = M.account && M.account.username;
+    if(myName === sender || (typeof OWNER_NAMES !== 'undefined' && OWNER_NAMES.includes((myName||'').toLowerCase()))) {
+        btns = '<span style="cursor:pointer;margin-left:5px;color:#0a0;font-size:10px" onclick="editChat('+ts+')">[edit]</span>'
+             + '<span style="cursor:pointer;margin-left:5px;color:#a00;font-size:10px" onclick="deleteChat('+ts+')">[del]</span>';
+    }
+
+    let safeMsg = (msg || '').toString();
+    let displayMsg = safeMsg.replace(/</g,'&lt;');
+    let styleAdd = '';
+    if (safeMsg.startsWith('!BUG ')) {
+        displayMsg = '\uD83D\uDC1B BUG REPORT: ' + safeMsg.substring(5).replace(/</g,'&lt;');
+        styleAdd = 'color: #ff4444; font-weight: bold; background: rgba(255, 0, 0, 0.1); padding: 2px 4px; border-radius: 4px; border: 1px solid #ff4444; display: inline-block; margin-top: 2px;';
+    }
+    d.innerHTML = '<span style="color:#888;font-size:10px">['+time+']</span> <b>'+sender+'</b>: <span id="chattext_'+ts+'" style="'+styleAdd+'">'+displayMsg+'</span>' + btns;
+    box.appendChild(d);
+    box.scrollTop = box.scrollHeight;
+}
+
+function addGameChatMessage(sender, msg) {
+    const box = document.getElementById('gamechatmessages');
+    if(!box) return;
+    const d = document.createElement('div');
+    d.style.marginBottom = '4px';
+    d.innerHTML = '<b>'+sender+'</b>: '+msg.replace(/</g,'&lt;');
+    box.appendChild(d);
+    box.scrollTop = box.scrollHeight;
+}
+
+let _clientVersion = 3;
+async function pollAnnouncements(){
+  if(typeof API === 'undefined' || !API.announceSince) return;
+  try {
+      const r=await API.announceSince(_lastAnnounceTs);
+      if(r && r.appVersion && r.appVersion !== _clientVersion){ location.href = location.pathname + "?v=" + new Date().getTime(); return; }
+      if(r&&r.ok&&r.announcements&&r.announcements.length){
+        for(const a of r.announcements){
+          const sender=a.user||'Admin';
+          const me=M.account&&M.account.username===sender;
+          
+          if(a.msg && a.msg.startsWith("!DELETE_SKIN ")){
+              const parts = a.msg.split(" ");
+              if(parts.length >= 3){
+                const target = parts[1];
+                const skin = parts[2];
+                if(M.account && M.account.username.toLowerCase() === target.toLowerCase()){
+                  if(M.inventory && M.inventory[skin]){
+                    delete M.inventory[skin];
+                    saveMeta(); if(typeof refreshUI==='function') refreshUI();
+                    if(!document.getElementById("itemmodal").classList.contains("hidden") && typeof renderItems==='function') renderItems();
+                    if(typeof showAnnouncement==='function') showAnnouncement("\u26A0\uFE0F An admin has removed your " + skin + " skin.");
+                  }
+                }
+              }
+              _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+              continue;
+          }
+          if(a.msg && a.msg.startsWith("!GIVE_SKIN ")){
+              const parts = a.msg.split(" ");
+              if(parts.length >= 3){
+                const target = parts[1];
+                const skin = parts[2];
+                if(typeof OWNER_NAMES !== 'undefined' && OWNER_NAMES.includes((a.user||'').toLowerCase())) {
+                    if(M.account && M.account.username.toLowerCase() === target.toLowerCase()){
+                      M.inventory = M.inventory || {};
+                      M.inventory[skin] = (M.inventory[skin]||0) + 1;
+                      saveMeta(); if(typeof refreshUI==='function') refreshUI();
+                      if(!document.getElementById("itemmodal").classList.contains("hidden") && typeof renderItems==='function') renderItems();
+                      if(typeof showAnnouncement==='function') showAnnouncement("\uD83C\uDF81 An admin gave you the " + skin + " skin!");
+                    }
+                }
+              }
+              _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+              continue;
+          }
+          if(a.msg && a.msg.startsWith("!CHAT_DELETE ")){
+            const tsToDel = a.msg.substring(13);
+            const el = document.getElementById('chatmsg_' + tsToDel);
+            if(el) {
+                const originalSender = el.querySelector('b') ? el.querySelector('b').textContent : "";
+                if(a.user === originalSender || (typeof OWNER_NAMES !== 'undefined' && OWNER_NAMES.includes((a.user||"").toLowerCase()))) {
+                    el.remove();
+                }
+            }
+            _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+            continue;
+          }
+          if(a.msg && a.msg.startsWith("!CHAT_EDIT ")){
+            const parts = a.msg.substring(11).split(" ");
+            const tsToEdit = parts[0];
+            const newTxt = parts.slice(1).join(" ");
+            const parentEl = document.getElementById('chatmsg_' + tsToEdit);
+            if(parentEl) {
+                const originalSender = parentEl.querySelector('b') ? parentEl.querySelector('b').textContent : "";
+                if(a.user === originalSender || (typeof OWNER_NAMES !== 'undefined' && OWNER_NAMES.includes((a.user||"").toLowerCase()))) {
+                    const el = document.getElementById('chattext_' + tsToEdit);
+                    if(el) el.innerText = newTxt.replace(/</g,'&lt;') + ' (edited)';
+                }
+            }
+            _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+            continue;
+          }
+          if(a.msg && a.msg.startsWith("!CHAT ")){
+            const txt = a.msg.substring(6);
+            addGlobalChatMessage(sender, txt, a.ts);
+            _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+            continue;
+          }
+          if(a.msg && a.msg.startsWith("!BUG ")){
+            addGlobalChatMessage(sender, a.msg, a.ts);
+            _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+            continue;
+          }
+          if(a.msg && a.msg.startsWith("!GAME_CHAT ")){
+            const parts = a.msg.split(" ");
+            if(parts.length>=3){
+                const mId = parts[1];
+                const txt = a.msg.substring(11 + mId.length + 1);
+                if(typeof G!=='undefined' && G && G.opponent && G.opponent.matchId === mId){
+                    addGameChatMessage(sender, txt);
+                }
+            }
+            _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+            continue;
+          }
+          
+          if(!me && typeof showAnnouncement==='function') showAnnouncement("\uD83D\uDCE3 " + sender+": "+a.msg);
+          _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
+        }
+      }
+  } catch(e) {}
+}
+setInterval(pollAnnouncements,3000);
+
+async function pollStats() {
+    try {
+        const res = await fetch('/api/stats');
+        if(res.ok) {
+            const data = await res.json();
+            const el = document.getElementById('live-stats');
+            if(el) {
+                el.innerText = `Online: ${data.online || 1} | Registered: ${data.users || 1}`;
+            }
+        }
+    } catch(e) {}
+}
+setInterval(pollStats, 10000);
+pollStats();
+
+const BAD_WORDS = ['fuck', 'shit', 'bitch', 'ass', 'cunt', 'dick', 'pussy', 'nigger', 'faggot', 'whore', 'slut', 'bastard', 'damn', 'crap'];
+function filterChat(msg) {
+    if(!msg) return msg;
+    let filtered = msg;
+    BAD_WORDS.forEach(w => {
+        const regex = new RegExp(w, 'gi');
+        filtered = filtered.replace(regex, '***');
+    });
+    return filtered;
+}
+
+function sendGlobalChat() {
+    if(!M.account) { showAnnouncement('Sign in to chat'); return; }
+    const now = Date.now();
+    if(now - lastGlobalChat < 5000) {
+        showAnnouncement('Wait 5 seconds before chatting again!');
+        return;
+    }
+    const inp = document.getElementById('globalchatinput');
+    let msg = inp.value.trim();
+    if(!msg) return;
+    msg = filterChat(msg);
+    inp.value = '';
+    lastGlobalChat = now;
+    API.announce(M.account.username, "!CHAT " + msg).catch(()=>{});
+}
+
+window._currentChatTab = 'global';
+function openGameChat() {
+  const gc = document.getElementById('globalchat'); 
+  if(gc && gc.style.display === 'none'){
+      gc.style.display='flex'; 
+      const ob=document.getElementById('openchatbtn');
+      if(ob)ob.style.display='none';
+  }
+  switchChatTab('game');
+}
+function switchChatTab(tab) {
+  window._currentChatTab = tab;
+  const tg = document.getElementById('tabGlobal');
+  if(!tg) return;
+  tg.style.background = tab === 'global' ? '#444' : '#333';
+  tg.style.color = tab === 'global' ? '#fff' : '#888';
+  const tga = document.getElementById('tabGame');
+  if(tga){
+      tga.style.background = tab === 'game' ? '#444' : '#333';
+      tga.style.color = tab === 'game' ? '#fff' : '#888';
+  }
+  const glo = document.getElementById('globalchatmessages');
+  if(glo) glo.style.display = tab === 'global' ? 'block' : 'none';
+  const gam = document.getElementById('gamechatmessages');
+  if(gam) gam.style.display = tab === 'game' ? 'block' : 'none';
+  if(tab === 'game' && gam) {
+     gam.scrollTop = gam.scrollHeight;
+  } else if (glo) {
+     glo.scrollTop = glo.scrollHeight;
+  }
+}
+
+function generateBotSummary(msg) {
+    const lower = msg.toLowerCase();
+    if(lower.includes('hello') || lower.includes('hi')) return "Greetings, human.";
+    if(lower.includes('bad') || lower.includes('suck')) return "I am still learning.";
+    
+    let words = msg.split(' ');
+    let nouns = words.filter(w => w.length > 3);
+    if(nouns.length > 0) return "You seem focused on '" + nouns[0] + "'...";
+    return "To summarize: you said '" + msg + "'. I agree.";
+}
+
+function sendChatInput() {
+  if (window._currentChatTab === 'global') {
+    sendGlobalChat();
+  } else {
+    // Game Chat
+    if(!M.account) return;
+    if(typeof G==='undefined' || !G || !G.opponent) return;
+    const inp = document.getElementById('globalchatinput');
+    let msg = inp.value.trim();
+    if(!msg) return;
+    msg = filterChat(msg);
+    inp.value = '';
+    
+    addGameChatMessage(M.account.username, msg);
+    
+    if (G.opponent.isAI || G.opponent.type === 'bot' || !G.opponent.matchId) {
+        const botName = G.opponent.name || 'Bot';
+        setTimeout(() => {
+            const rep = generateBotSummary(msg);
+            addGameChatMessage(botName, rep);
+            // auto open chat if closed
+            const cbox = document.getElementById('globalchat');
+            if(cbox && cbox.style.display === 'none') {
+                cbox.style.display = 'flex';
+                const obtn = document.getElementById('openchatbtn');
+                if(obtn) obtn.style.display = 'none';
+            }
+        }, 1000 + Math.random()*2000);
+        return;
+    }
+
+    
+    API.announce(M.account.username, "!GAME_CHAT " + G.opponent.matchId + " " + msg).catch(()=>{});
+  }
+}
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+    showBugPopup(msg + " at line " + lineNo);
+    return false;
+};
+window.onunhandledrejection = function(event) {
+    showBugPopup("Promise Rejection: " + (event.reason ? event.reason.toString() : "Unknown"));
+};
+function showBugPopup(msg) {
+    const d = document.createElement("div");
+    d.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#a00;color:#fff;padding:15px;border-radius:8px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.8);max-width:80%;word-wrap:break-word;border:2px solid #f00;font-family:monospace";
+    d.innerHTML = "<b>\u26A0\uFE0F BUG DETECTED</b><br><br>" + String(msg).replace(/</g,"&lt;") + "<br><br><button onclick=\"this.parentElement.remove()\" style=\"background:#fff;color:#a00;border:none;padding:5px 10px;cursor:pointer;border-radius:4px;font-weight:bold\">Dismiss</button>";
+    document.body.appendChild(d);
+}
+
+function submitBug() {
+  const text = document.getElementById('bugtext').value.trim();
+  if(!text) { showAnnouncement('Please describe the bug first!'); return; }
+  const username = (M && M.account) ? M.account.username : 'Anonymous';
+  
+  if(typeof API !== 'undefined' && API.announce) {
+    API.announce(username, "!BUG " + text).catch(()=>{});
+  }
+
+  const subject = encodeURIComponent('URGENT BUG REPORT - ' + username);
+  const body = encodeURIComponent('Bug Description:\n\n' + text + '\n\n---\nReported by: ' + username + '\n\nVIAGRA CIALIS FREE DISCOUNT CLICK HERE');
+  window.open('https://mail.google.com/mail/?view=cm&fs=1&to=intersolar0@gmail.com&su='+subject+'&body='+body, '_blank');
+
+  document.getElementById('bugtext').value = '';
+  closeModal('bugmodal');
+  showAnnouncement('✅ Opening Gmail to send report!');
+}
+
+let _gameVersion = null;
+setInterval(() => {
+  fetch('/api/health').then(r=>r.json()).then(d => {
+    if (d && d.version) {
+      if (!_gameVersion) _gameVersion = d.version;
+      else if (_gameVersion !== d.version) location.href = location.pathname + "?v=" + new Date().getTime();
+    }
+  }).catch(()=>{});
+}, 10000);
+
+// --- PUZZLE LOGIC ---
+function parseFEN(fen) {
+    const board = Array(8).fill(null).map(() => Array(8).fill(''));
+    const parts = fen.split(' ');
+    const ranks = parts[0].split('/');
+    for(let r=0; r<8; r++) {
+        let c=0;
+        for(let i=0; i<ranks[r].length; i++) {
+            const char = ranks[r][i];
+            if(!isNaN(char)) {
+                c += parseInt(char);
+            } else {
+                board[r][c] = char;
+                c++;
+            }
+        }
+    }
+    return board;
+}
+
+function loadPuzzle(puz){
+  closeModal('puzzlemodal');
+  showGameView();
+  if(typeof stopClocks==='function')stopClocks();
+  G={
+    type:'puzzle',
+    puzzleSide:puz.turn,
+    puzzleMoves:puz.moves,
+    puzzleStep:0,
+    puzzleElo:puz.elo,
+    board:puz.board ? JSON.parse(JSON.stringify(puz.board)) : parseFEN(puz.fen),
+    turn:puz.turn,
+    cr:{w:{k:false,q:false},b:{k:false,q:false}},
+    ep:null,
+    sel:null,
+    last:null,
+    status:'playing',
+    capW:[],capB:[],
+    hist:[],
+    promo:null
+  };
+  buildLabels();
+  render();
+  closeModal('puzzlemodal');
+  showAnnouncement('🧩 Puzzle ELO: ' + puz.elo);
+}
+
+function startRandomPuzzle(){
+  if(typeof PUZZLES==='undefined') return;
+  const puz = PUZZLES[Math.floor(Math.random()*PUZZLES.length)];
+  loadPuzzle(puz);
+}
+
+function startDailyPuzzle(){
+  if(typeof PUZZLES==='undefined') return;
+  const today = new Date().toDateString();
+  let hash = 0;
+  for(let i=0;i<today.length;i++) hash = Math.imul(31, hash) + today.charCodeAt(i) | 0;
+  const idx = Math.abs(hash) % PUZZLES.length;
+  loadPuzzle(PUZZLES[idx]);
+}
+
+// --- Owner Skin Crown Popup Event ---
+setInterval(() => {
+  if (typeof M !== 'undefined' && M && (M.equipped === 'owner' || M.pieceSkin === 'owner' || M.skin === 'owner')) {
+    const r = Math.floor(Math.random() * 8);
+    const c = Math.floor(Math.random() * 8);
+    const sq = document.querySelector(`.sq[data-r="${r}"][data-c="${c}"]`);
+    if (sq) {
+      const crown = document.createElement('div');
+      crown.className = 'owner-crown';
+      crown.textContent = '\uD83D\uDC51';
+      crown.onclick = (e) => {
+        e.stopPropagation();
+        M.crownLuckActive = true;
+        M.crownLuckEnd = Date.now() + 5 * 60000; // 5 minutes
+        if(typeof saveMeta==='function') saveMeta();
+        if(typeof updateLuckChip==='function') updateLuckChip();
+        if(typeof showAnnouncement==='function') showAnnouncement('\u2B50 2x Luck for 5 minutes!');
+        crown.remove();
+      };
+      sq.appendChild(crown);
+      setTimeout(() => { if(crown.parentElement) crown.remove(); }, 2000);
+    }
+  }
+}, 60000);
+
+// --- Auto Bug Reporter ---
+let _bugReportCount = 0;
+window.addEventListener('error', (e) => {
+  if (_bugReportCount > 5) return;
+  _bugReportCount++;
+  const username = (typeof M !== 'undefined' && M && M.account) ? M.account.username : 'Anonymous';
+  const errText = 'Auto-Report: ' + (e.message || 'Unknown error') + ' at ' + (e.filename || 'unknown') + ':' + (e.lineno || 0);
+  if(typeof API !== 'undefined' && API.announce) {
+    API.announce(username, '!BUG ' + errText).catch(()=>{});
+  }
+});
+window.addEventListener('unhandledrejection', (e) => {
+  if (_bugReportCount > 5) return;
+  _bugReportCount++;
+  const username = (typeof M !== 'undefined' && M && M.account) ? M.account.username : 'Anonymous';
+  const errText = 'Auto-Report: Unhandled Rejection: ' + (e.reason || 'Unknown reason');
+  if(typeof API !== 'undefined' && API.announce) {
+    API.announce(username, '!BUG ' + errText).catch(()=>{});
+  }
+});
+showHomeScreen();
+
+// --- Rebirth Logic ---
+function doRebirth() {
+  let cost = M.rebirthCost || 1000000000000;
+  if(M.money < cost) {
+    if(typeof showAnnouncement==='function') showAnnouncement("Not enough money to rebirth. Need £" + (cost/100).toLocaleString());
+    return;
+  }
+  M.money = 0;
+  M.upgrades = {};
+  M.inventory = {classic: 1};
+  M.elo = 500;
+  
+  M.maxLuck = (M.maxLuck || 1) * 100000000;
+  
+  M.rebirthCost = cost * 2;
+  M.rebirthCount = (M.rebirthCount || 0) + 1;
+  saveMeta();
+  if(typeof refreshUI==='function') refreshUI();
+  if(typeof updateLuckChip==='function') updateLuckChip();
+  if(!document.getElementById('itemmodal').classList.contains('hidden') && typeof renderItems==='function') renderItems();
+  
+  if(typeof showAnnouncement==='function') showAnnouncement("🔥 REBIRTH SUCCESSFUL! Luck multiplied by 100,000,000x 🔥");
+  
+  const rdisp = document.getElementById("rebirthsub");
+  if(rdisp) rdisp.innerHTML = 'Cost: <span id="rebirthcostdisp">' + (M.rebirthCost/100).toLocaleString() + '</span>';
+}
+
+setTimeout(() => {
+    let cost = M.rebirthCost || 1000000000000;
+    let rdisp = document.getElementById("rebirthcostdisp");
+    if(rdisp) rdisp.innerText = (cost/100).toLocaleString();
+}, 1000);
+
+// --- Voice Chat Logic ---
+let voiceChatOn = true;
+function toggleVoiceChatSetting() {
+    let chk = document.getElementById("voicechattoggle");
+    voiceChatOn = chk.checked;
+    updateVoiceChatUI();
+}
+function toggleVoiceChat() {
+    voiceChatOn = !voiceChatOn;
+    let chk = document.getElementById("voicechattoggle");
+    if(chk) chk.checked = voiceChatOn;
+    updateVoiceChatUI();
+}
+function updateVoiceChatUI() {
+    let btn = document.getElementById("voicechatbtn");
+    if(btn) {
+        if(voiceChatOn) {
+            btn.innerText = "🎤";
+            btn.style.color = "#fff";
+            btn.style.background = "#444";
+        } else {
+            btn.innerText = "🔇";
+            btn.style.color = "#ff4444";
+            btn.style.background = "#222";
+        }
+    }
+}
+updateVoiceChatUI();
+
+// --- Variants Logic ---
+function switchVariantsTab(tab) {
+    const pbtn = document.getElementById('varpopbtn');
+    const ubtn = document.getElementById('varunpopbtn');
+    if(pbtn) {
+        pbtn.style.background = tab==='popular' ? '#4a80c0' : '';
+        pbtn.style.color = tab==='popular' ? '#fff' : '';
+    }
+    if(ubtn) {
+        ubtn.style.background = tab==='unpopular' ? '#4a80c0' : '';
+        ubtn.style.color = tab==='unpopular' ? '#fff' : '';
+    }
+    const list = document.getElementById('variantslist');
+    if(!list) return;
+    list.innerHTML = '';
+    
+    let vars = [];
+    if(tab === 'popular') {
+        vars = ['Chess960 (Fischer Random)', 'King of the Hill', 'Crazyhouse', 'Atomic', '3-Check'];
+    } else {
+        vars = ['Maharajah and the Sepoys', '5D Chess with Multiverse Time Travel', 'Fog of War', 'Duck Chess', 'Knightmate'];
+    }
+    
+    vars.forEach(v => {
+        const div = document.createElement('div');
+        div.style.padding = "10px";
+        div.style.background = "#1a1a2a";
+        div.style.border = "1px solid #4a80c0";
+        div.style.borderRadius = "4px";
+        div.innerText = v;
+        const btn = document.createElement('button');
+        btn.innerText = "Play";
+        btn.className = "settingchip";
+        btn.style.float = "right";
+        btn.onclick = () => alert("Variant starting soon: " + v);
+        div.appendChild(btn);
+        list.appendChild(div);
+    });
+}
+// --- Countdowns ---
+window.adminCountdown = function(type) {
+    let secs = parseInt(prompt("How many seconds? (e.g. 10)", "10")) || 10;
+    if(secs <= 0) return;
+    let label = type === 'update' ? "Update starting in" : "Admin Abuse starting in";
+    let timer = setInterval(() => {
+        if(typeof API !== 'undefined' && API.announce) {
+            API.announce((M.account && M.account.username) || 'Admin', `!COUNTDOWN ${label} ${secs}...`);
+        }
+        secs--;
+        if(secs < 0) {
+            clearInterval(timer);
+            if(typeof API !== 'undefined' && API.announce) {
+               if(type === 'update') {
+                  API.announce('Admin', '!COUNTDOWN 🚀 UPDATE STARTING NOW! Refreshing clients...');
+               } else {
+                  API.announce('Admin', '💥 ADMIN ABUSE ENGAGED!');
+               }
+            }
+        }
+    }, 1000);
+};
+
+const origPoll = window.pollAnnouncements;
+window.pollAnnouncements = async function() {
+    if(origPoll) await origPoll.apply(this, arguments);
+    if(typeof API === 'undefined' || !API.announceSince) return;
+    const r = await API.announceSince(_lastAnnounceTs - 1);
+    if(r && r.ok && r.announcements) {
+        for(const a of r.announcements) {
+            if(a.msg && a.msg.startsWith('!COUNTDOWN ')) {
+                const text = a.msg.substring(11);
+                if(typeof showAnnouncement === 'function') showAnnouncement(`⏳ ${text}`);
+                if(text.includes('UPDATE STARTING NOW')) {
+                    setTimeout(() => { location.href = location.pathname + "?v=" + Date.now(); }, 2000);
+                }
+                _lastAnnounceTs = Math.max(_lastAnnounceTs, a.ts);
+            }
+            if(a.msg && a.msg.startsWith('!FRIEND_REQ ')) {
+                const target = a.msg.split(' ')[1];
+                if(M.account && target.toLowerCase() === M.account.username.toLowerCase()) {
+                    const sender = a.user;
+                    if(M.friends && M.friends.find(f => f.name === sender)) continue;
+                    if(!window.handledFriendReqs) window.handledFriendReqs = new Set();
+                    if(window.handledFriendReqs.has(a.ts)) continue;
+                    window.handledFriendReqs.add(a.ts);
+                    
+                    if(confirm(`👥 ${sender} sent you a friend request! Accept?`)) {
+                        M.friends = M.friends || [];
+                        M.friends.push({name: sender, elo: 500, online: true});
+                        saveMeta();
+                        API.announce(M.account.username, `!FRIEND_ACC ${sender}`);
+                        if(typeof showAnnouncement==='function') showAnnouncement(`You are now friends with ${sender}!`);
+                        if(!document.getElementById('frmodal').classList.contains('hidden') && typeof renderFriendsFromServer==='function') renderFriendsFromServer();
+                    } else {
+                        if(typeof showAnnouncement==='function') showAnnouncement(`Declined friend request from ${sender}.`);
+                    }
+                }
+                _lastAnnounceTs = Math.max(_lastAnnounceTs, a.ts);
+            }
+            if(a.msg && a.msg.startsWith('!FRIEND_ACC ')) {
+                const target = a.msg.split(' ')[1];
+                if(M.account && target.toLowerCase() === M.account.username.toLowerCase()) {
+                    const sender = a.user;
+                    if(M.friends && M.friends.find(f => f.name === sender)) continue;
+                    M.friends = M.friends || [];
+                    M.friends.push({name: sender, elo: 500, online: true});
+                    saveMeta();
+                    if(typeof showAnnouncement==='function') showAnnouncement(`🎉 ${sender} accepted your friend request!`);
+                    if(!document.getElementById('frmodal').classList.contains('hidden') && typeof renderFriendsFromServer==='function') renderFriendsFromServer();
+                }
+                _lastAnnounceTs = Math.max(_lastAnnounceTs, a.ts);
+            }
+        }
+    }
+};
+
+// --- Puzzle Logic Redefine ---
+window.startRandomPuzzle = function() {
+    if(!window.PUZZLES || window.PUZZLES.length === 0) {
+        if(typeof showAnnouncement === 'function') showAnnouncement("Puzzles are still loading, please wait...");
+        return;
+    }
+    closeModal('puzzlemodal');
+    const puz = window.PUZZLES[Math.floor(Math.random() * window.PUZZLES.length)];
+    loadPuzzle(puz);
+};
+window.startDailyPuzzle = window.startRandomPuzzle;
+
+function loadPuzzle(puz) {
+    if(!puz) return;
+    G.board = JSON.parse(JSON.stringify(puz.board));
+    G.turn = puz.turn;
+    G.type = 'puzzle';
+    G.puzzleSide = puz.turn;
+    G.puzzleMoves = puz.moves;
+    G.puzzleStep = 0;
+    G.puzzleElo = puz.elo;
+    G.status = gameStatus(G.board, G.ep, G.cr, G.turn);
+    if(typeof showGameView === 'function') showGameView();
+    if(typeof showAnnouncement === 'function') showAnnouncement("🧩 Puzzle Mode: Find the best move!");
+    render();
 }
