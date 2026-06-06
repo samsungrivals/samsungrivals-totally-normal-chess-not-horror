@@ -91,6 +91,16 @@ app.post('/api/login', (req, res) => {
 });
 
 // --- Leaderboard ---
+app.get('/api/check-syntax', (req, res) => {
+  try {
+    const code = fs.readFileSync('app.js', 'utf8');
+    const vm = require('vm');
+    new vm.Script(code);
+    res.json({ ok: true, msg: "No syntax errors!" });
+  } catch(e) {
+    res.json({ ok: false, error: e.stack || e.message });
+  }
+});
 app.get('/api/leaderboard', (req, res) => {
   const list = Object.values(db.users)
     .filter(u => !u.isAI && u.username && !u.isBot && !['GrandmasterX', 'PawnPusher', 'CastleMaster', 'KnightFork99', 'BishopPairBen', 'EndgameEric', 'TacticalTom', 'AverageAndy', 'BlitzKing', 'QueenBee', 'OpeningOscar', 'SlowAndSteady', 'PromotionPete', 'GambitGirl', 'PinPusher', 'ChessNoob42', 'BlunderBob', 'StalemateSteve', 'ZugzwangZoe', 'Bot1800', 'Bot1650', 'Bot1987', 'Bot2300'].includes(u.username))
