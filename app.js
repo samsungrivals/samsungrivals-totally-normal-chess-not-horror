@@ -391,15 +391,22 @@ function renderBoard(){
   const el=document.getElementById('board');
   el.innerHTML='';
   const s=G;
-  const selMoves=s.sel?new Set(legal(s.board,s.sel[0],s.sel[1],s.ep,s.cr,s.turn).map(([r,c])=>`${r},${c}`)):new Set();
   const over=s.status==='checkmate'||s.status==='stalemate';
   const w=s.turn==='white';
   const ckp=(s.status==='check'||s.status==='checkmate')?kingPos(s.board,w):null;
+  const lms=s.sel?legal(s.board,s.sel[0],s.sel[1],s.ep,s.cr,s.turn):[];
 
   for(let r=0;r<8;r++)for(let c=0;c<8;c++){
     const sq=document.createElement('div');
+    sq.id=`sq-${r}-${c}`;
     sq.className=`sq ${(r+c)%2===0?'light':'dark'}`;
+    sq.style.position = 'relative';
     sq.dataset.r=r;sq.dataset.c=c;
+    
+    if(lms.some(m => m[0]===r && m[1]===c)) {
+      sq.innerHTML = '<div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:20%; height:20%; background:rgba(0,0,0,0.2); border-radius:50%; pointer-events:none; z-index:5;"></div>';
+    }
+
     const isSel=s.sel&&s.sel[0]===r&&s.sel[1]===c;
     const isLF=s.last&&s.last.from[0]===r&&s.last.from[1]===c;
     const isLT=s.last&&s.last.to[0]===r&&s.last.to[1]===c;
@@ -442,11 +449,11 @@ function renderBoard(){
      arrow.setAttribute("x2", x2);
      arrow.setAttribute("y2", y2);
      arrow.setAttribute("stroke", arrowCol);
-     arrow.setAttribute("stroke-width", "5");
+     arrow.setAttribute("stroke-width", "3");
      arrow.setAttribute("marker-end", "url(#arrowhead)");
      
      const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-     defs.innerHTML = `<marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="${arrowCol}"/></marker>`;
+     defs.innerHTML = `<marker id="arrowhead" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto"><polygon points="0 0, 6 2.5, 0 5" fill="${arrowCol}"/></marker>`;
      svg.appendChild(defs);
      svg.appendChild(arrow);
      el.appendChild(svg);
@@ -1409,7 +1416,9 @@ function startVsComputer(key){
 }
 
 function startGameVsBot(bot){
+  if (typeof M !== 'undefined' && M) { M.currentVariant = null; saveMeta(); }
   newGame();
+  showGameView();
   const box = document.getElementById('gamechatmessages');
   if(box) box.innerHTML = '';
   openGameChat();
@@ -5424,7 +5433,7 @@ if(_origRenderB) {
       b.style.position = "relative";
       let svg = document.getElementById("arrow-layer");
       if(!svg) {
-        b.insertAdjacentHTML("beforeend", '<svg id="arrow-layer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:100;"><defs><marker id="arrowhead" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto"><polygon points="0 0, 4 2, 0 4" fill="rgba(255, 170, 0, 0.8)"/></marker></defs></svg>');
+        b.insertAdjacentHTML("beforeend", '<svg id="arrow-layer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:100;"><defs><marker id="arrowhead" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto"><polygon points="0 0, 6 3, 0 6" fill="rgba(255, 170, 0, 0.8)"/></marker></defs></svg>');
       }
       drawArrows();
     }
@@ -5433,12 +5442,12 @@ if(_origRenderB) {
 function drawArrows() {
   const svg = document.getElementById("arrow-layer");
   if(!svg) return;
-  svg.innerHTML = '<defs><marker id="arrowhead" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto"><polygon points="0 0, 4 2, 0 4" fill="rgba(255, 170, 0, 0.8)"/></marker></defs>';
+  svg.innerHTML = '<defs><marker id="arrowhead" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto"><polygon points="0 0, 6 3, 0 6" fill="rgba(255, 170, 0, 0.8)"/></marker></defs>';
   _arrows.forEach(a => {
     const sqW = 100 / 8;
     const x1 = a.c1 * sqW + sqW/2, y1 = a.r1 * sqW + sqW/2;
     const x2 = a.c2 * sqW + sqW/2, y2 = a.r2 * sqW + sqW/2;
-    svg.innerHTML += `<line x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%" stroke="rgba(255, 170, 0, 0.8)" stroke-width="2%" marker-end="url(#arrowhead)" />`;
+    svg.innerHTML += `<line x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%" stroke="rgba(255, 170, 0, 0.8)" stroke-width="1%" marker-end="url(#arrowhead)" />`;
   });
 }
 document.addEventListener("contextmenu", e => {
