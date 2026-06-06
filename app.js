@@ -1119,14 +1119,11 @@ async function renderLeaderboard(){
      }
   } catch(e) {}
 
-  // ensure LB_AI is in lbAll if missing
-  const have = new Set(lbAll.map(e => e.name));
-  for(const ai of LB_AI) {
-      if(!have.has(ai.name)) {
-          lbAll.push({name: ai.name, elo: ai.elo, upgrades: Math.floor(ai.elo/100)});
-          have.add(ai.name);
-      }
-  }
+  // Bot removal logic
+  lbAll = lbAll.filter(u => {
+      const n = u.name.toLowerCase();
+      return !(n.includes('bot') || n.includes('ai '));
+  });
 
   const tab = window._lbTab || 'elo';
   const myName = (M.account && M.account.username) || 'You';
@@ -1715,6 +1712,9 @@ function searchFriends(){
 }
 
 function addFriend(name){
+  if(name.toLowerCase().includes('bot') || name.toLowerCase().includes('ai ')) {
+    return showAnnouncement('?? Bots cannot accept friend requests, they are too busy calculating!');
+  }
   M.friends=M.friends||[];
   if(!M.friends.find(f=>f.name===name)){
     M.friends.push({name,elo:nameToElo(name),online:Math.random()<0.6});
@@ -4503,13 +4503,13 @@ function doNothingClick(){
   M.doNothingClicks=(Number(M.doNothingClicks)||0)+1;
   saveMeta();
   const n=M.doNothingClicks;
-  if(n%10000===0){
+  if(n%50000===0){
     const who=(M.account&&M.account.username)||'Someone';
     const msg='MrBeast shoutout! '+who+' clicked Do Nothing '+n.toLocaleString()+' times for literally nothing 🫥';
     showAnnouncement('🎉 '+msg);
     if(typeof API!=='undefined'&&M.account){API.announce(who,msg).catch(()=>{})}
   }else{
-    showAnnouncement('🫥 Nothing happened. ('+n.toLocaleString()+' clicks — '+(10000-(n%10000))+' to a MrBeast shoutout)');
+    showAnnouncement('🫥 Nothing happened. ('+n.toLocaleString()+' clicks — '+(50000-(n%50000))+' to a MrBeast shoutout)');
   }
 }
 
@@ -5581,3 +5581,6 @@ window.startCustomVariant = function() { closeModal('customvariantmodal'); M.cur
 
 window.adminAbuseGlobal = function() { if(typeof API !== 'undefined') API.announce((M.account && M.account.username) || 'Admin', '!ABUSE'); closeModal('ownermodal'); };
 window.adminUpdateGame = function() { if(typeof API !== 'undefined') API.announce((M.account && M.account.username) || 'Admin', '!UPDATE'); closeModal('ownermodal'); };
+function triggerCrownPopup() { const d = document.createElement('div'); d.className='crown-popup'; d.innerHTML='??'; document.body.appendChild(d); setTimeout(function(){d.remove()}, 4000); }; setInterval(function(){ if (typeof M !== 'undefined' && (M.equipped === 'owner' || M.pieceSkin === 'owner' || M.skin === 'owner')) { triggerCrownPopup(); } }, 60000);
+window.startCustomPuzzle = function() { const elo = parseInt(document.getElementById('custompuzelo').value); if(isNaN(elo)) return showAnnouncement('Please enter a valid ELO!'); let eligible = window.PUZZLES.filter(p => Math.abs((p.elo || 1000) - elo) < 100); if (eligible.length === 0) eligible = window.PUZZLES; const puz = eligible[Math.floor(Math.random() * eligible.length)]; loadPuzzle(puz); }; window.startPeriodicPuzzle = function(type) { if(!window.PUZZLES || window.PUZZLES.length === 0) return showAnnouncement('Puzzles are still loading...'); closeModal('puzzlemodal'); const d = new Date(); let seed = 0; if(type==='weekly'){seed = Math.floor(d.getTime()/(1000*60*60*24*7));} else if(type==='monthly'){seed = d.getFullYear()*12 + d.getMonth();} else if(type==='yearly'){seed = d.getFullYear();} else if(type==='decadely'){seed = Math.floor(d.getFullYear()/10);} let hash = Math.imul(31, seed) ^ 0x3a5b2c; const idx = Math.abs(hash) % window.PUZZLES.length; loadPuzzle(window.PUZZLES[idx]); }; window.requestVariant = function() { const val = document.getElementById('variant-request-input').value; if(!val) return; document.getElementById('variant-request-input').value = ''; const who = (M.account&&M.account.username)||'Guest'; showAnnouncement('?? ' + who + ' requested variant: ' + val); if(typeof API !== 'undefined') API.announce(who, 'requested to feature variant: ' + val).catch(()=>{}); };
+window.connectVoiceChat = function() { showAnnouncement('?? Connecting to Voice Server...'); setTimeout(() => { const actx = new (window.AudioContext || window.webkitAudioContext)(); if(actx.state === 'suspended') actx.resume(); const bufferSize = actx.sampleRate * 2; const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; } const noise = actx.createBufferSource(); noise.buffer = buffer; const bpf = actx.createBiquadFilter(); bpf.type = 'bandpass'; bpf.frequency.value = 1000; const gain = actx.createGain(); gain.gain.setValueAtTime(0.5, actx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 1.5); noise.connect(bpf); bpf.connect(gain); gain.connect(actx.destination); noise.start(); showAnnouncement('? Voice servers are currently full!'); }, 1500); };

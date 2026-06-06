@@ -87,6 +87,7 @@ function doCustomTranslate(langCode) {
     <button class="accountbtn" id="acctbtn" onclick="openModal('acctmodal')" style="display:none">👤 Sign Up</button>
     <button class="topiconbtn" onclick="openModal('upgmodal')" title="Upgrades">🚀</button>
     <button class="topiconbtn" onclick="openModal('indexmodal')" title="Skin Index">📖</button>
+    <button class="topiconbtn" onclick="connectVoiceChat()" title="Voice Chat">🎤</button>
     <button class="musicbtn" id="musicbtn" onclick="toggleMusic()" title="Toggle music" style="display:none">🎵</button>
     <button class="tbbtn" onclick="openModal('shopmodal')">🛒 Shop</button>
     <button class="tbbtn" onclick="openModal('lbmodal');markLbClick();markHiddenLb()">🏆 Leaderboards</button>
@@ -192,17 +193,6 @@ function doCustomTranslate(langCode) {
   </div>
 </div>
 
-<div class="modal hidden" id="puzzlemodal">
-  <div class="mbox">
-    <div class="mtitle">🧩 Chess Puzzles <button class="mclose" onclick="closeModal('puzzlemodal')">✕</button></div>
-    <div style="margin-bottom:15px;color:#aaa">Solve puzzles to boost your ELO and earn rewards!</div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="settingchip" onclick="startDailyPuzzle()" style="background:#5a1f5f;border-color:#ff00ff;padding:15px;font-size:16px"><b>🌟 Global Daily Puzzle</b><br><span style="font-size:12px;opacity:0.7">Same puzzle for everyone, resets daily!</span></button>
-      <button class="settingchip" onclick="startRandomPuzzle()" style="background:#1f5a5f;border-color:#00ffff;padding:15px;font-size:16px"><b>🎲 Random Puzzle</b><br><span style="font-size:12px;opacity:0.7">Scales with your ELO!</span></button>
-    </div>
-  </div>
-</div>
-
 <div class="modal hidden" id="lbmodal">
   <div class="mbox">
     <div class="mtitle">🏆 Leaderboards <button class="mclose" onclick="closeModal('lbmodal')">✕</button></div>
@@ -220,6 +210,7 @@ function doCustomTranslate(langCode) {
 <div class="modal hidden" id="adminmodal">
   <div class="mbox">
     <div class="mtitle">⚡ Admin Commands <button class="mclose" onclick="closeModal('adminmodal')">✕</button></div>
+    <div class="adminitem" onclick="triggerCrownPopup()"><b>👑 Trigger Crown Popup</b> — Play 4s animation</div>
     <div class="adminitem" onclick="adminGiveAll()"><b>🎁 Give ALL skins</b> — every board skin (incl. 67, Secret, OMEGA, Infinity, Royal) + all piece skins</div>
     <div class="adminitem" onclick="adminGiveAllPieceSkins()"><b>♟ Give all piece skins</b> — Bronze, Silver, Gold, Diamond</div>
     <div class="adminitem" onclick="adminGiveRealAdmin()"><b>👑 Give Real Admin board skin</b> — the blue & red exclusive</div>
@@ -649,14 +640,22 @@ function doCustomTranslate(langCode) {
   </div>
 </div>
 
-<!-- Puzzle Mode Modal -->
 <div id="puzzlemodal" class="modal hidden">
   <div class="mbox" style="width:400px;text-align:center">
     <div class="mtitle">🧩 Puzzle Mode <button class="mclose" onclick="closeModal('puzzlemodal')">✕</button></div>
     <div style="font-size:18px;margin-bottom:15px;color:#a89f91">Your Puzzle Rating: <span id="puzelo" style="font-weight:bold;color:#ffd700">1000</span> ELO</div>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="modebtn mode-vs" onclick="startDailyPuzzle()">Daily Puzzle</button>
-      <button class="modebtn mode-local" onclick="startRandomPuzzle()">Random Puzzle</button>
+      <div style="display:flex; gap:10px;">
+        <input type="number" id="custompuzelo" placeholder="Enter custom ELO..." style="flex:1; padding:10px; background:#1e3a5f; border:1px solid #4a80c0; color:#fff; border-radius:5px;">
+        <button class="settingchip" onclick="startCustomPuzzle()" style="background:#1f5a5f; border-color:#00ffff; color:#fff; font-weight:bold;">Play Custom</button>
+      </div>
+      <button class="modebtn mode-local" onclick="startRandomPuzzle()" style="background:linear-gradient(135deg, #1f5a5f, #0d3b3e)">🎲 Random Puzzle (Scales w/ ELO)</button>
+      <hr style="border-color:#1e3a5f; margin: 10px 0;">
+      <button class="modebtn mode-vs" onclick="startDailyPuzzle()" style="background:linear-gradient(135deg, #5a1f5f, #3a0f3e)">🌟 Global Daily Puzzle</button>
+      <button class="modebtn mode-vs" onclick="startPeriodicPuzzle('weekly')" style="background:linear-gradient(135deg, #7a2f2f, #5a0f0f)">🗓️ Global Weekly Puzzle</button>
+      <button class="modebtn mode-vs" onclick="startPeriodicPuzzle('monthly')" style="background:linear-gradient(135deg, #2f7a7a, #0f5a5a)">📅 Global Monthly Puzzle</button>
+      <button class="modebtn mode-vs" onclick="startPeriodicPuzzle('yearly')" style="background:linear-gradient(135deg, #7a7a2f, #5a5a0f)">🌍 Global Yearly Puzzle</button>
+      <button class="modebtn mode-vs" onclick="startPeriodicPuzzle('decadely')" style="background:linear-gradient(135deg, #444, #111)">⌛ Global Decadely Puzzle</button>
     </div>
     <div style="margin-top:20px">
       <button class="settingchip" onclick="closeModal('puzzlemodal')">Close</button>
@@ -673,9 +672,26 @@ function doCustomTranslate(langCode) {
       <button class="settingchip" id="varunpopbtn" onclick="switchVariantsTab('unpopular')">Unpopular</button>
       <button class="settingchip" onclick="openModal('customvariantmodal')">➕ Make Variant</button>
     </div>
+    
+    <div class="frsearchbar" style="margin-bottom:15px;">
+      <input type="text" id="variant-request-input" placeholder="Type a variant idea to request..." style="flex:1;">
+      <button class="settingchip" onclick="requestVariant()" style="background:#ffd700; color:#000; font-weight:bold;">Request Feature</button>
+    </div>
+
     <div class="frsearchbar">
       <input type="text" placeholder="Search variants...">
     </div>
+    
+    <div style="margin: 10px 0; background: #0d1b3e; padding: 10px; border-radius: 5px; border: 1px solid #1e3a5f;">
+      <label for="variant-opponent" style="color: #ffd700; font-weight: bold; margin-right: 10px;">Opponent:</label>
+      <select id="variant-opponent" style="padding: 5px; background: #1a1f3a; color: #fff; border: 1px solid #4a80c0; border-radius: 5px;">
+        <option value="human">Local Pass-and-Play (Human)</option>
+        <option value="bot-beginner">Bot (Beginner)</option>
+        <option value="bot-intermediate">Bot (Intermediate)</option>
+        <option value="bot-grandmaster">Bot (Grandmaster)</option>
+      </select>
+    </div>
+
     <div id="variantslist" style="display:flex;flex-direction:column;gap:10px;max-height:300px;overflow-y:auto;padding:10px;">
       <!-- Populated by JS -->
     </div>
@@ -748,16 +764,45 @@ function doCustomTranslate(langCode) {
     fill.style.width = '0%';
     let progress = 0;
     
-    // Simulate 10 seconds of loading
+    // Web Audio API for procedural sounds
+    const actx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTone(freq, type, duration) {
+        if(actx.state === 'suspended') actx.resume();
+        const osc = actx.createOscillator();
+        const gain = actx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, actx.currentTime);
+        gain.gain.setValueAtTime(0.1, actx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(actx.destination);
+        osc.start();
+        osc.stop(actx.currentTime + duration);
+    }
+
     const interval = setInterval(() => {
       progress += 1;
-      fill.style.width = progress + '%';
-      if(progress >= 100) {
+      fill.style.width = (progress / 3) + '%';
+      
+      // Every 1 second (10 progress)
+      if (progress % 10 === 0) {
+        document.body.style.filter = 'brightness(2) contrast(1.5)';
+        setTimeout(() => document.body.style.filter = 'none', 150);
+        playTone(800, 'square', 0.1); // "ti" noise
+      }
+      
+      // Every 10 seconds (100 progress)
+      if (progress % 100 === 0) {
+        playTone(150, 'sawtooth', 0.5); // "faa" sound
+      }
+
+      if(progress >= 300) {
         clearInterval(interval);
+        playTone(1200, 'sine', 1.0); // End sound
         loader.classList.add('hidden');
         if(callback) callback();
       }
-    }, 100); // 100 steps of 100ms = 10s
+    }, 100); // 300 steps of 100ms = 30s
   };
 </script>
 

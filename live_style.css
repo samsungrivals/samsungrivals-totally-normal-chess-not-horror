@@ -497,4 +497,4 @@ body.mobile-mode .spinbtn{padding:8px 14px;font-size:14px}
 #board.skin-vip .dark, .sq.skin-vip.dark{background:linear-gradient(135deg,#001a33,#0044aa,#00ffff)}
 #board.skin-owner .light, .sq.skin-owner.light{background:linear-gradient(135deg,#ffd700,#fff8c0,#ffaa00,#ffd700);background-size:300% 300%;animation:ownerbg 5s ease infinite}
 #board.skin-owner .dark, .sq.skin-owner.dark{background:linear-gradient(135deg,#1a1a1a,#3a2a00,#000,#1a1a1a);background-size:300% 300%;animation:ownerbg 5s ease infinite}
-@keyframes ownerbg{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes ownerbg{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}.inverted-pieces .pc { text-shadow: none !important; }
