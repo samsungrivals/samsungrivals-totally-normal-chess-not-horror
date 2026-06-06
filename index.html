@@ -247,8 +247,14 @@ function doCustomTranslate(langCode) {
     <div class="adminitem owner-only" onclick="ownerCustomSubtractElo()" style="background:linear-gradient(135deg,#3a2a00,#1a1a1a);border-color:#ffd700"><b>&#x1F4C9; - Custom ELO</b> - type how much to subtract</div>
     <div class="adminitem owner-only" onclick="adminResetPlayerElo()" style="background:linear-gradient(135deg,#4a0000,#1a0000);border-color:#ff0000;color:#fcc"><b>🎯 Reset Player ELO</b> - owner only</div>
     <div class="adminitem owner-only" onclick="ownerRestoreProgress()" style="background:linear-gradient(135deg,#005a3a,#002a1a);border-color:#00ffaa"><b>🔄 Restore My Progress</b> - owner only: fully recover max ELO and items</div>
-    <div class="adminitem owner-only" onclick="adminCountdown('update')" style="background:linear-gradient(135deg,#114411,#002200);border-color:#00ffaa"><b>⏳ Update Countdown (Global)</b></div>
-    <div class="adminitem owner-only" onclick="adminCountdown('abuse')" style="background:linear-gradient(135deg,#550000,#220000);border-color:#ff0044"><b>💥 Admin Abuse Countdown (Global)</b></div>
+    <div class="adminitem owner-only" onclick="adminAbuseGlobal()" style="background:linear-gradient(135deg,#ff00ff,#aa00aa);border-color:#ff55ff;padding:15px;border-radius:8px;margin-top:10px;">
+      <b style="color:#fff;font-size:16px;">⚡ Admin Abuse (Global 2x)</b><br>
+      <span style="color:#ddd;font-size:12px;">- Gives global 2x luck, money, elo, upgrades, and -50% shop</span>
+    </div>
+    <div class="adminitem owner-only" onclick="adminUpdateGame()" style="background:linear-gradient(135deg,#0055ff,#0022cc);border-color:#5588ff;padding:15px;border-radius:8px;margin-top:10px;">
+      <b style="color:#fff;font-size:16px;">🔄 Update Game (Global)</b><br>
+      <span style="color:#ddd;font-size:12px;">- Forces the update into the game for everyone</span>
+    </div>
   </div>
 </div>
 

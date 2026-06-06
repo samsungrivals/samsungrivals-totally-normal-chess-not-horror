@@ -98,6 +98,20 @@ app.get('/api/leaderboard', (req, res) => {
   ok(res, { lb: list, totalUsers: list.length });
 });
 
+// --- Stats ---
+app.get('/api/stats', (req, res) => {
+  const list = Object.values(db.users).filter(u => !u.isAI && u.username && !u.isBot);
+  const registered = list.length;
+  // Count as online if seen in last 2 mins
+  const now = Date.now();
+  let online = 0;
+  for(const k in db.presence) {
+     if(now - db.presence[k] < 120000) online++;
+  }
+  // Fallback to at least 1 (the requester)
+  ok(res, { online: Math.max(1, online), registered });
+});
+
 // --- Update ELO ---
 app.post('/api/elo', (req, res) => {
   const { username, elo } = req.body || {};

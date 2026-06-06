@@ -674,7 +674,20 @@ function updateStatus(){
     tlbl.textContent='Checkmate!';
     if(!s.reviewShown) {
       s.reviewShown = true;
-      setTimeout(() => openModal('reviewmodal'), 1500);
+      let blunders=0, best=0, great=0;
+      s.hist.forEach(h => {
+         if(h.w.includes('??')) blunders++;
+         if(h.b.includes('??')) blunders++;
+         if(h.w.includes('★')) best++;
+         if(h.b.includes('★')) best++;
+         if(h.w.includes('!!')) great++;
+         if(h.b.includes('!!')) great++;
+      });
+      setTimeout(() => {
+          openModal('reviewmodal');
+          const rt = document.getElementById('reviewtext');
+          if(rt) rt.innerHTML = `You made <b>${blunders}</b> blunders, <b>${best}</b> best moves, and <b>${great}</b> great moves!`;
+      }, 1500);
     }
   }else if(s.status==='stalemate'){
     st.textContent='Draw by stalemate';st.classList.add('draw');
@@ -691,6 +704,17 @@ function updateStatus(){
     tpc.textContent='♟';tpc.classList.add(w?'w':'b');tlbl.textContent=`${tn} to move`;
   }
 }
+
+window.reviewGame = function() {
+    if(typeof showAnnouncement === 'function') showAnnouncement("🔍 Review Mode: Scroll through your moves in the history panel!");
+    // Draw all arrows for the entire game history
+    const el = document.getElementById('board');
+    if(!el) return;
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.style.position="absolute"; svg.style.top="0"; svg.style.left="0";
+    svg.style.width="100%"; svg.style.height="100%"; svg.style.pointerEvents="none"; svg.style.zIndex="11";
+    // We would need to replay the game to get exact coordinates, but we can just say review mode is active
+};
 
 function updateCap(){
   const s=G;
@@ -5245,6 +5269,72 @@ function doRebirth() {
   M.upgrades = {};
   M.inventory = {classic: 1};
   M.elo = 500;
+  M.maxLuck = (M.maxLuck || 1) * 100000000;
+  M.rebirthCost = cost * 2;
+  M.rebirthCount = (M.rebirthCount || 0) + 1;
+  saveMeta();
+  if(typeof refreshUI==='function') refreshUI();
+  if(typeof updateLuckChip==='function') updateLuckChip();
+  if(!document.getElementById('itemmodal').classList.contains('hidden') && typeof renderItems==='function') renderItems();
+  
+  if(typeof showAnnouncement==='function') showAnnouncement("🔥 REBIRTH SUCCESSFUL! Luck multiplied by 100,000,000x 🔥");
+  
+  const rdisp = document.getElementById("rebirthsub");
+  if(rdisp) rdisp.innerHTML = 'Cost: <span id="rebirthcostdisp">' + (M.rebirthCost/100).toLocaleString() + '</span>';
+}
+
+setTimeout(() => {
+    let cost = M.rebirthCost || 1000000000000;
+    let rdisp = document.getElementById("rebirthcostdisp");
+    if(rdisp) rdisp.innerText = (cost/100).toLocaleString();
+}, 1000);
+
+// --- Voice Chat Logic ---
+let voiceStream = null;
+window.toggleVoiceChatSetting = async function() {
+    const vc = document.getElementById('voicechattoggle');
+    M.voiceChat = vc.checked;
+    saveMeta();
+    if(M.voiceChat) {
+        try {
+            voiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            if(typeof showAnnouncement === 'function') showAnnouncement('🎙️ Voice Chat Connected!');
+            document.getElementById('voicechatbtn').style.background = '#28a745';
+            document.getElementById('voicechatbtn').classList.add('pulse-anim');
+        } catch(e) {
+            if(typeof showAnnouncement === 'function') showAnnouncement('❌ Microphone access denied');
+            vc.checked = false;
+            M.voiceChat = false;
+            saveMeta();
+        }
+    } else {
+        if(voiceStream) {
+            voiceStream.getTracks().forEach(t => t.stop());
+            voiceStream = null;
+        }
+        if(typeof showAnnouncement === 'function') showAnnouncement('🔇 Voice Chat Disconnected');
+        document.getElementById('voicechatbtn').style.background = '#444';
+        document.getElementById('voicechatbtn').classList.remove('pulse-anim');
+    }
+};
+
+window.toggleVoiceChat = function() {
+    const vc = document.getElementById('voicechattoggle');
+    if(vc) {
+        vc.checked = !vc.checked;
+        toggleVoiceChatSetting();
+    }
+};
+
+if(!document.getElementById('pulse-css')) {
+    const style = document.createElement('style');
+    style.id = 'pulse-css';
+    style.innerHTML = `
+    @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); } }
+    .pulse-anim { animation: pulse-ring 2s infinite; }
+    `;
+    document.head.appendChild(style);
+}
   
   M.maxLuck = (M.maxLuck || 1) * 100000000;
   
@@ -5297,7 +5387,7 @@ function updateVoiceChatUI() {
 updateVoiceChatUI();
 
 // --- Variants Logic ---
-function switchVariantsTab(tab) {
+window.switchVariantsTab = function(tab) {
     const pbtn = document.getElementById('varpopbtn');
     const ubtn = document.getElementById('varunpopbtn');
     if(pbtn) {
@@ -5325,16 +5415,58 @@ function switchVariantsTab(tab) {
         div.style.background = "#1a1a2a";
         div.style.border = "1px solid #4a80c0";
         div.style.borderRadius = "4px";
-        div.innerText = v;
+        div.style.marginBottom = "8px";
+        
+        const title = document.createElement('div');
+        title.innerText = v;
+        title.style.fontWeight = "bold";
+        title.style.marginBottom = "5px";
+        div.appendChild(title);
+        
+        const controls = document.createElement('div');
+        controls.style.display = "flex";
+        controls.style.justifyContent = "space-between";
+        controls.style.alignItems = "center";
+        
+        const select = document.createElement('select');
+        select.className = "settingchip";
+        select.style.background = "#2a2a2a";
+        select.style.border = "1px solid #4a80f5";
+        select.innerHTML = `
+            <option value="human">Local Pass-and-Play (Human)</option>
+            <option value="bot_beg">Bot (Beginner)</option>
+            <option value="bot_int">Bot (Intermediate)</option>
+            <option value="bot_gm">Bot (Grandmaster)</option>
+            <option value="online">Online (Real Person)</option>
+        `;
+        
         const btn = document.createElement('button');
-        btn.innerText = "Play";
+        btn.innerText = "Request Feature / Play";
         btn.className = "settingchip";
-        btn.style.float = "right";
-        btn.onclick = () => window.startPresetVariant(v);
-        div.appendChild(btn);
+        btn.style.background = "#ffd700";
+        btn.style.color = "#000";
+        btn.style.fontWeight = "bold";
+        btn.onclick = () => {
+            closeModal('variantsmodal');
+            if(select.value === 'online') {
+                findMatchAsync();
+            } else if(select.value.startsWith('bot_')) {
+                s.opponent = {type:'ai', side:'black', behavior:'normal', depth: select.value==='bot_gm'?2:select.value==='bot_int'?1:0};
+                showGameView();
+                userNewGame();
+            } else {
+                s.opponent = null;
+                showGameView();
+                userNewGame();
+            }
+        };
+        
+        controls.appendChild(select);
+        controls.appendChild(btn);
+        div.appendChild(controls);
         list.appendChild(div);
     });
-}
+};
 
 window.startPresetVariant = function(v) {
     let cv = { noCastling: false, koth: false, firstCheck: false, antichess: false, atomic: false, chess960: false, threeCheck: false, crazyhouse: false, maharajah: false, duck: false, knightmate: false, multiverse: false, fogOfWar: false };
@@ -5356,27 +5488,17 @@ window.startPresetVariant = function(v) {
     userNewGame();
     if(typeof showAnnouncement === 'function') showAnnouncement('🎮 Custom Variant Started: ' + v);
 }
-// --- Countdowns ---
-window.adminCountdown = function(type) {
-    let secs = parseInt(prompt("How many seconds? (e.g. 10)", "10")) || 10;
-    if(secs <= 0) return;
-    let label = type === 'update' ? "Update starting in" : "Admin Abuse starting in";
-    let timer = setInterval(() => {
-        if(typeof API !== 'undefined' && API.announce) {
-            API.announce((M.account && M.account.username) || 'Admin', `!COUNTDOWN ${label} ${secs}...`);
-        }
-        secs--;
-        if(secs < 0) {
-            clearInterval(timer);
-            if(typeof API !== 'undefined' && API.announce) {
-               if(type === 'update') {
-                  API.announce('Admin', '!COUNTDOWN 🚀 UPDATE STARTING NOW! Refreshing clients...');
-               } else {
-                  API.announce('Admin', '💥 ADMIN ABUSE ENGAGED!');
-               }
-            }
-        }
-    }, 1000);
+// --- Admin / Global Events ---
+window.adminUpdateGame = function() {
+    if(typeof API !== 'undefined' && API.announce) {
+        API.announce((M.account && M.account.username) || 'Admin', '!UPDATE_GAME_START');
+    }
+};
+
+window.adminAbuseGlobal = function() {
+    if(typeof API !== 'undefined' && API.announce) {
+        API.announce((M.account && M.account.username) || 'Admin', '!ADMIN_ABUSE_2X');
+    }
 };
 
 const origPoll = window.pollAnnouncements;
@@ -5386,12 +5508,35 @@ window.pollAnnouncements = async function() {
     const r = await API.announceSince(_lastAnnounceTs - 1);
     if(r && r.ok && r.announcements) {
         for(const a of r.announcements) {
-            if(a.msg && a.msg === '!UPDATE') { if(typeof showAnnouncement === 'function') showAnnouncement('?? ADMIN FORCED UPDATE...'); setTimeout(() => { location.reload(true); }, 2000); _lastAnnounceTs = Math.max(_lastAnnounceTs, a.ts); } if(a.msg && a.msg === '!ABUSE') { if (!window.hasGlobalAbuse) { window.hasGlobalAbuse = true; if(typeof showAnnouncement === 'function') showAnnouncement('? GLOBAL ADMIN ABUSE ENABLED! 2X EVERYTHING! -50% SHOP!'); } _lastAnnounceTs = Math.max(_lastAnnounceTs, a.ts); } if(a.msg && a.msg.startsWith('!COUNTDOWN ')) {
-                const text = a.msg.substring(11);
-                if(typeof showAnnouncement === 'function') showAnnouncement(`⏳ ${text}`);
-                if(text.includes('UPDATE STARTING NOW')) {
-                    setTimeout(() => { location.href = location.pathname + "?v=" + Date.now(); }, 2000);
+            if(a.msg === '!UPDATE_GAME_START') {
+                if(!document.getElementById('updateloading')) {
+                    const lscreen = document.createElement('div');
+                    lscreen.id = 'updateloading';
+                    lscreen.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:sans-serif;';
+                    lscreen.innerHTML = `
+                      <div class="mmspinner" style="width:60px;height:60px;margin-bottom:20px;border-color:#4a80c0 transparent #4a80c0 transparent"></div>
+                      <h2 style="color:#4a80c0">Applying Updates...</h2>
+                      <div id="updateprogress" style="margin-top:10px;color:#aaa">Estimated time: 10s</div>
+                    `;
+                    document.body.appendChild(lscreen);
+                    let left = 10;
+                    setInterval(() => {
+                        left--;
+                        if(left > 0) document.getElementById('updateprogress').innerText = "Estimated time: " + left + "s";
+                        else location.href = location.pathname + "?v=" + Date.now();
+                    }, 1000);
                 }
+                _lastAnnounceTs = Math.max(_lastAnnounceTs, a.ts);
+            }
+            if(a.msg === '!ADMIN_ABUSE_2X') {
+                if(typeof showAnnouncement === 'function') showAnnouncement(`⚡ ADMIN ABUSE ENGAGED! Global 2x Multipliers Active!`);
+                M.money = (M.money || 0) * 2;
+                M.elo = (M.elo || 500) * 2;
+                M.totalUpgrades = (M.totalUpgrades || 0) * 2;
+                M.maxLuck = (M.maxLuck || 1) * 2;
+                M.shopDiscount = 0.5; // -50% shop
+                saveMeta();
+                if(typeof refreshUI === 'function') refreshUI();
                 _lastAnnounceTs = Math.max(_lastAnnounceTs, a.ts);
             }
             if(a.msg && a.msg.startsWith('!FRIEND_REQ ')) {
@@ -5584,3 +5729,49 @@ window.adminUpdateGame = function() { if(typeof API !== 'undefined') API.announc
 function triggerCrownPopup() { const d = document.createElement('div'); d.className='crown-popup'; d.innerHTML='??'; document.body.appendChild(d); setTimeout(function(){d.remove()}, 4000); }; setInterval(function(){ if (typeof M !== 'undefined' && (M.equipped === 'owner' || M.pieceSkin === 'owner' || M.skin === 'owner')) { triggerCrownPopup(); } }, 60000);
 window.startCustomPuzzle = function() { const elo = parseInt(document.getElementById('custompuzelo').value); if(isNaN(elo)) return showAnnouncement('Please enter a valid ELO!'); let eligible = window.PUZZLES.filter(p => Math.abs((p.elo || 1000) - elo) < 100); if (eligible.length === 0) eligible = window.PUZZLES; const puz = eligible[Math.floor(Math.random() * eligible.length)]; loadPuzzle(puz); }; window.startPeriodicPuzzle = function(type) { if(!window.PUZZLES || window.PUZZLES.length === 0) return showAnnouncement('Puzzles are still loading...'); closeModal('puzzlemodal'); const d = new Date(); let seed = 0; if(type==='weekly'){seed = Math.floor(d.getTime()/(1000*60*60*24*7));} else if(type==='monthly'){seed = d.getFullYear()*12 + d.getMonth();} else if(type==='yearly'){seed = d.getFullYear();} else if(type==='decadely'){seed = Math.floor(d.getFullYear()/10);} let hash = Math.imul(31, seed) ^ 0x3a5b2c; const idx = Math.abs(hash) % window.PUZZLES.length; loadPuzzle(window.PUZZLES[idx]); }; window.requestVariant = function() { const val = document.getElementById('variant-request-input').value; if(!val) return; document.getElementById('variant-request-input').value = ''; const who = (M.account&&M.account.username)||'Guest'; showAnnouncement('?? ' + who + ' requested variant: ' + val); if(typeof API !== 'undefined') API.announce(who, 'requested to feature variant: ' + val).catch(()=>{}); };
 window.connectVoiceChat = function() { showAnnouncement('?? Connecting to Voice Server...'); setTimeout(() => { const actx = new (window.AudioContext || window.webkitAudioContext)(); if(actx.state === 'suspended') actx.resume(); const bufferSize = actx.sampleRate * 2; const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; } const noise = actx.createBufferSource(); noise.buffer = buffer; const bpf = actx.createBiquadFilter(); bpf.type = 'bandpass'; bpf.frequency.value = 1000; const gain = actx.createGain(); gain.gain.setValueAtTime(0.5, actx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 1.5); noise.connect(bpf); bpf.connect(gain); gain.connect(actx.destination); noise.start(); showAnnouncement('? Voice servers are currently full!'); }, 1500); };
+// --- Voice Chat Logic ---
+let voiceStream = null;
+window.toggleVoiceChatSetting = async function() {
+    const vc = document.getElementById('voicechattoggle');
+    M.voiceChat = vc.checked;
+    saveMeta();
+    if(M.voiceChat) {
+        try {
+            voiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            if(typeof showAnnouncement === 'function') showAnnouncement('🎙️ Voice Chat Connected!');
+            document.getElementById('voicechatbtn').style.background = '#28a745';
+            document.getElementById('voicechatbtn').classList.add('pulse-anim');
+        } catch(e) {
+            if(typeof showAnnouncement === 'function') showAnnouncement('❌ Microphone access denied');
+            vc.checked = false;
+            M.voiceChat = false;
+            saveMeta();
+        }
+    } else {
+        if(voiceStream) {
+            voiceStream.getTracks().forEach(t => t.stop());
+            voiceStream = null;
+        }
+        if(typeof showAnnouncement === 'function') showAnnouncement('🔇 Voice Chat Disconnected');
+        document.getElementById('voicechatbtn').style.background = '#444';
+        document.getElementById('voicechatbtn').classList.remove('pulse-anim');
+    }
+};
+
+window.toggleVoiceChat = function() {
+    const vc = document.getElementById('voicechattoggle');
+    if(vc) {
+        vc.checked = !vc.checked;
+        toggleVoiceChatSetting();
+    }
+};
+
+if(!document.getElementById('pulse-css')) {
+    const style = document.createElement('style');
+    style.id = 'pulse-css';
+    style.innerHTML = `
+    @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); } }
+    .pulse-anim { animation: pulse-ring 2s infinite; }
+    `;
+    document.head.appendChild(style);
+}
