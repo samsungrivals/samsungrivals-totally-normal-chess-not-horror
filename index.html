@@ -600,7 +600,7 @@ function doCustomTranslate(langCode) {
 <!-- Scripts -->
 <div id="google_translate_element" style="display:none"></div>
 <script src="puzzles.js"></script>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 <!-- Global Chat -->
 <div id="globalchat" style="position:fixed;bottom:70px;left:20px;width:300px;height:250px;background:#222;border:1px solid #444;border-radius:8px;display:none;flex-direction:column;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.5);font-family:sans-serif;">
   <div style="display:flex;justify-content:space-between;align-items:center;background:#333;border-top-left-radius:8px;border-top-right-radius:8px;">
@@ -762,55 +762,7 @@ function doCustomTranslate(langCode) {
   </style>
 </div>
 
-<script>
-  window.showLoadingScreen = function(callback) {
-    const loader = document.getElementById('loading-screen');
-    const fill = document.getElementById('loading-bar-fill');
-    loader.classList.remove('hidden');
-    fill.style.width = '0%';
-    let progress = 0;
-    
-    // Web Audio API for procedural sounds
-    const actx = new (window.AudioContext || window.webkitAudioContext)();
-    function playTone(freq, type, duration) {
-        if(actx.state === 'suspended') actx.resume();
-        const osc = actx.createOscillator();
-        const gain = actx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, actx.currentTime);
-        gain.gain.setValueAtTime(0.1, actx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(actx.destination);
-        osc.start();
-        osc.stop(actx.currentTime + duration);
-    }
 
-    const interval = setInterval(() => {
-      progress += 1;
-      fill.style.width = (progress / 3) + '%';
-      
-      // Every 1 second (10 progress)
-      if (progress % 10 === 0) {
-        document.body.style.filter = 'brightness(2) contrast(1.5)';
-        setTimeout(() => document.body.style.filter = 'none', 150);
-        playTone(800, 'square', 0.1); // "ti" noise
-      }
-      
-      // Every 10 seconds (100 progress)
-      if (progress % 100 === 0) {
-        playTone(150, 'sawtooth', 0.5); // "faa" sound
-      }
-
-      if(progress >= 300) {
-        clearInterval(interval);
-        playTone(1200, 'sine', 1.0); // End sound
-        loader.classList.add('hidden');
-        if(callback) callback();
-      }
-    }, 100); // 300 steps of 100ms = 30s
-  };
-</script>
 
 </body>
 </html>
