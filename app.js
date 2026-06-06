@@ -5336,20 +5336,20 @@ if(!document.getElementById('pulse-css')) {
     document.head.appendChild(style);
 }
   
-  M.maxLuck = (M.maxLuck || 1) * 100000000;
+// M.maxLuck = (M.maxLuck || 1) * 100000000;
   
-  M.rebirthCost = cost * 2;
-  M.rebirthCount = (M.rebirthCount || 0) + 1;
-  saveMeta();
-  if(typeof refreshUI==='function') refreshUI();
-  if(typeof updateLuckChip==='function') updateLuckChip();
-  if(!document.getElementById('itemmodal').classList.contains('hidden') && typeof renderItems==='function') renderItems();
+// M.rebirthCost = cost * 2;
+// M.rebirthCount = (M.rebirthCount || 0) + 1;
+// saveMeta();
+// if(typeof refreshUI==='function') refreshUI();
+// if(typeof updateLuckChip==='function') updateLuckChip();
+// if(!document.getElementById('itemmodal').classList.contains('hidden') && typeof renderItems==='function') renderItems();
   
-  if(typeof showAnnouncement==='function') showAnnouncement("🔥 REBIRTH SUCCESSFUL! Luck multiplied by 100,000,000x 🔥");
+// if(typeof showAnnouncement==='function') showAnnouncement("🔥 REBIRTH SUCCESSFUL! Luck multiplied by 100,000,000x 🔥");
   
-  const rdisp = document.getElementById("rebirthsub");
-  if(rdisp) rdisp.innerHTML = 'Cost: <span id="rebirthcostdisp">' + (M.rebirthCost/100).toLocaleString() + '</span>';
-}
+// const rdisp = document.getElementById("rebirthsub");
+// if(rdisp) rdisp.innerHTML = 'Cost: <span id="rebirthcostdisp">' + (M.rebirthCost/100).toLocaleString() + '</span>';
+// }
 
 setTimeout(() => {
     let cost = M.rebirthCost || 1000000000000;
