@@ -394,7 +394,7 @@ function renderBoard(){
   const over=s.status==='checkmate'||s.status==='stalemate';
   const w=s.turn==='white';
   const ckp=(s.status==='check'||s.status==='checkmate')?kingPos(s.board,w):null;
-  const lms=s.sel?legal(s.board,s.sel[0],s.sel[1],s.ep,s.cr,s.turn):[];
+  const selMoves=s.sel?new Set(legal(s.board,s.sel[0],s.sel[1],s.ep,s.cr,s.turn).map(([r,c])=>`${r},${c}`)):new Set();
 
   for(let r=0;r<8;r++)for(let c=0;c<8;c++){
     const sq=document.createElement('div');
@@ -403,10 +403,6 @@ function renderBoard(){
     sq.style.position = 'relative';
     sq.dataset.r=r;sq.dataset.c=c;
     
-    if(lms.some(m => m[0]===r && m[1]===c)) {
-      sq.innerHTML = '<div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:20%; height:20%; background:rgba(0,0,0,0.2); border-radius:50%; pointer-events:none; z-index:5;"></div>';
-    }
-
     const isSel=s.sel&&s.sel[0]===r&&s.sel[1]===c;
     const isLF=s.last&&s.last.from[0]===r&&s.last.from[1]===c;
     const isLT=s.last&&s.last.to[0]===r&&s.last.to[1]===c;
