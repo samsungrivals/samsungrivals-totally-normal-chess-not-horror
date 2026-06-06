@@ -105,11 +105,11 @@ function doCustomTranslate(langCode) {
   <div class="hs-content">
     <div class="hs-logo" style="font-size: 64px; font-weight: bold; background: linear-gradient(135deg, #ffd700, #ff8c00); -webkit-background-clip: text; color: transparent; text-shadow: 0 4px 15px rgba(255,140,0,0.5); margin-bottom: 40px; text-align: center;">CHESS RNG</div>
     <div class="hs-buttons" style="display: flex; flex-direction: column; gap: 15px; width: 300px; margin: 0 auto;">
-      <button class="hs-btn" onclick="openModal('startgamemodal')">▶️ Start Game</button>
-      <button class="hs-btn" onclick="openModal('variantsmodal')" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">♟️ Variants</button>
-      <button class="hs-btn" onclick="openModal('puzzlemodal')" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">🧩 Puzzles</button>
-      <button class="hs-btn" onclick="openModal('welcomemodal')">📖 How to Play</button>
-      <button class="hs-btn" onclick="openModal('acctmodal')">👤 Profile</button>
+      <button class="hs-btn" onclick="showGameView(); openModal('startgamemodal')">▶️ Start Game</button>
+      <button class="hs-btn" onclick="showGameView(); openModal('variantsmodal')" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">♟️ Variants</button>
+      <button class="hs-btn" onclick="showGameView(); openModal('puzzlemodal')" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">🧩 Puzzles</button>
+      <button class="hs-btn" onclick="showGameView(); openModal('welcomemodal')">📖 How to Play</button>
+      <button class="hs-btn" onclick="showGameView(); openModal('acctmodal')">👤 Profile</button>
     </div>
   </div>
 </div>
