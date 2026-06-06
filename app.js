@@ -5563,7 +5563,6 @@ window.pollAnnouncements = async function() {
                     }
                     
                     document.body.appendChild(lscreen);
-                    let left = 10;
                     setInterval(() => {
                         left--;
                         if(left > 0) document.getElementById('updateprogress').innerText = "Estimated time: " + left + "s";
@@ -5852,6 +5851,20 @@ window.showLoadingScreen = function(callback) {
         if(callback) callback();
     }, 3000); // 3 second loading screen
 };
+
+// --- Live Stats Polling ---
+setInterval(function() {
+    if(typeof API !== 'undefined' && API.req) {
+        API.req('stats').then(res => {
+            if(res && res.ok) {
+                const o = document.getElementById('stat-online');
+                const r = document.getElementById('stat-reg');
+                if(o) o.innerText = res.stats.online;
+                if(r) r.innerText = res.stats.registered;
+            }
+        }).catch(e => {});
+    }
+}, 5000);
 
 window.showGameView = function() {
     const hs = document.getElementById('home-screen');
