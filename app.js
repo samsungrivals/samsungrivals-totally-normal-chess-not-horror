@@ -1,7 +1,7 @@
 function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
-const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟'};
-const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0};
+const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟','D':'🦆','M':'🫅'};
+const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
 const OPENINGS = {
   "e4 c5": "Sicilian Defense",
   "e4 e5": "Open Game",
@@ -80,16 +80,31 @@ function newGame(){
       br = generateChess960();
   }
   let brB = br.map(p => p.toLowerCase());
+  
+  let pR = ['P','P','P','P','P','P','P','P'];
+  let pRB = ['p','p','p','p','p','p','p','p'];
+  
+  if(typeof M !== 'undefined' && M && M.currentVariant) {
+      if(M.currentVariant.maharajah) {
+          br = ['','','','','M','','',''];
+          pR = ['','','','','','','',''];
+      }
+      if(M.currentVariant.knightmate) {
+          br = ['R','K','B','Q','N','B','K','R'];
+          brB = br.map(p => p.toLowerCase());
+      }
+  }
+
   G={
     palette:pal,
     board:[
       brB,
-      ['p','p','p','p','p','p','p','p'],
+      pRB,
       ['','','','','','','',''],
       ['','','','','','','',''],
       ['','','','','','','',''],
       ['','','','','','','',''],
-      ['P','P','P','P','P','P','P','P'],
+      pR,
       br,
     ],
     turn:'white',
@@ -120,7 +135,12 @@ function fr(r){return String(8-r)}
 function pseudo(b,r,c,ep,cr,atk=false){
   const p=b[r][c];if(!p)return[];
   const w=isU(p),t=w?'white':'black',ms=[];
-  const type=p.toLowerCase();
+  let type=p.toLowerCase();
+
+  if (typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.knightmate) {
+      if (type === 'k') type = 'n';
+      else if (type === 'n') type = 'k';
+  }
 
   function slide(dirs){
     for(const[dr,dc]of dirs){
@@ -128,7 +148,7 @@ function pseudo(b,r,c,ep,cr,atk=false){
         const nr=r+dr*n,nc=c+dc*n;
         if(!inB(nr,nc))break;
         const tg=b[nr][nc];
-        if(!tg){ms.push([nr,nc])}else{if(opp(tg,t))ms.push([nr,nc]);break}
+        if(!tg){ms.push([nr,nc])}else{if(opp(tg,t) && tg!=='D')ms.push([nr,nc]);break}
       }
     }
   }
@@ -139,7 +159,7 @@ function pseudo(b,r,c,ep,cr,atk=false){
       const nr=r+dir,nc=c+dc;
       if(inB(nr,nc)){
         if(atk)ms.push([nr,nc]);
-        else if(opp(b[nr][nc],t))ms.push([nr,nc]);
+        else if(opp(b[nr][nc],t) && b[nr][nc] !== 'D')ms.push([nr,nc]);
         else if(ep&&nr===ep[0]&&nc===ep[1])ms.push([nr,nc]);
       }
     }
@@ -150,7 +170,7 @@ function pseudo(b,r,c,ep,cr,atk=false){
   }else if(type==='n'){
     for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){
       const nr=r+dr,nc=c+dc;
-      if(inB(nr,nc)&&!own(b[nr][nc],t))ms.push([nr,nc]);
+      if(inB(nr,nc)&&!own(b[nr][nc],t)&&b[nr][nc]!=='D')ms.push([nr,nc]);
     }
   }else if(type==='b'){slide([[-1,-1],[-1,1],[1,-1],[1,1]])}
   else if(type==='r'){slide([[-1,0],[1,0],[0,-1],[0,1]])}
@@ -160,7 +180,7 @@ function pseudo(b,r,c,ep,cr,atk=false){
       const nr=r+dr,nc=c+dc;
       if(inB(nr,nc)){
           const target = b[nr][nc];
-          if(!own(target,t)) {
+          if(!own(target,t) && target!=='D') {
               if (target && typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.atomic) {
                   continue; // Kings cannot capture in atomic chess
               }
@@ -174,6 +194,13 @@ function pseudo(b,r,c,ep,cr,atk=false){
         if(rts.k&&!b[row][5]&&!b[row][6]&&b[row][7]?.toLowerCase()==='r')ms.push([row,6]);
         if(rts.q&&!b[row][3]&&!b[row][2]&&!b[row][1]&&b[row][0]?.toLowerCase()==='r')ms.push([row,2]);
       }
+    }
+  }else if(type==='m'){
+    // Maharajah moves like a Queen and a Knight
+    slide([[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]);
+    for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){
+      const nr=r+dr,nc=c+dc;
+      if(inB(nr,nc)&&!own(b[nr][nc],t)&&b[nr][nc]!=='D')ms.push([nr,nc]);
     }
   }
   return ms;
@@ -189,7 +216,8 @@ function attacked(b,r,c,byW){
 }
 
 function kingPos(b,w){
-  const k=w?'K':'k';
+  let k=w?'K':'k';
+  if (typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.maharajah && w) k = 'M';
   for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(b[r][c]===k)return[r,c];
   return null;
 }
@@ -395,6 +423,17 @@ function renderBoard(){
   const w=s.turn==='white';
   const ckp=(s.status==='check'||s.status==='checkmate')?kingPos(s.board,w):null;
   const selMoves=s.sel?new Set(legal(s.board,s.sel[0],s.sel[1],s.ep,s.cr,s.turn).map(([r,c])=>`${r},${c}`)):new Set();
+  
+  const fog = (typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.fogOfWar) ? new Set() : null;
+  if(fog && !over) {
+      for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+          const p = s.board[r][c];
+          if(p && own(p, s.turn)) {
+              fog.add(`${r},${c}`);
+              pseudo(s.board, r, c, s.ep, s.cr, true).forEach(([tr,tc]) => fog.add(`${tr},${tc}`));
+          }
+      }
+  }
 
   for(let r=0;r<8;r++)for(let c=0;c<8;c++){
     const sq=document.createElement('div');
@@ -407,16 +446,24 @@ function renderBoard(){
     const isLF=s.last&&s.last.from[0]===r&&s.last.from[1]===c;
     const isLT=s.last&&s.last.to[0]===r&&s.last.to[1]===c;
     const isChk=ckp&&ckp[0]===r&&ckp[1]===c;
-    if(isSel)sq.classList.add('selected');
-    else if(isLF)sq.classList.add('lf');
-    else if(isLT)sq.classList.add('lt');
+
+    if(isSel)sq.classList.add('sel');
+    if(isLF)sq.classList.add('lf');
+    if(isLT)sq.classList.add('lt');
     if(isChk)sq.classList.add('incheck');
 
-    const piece=s.board[r][c];
-    if(piece){const sp=document.createElement('span');sp.className='pc '+(isU(piece)?'w':'b');sp.textContent=SYM[piece];sq.appendChild(sp)}
+    const isVisible = !fog || fog.has(`${r},${c}`);
+    if (!isVisible) {
+        sq.style.backgroundColor = '#1a1a1a';
+        sq.style.backgroundImage = 'none';
+        sq.style.boxShadow = 'inset 0 0 10px #000';
+    } else {
+        const piece=s.board[r][c];
+        if(piece){const sp=document.createElement('span');sp.className='pc '+(isU(piece)?'w':'b');sp.textContent=SYM[piece];sq.appendChild(sp)}
+    }
 
     if(!over&&selMoves.has(`${r},${c}`)){
-      const m=document.createElement('div');m.className=piece?'ring':'dot';sq.appendChild(m);
+      const m=document.createElement('div');m.className=(isVisible && s.board[r][c])?'ring':'dot';sq.appendChild(m);
     }
     if(!over)sq.addEventListener('click',()=>click(r,c));
     el.appendChild(sq);
@@ -533,6 +580,46 @@ function doMove(from,to,promo){
 
   s.turn=flip(s.turn);
   s.promo=null;
+  if(typeof M !== 'undefined' && M && M.currentVariant) {
+      if(M.currentVariant.duck) {
+          for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(s.board[r][c]==='D')s.board[r][c]='';
+          let em=[];
+          for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(!s.board[r][c])em.push([r,c]);
+          if(em.length > 0) {
+              const [dr,dc] = em[Math.floor(Math.random()*em.length)];
+              s.board[dr][dc] = 'D';
+          }
+      }
+      if(M.currentVariant.multiverse && M.totalMoves % 5 === 0) {
+          let pcs=[];
+          for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(s.board[r][c] && s.board[r][c].toLowerCase()!=='k')pcs.push([r,c]);
+          if(pcs.length >= 2) {
+             const i1 = Math.floor(Math.random()*pcs.length);
+             let i2 = Math.floor(Math.random()*pcs.length);
+             while(i1===i2) i2 = Math.floor(Math.random()*pcs.length);
+             const [r1,c1]=pcs[i1], [r2,c2]=pcs[i2];
+             const tmp = s.board[r1][c1];
+             s.board[r1][c1] = s.board[r2][c2];
+             s.board[r2][c2] = tmp;
+             if(typeof showAnnouncement === 'function') showAnnouncement('?? Multiverse Shift! Two pieces swapped timelines!');
+          }
+      }
+      if(M.currentVariant.crazyhouse && Math.random() < 0.25) {
+          let caps = w ? s.capW : s.capB;
+          if(caps.length > 0) {
+              let p = caps.pop();
+              let em=[];
+              for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(!s.board[r][c])em.push([r,c]);
+              if(em.length > 0) {
+                  const [dr,dc] = em[Math.floor(Math.random()*em.length)];
+                  if (w) p = p.toUpperCase(); else p = p.toLowerCase();
+                  s.board[dr][dc] = p;
+                  if(typeof showAnnouncement === 'function') showAnnouncement('🤪 Crazyhouse Drop! ' + SYM[p] + ' entered the fray!');
+              }
+          }
+      }
+  }
+
   const nowChk = inCheck(s.board, s.turn==='white');
   if(nowChk) {
       if(s.turn==='white') s.checksB++; else s.checksW++;
@@ -5250,13 +5337,18 @@ function switchVariantsTab(tab) {
 }
 
 window.startPresetVariant = function(v) {
-    let cv = { noCastling: false, koth: false, firstCheck: false, antichess: false, atomic: false, chess960: false, threeCheck: false };
+    let cv = { noCastling: false, koth: false, firstCheck: false, antichess: false, atomic: false, chess960: false, threeCheck: false, crazyhouse: false, maharajah: false, duck: false, knightmate: false, multiverse: false, fogOfWar: false };
     if(v === 'King of the Hill') cv.koth = true;
     else if(v === 'Chess960 (Fischer Random)') { cv.chess960 = true; cv.noCastling = true; }
     else if(v === 'Atomic') cv.atomic = true;
     else if(v === '3-Check') cv.threeCheck = true;
-    else if(v === 'Crazyhouse') { alert("Crazyhouse is coming soon. Starting standard game."); }
-    else { alert("Variant coming soon: " + v); return; }
+    else if(v === 'Crazyhouse') cv.crazyhouse = true;
+    else if(v === 'Maharajah and the Sepoys') cv.maharajah = true;
+    else if(v === '5D Chess with Multiverse Time Travel') cv.multiverse = true;
+    else if(v === 'Fog of War') cv.fogOfWar = true;
+    else if(v === 'Duck Chess') cv.duck = true;
+    else if(v === 'Knightmate') cv.knightmate = true;
+    else { alert("Unknown variant: " + v); return; }
     
     closeModal('variantsmodal');
     M.currentVariant = cv;

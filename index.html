@@ -105,11 +105,11 @@ function doCustomTranslate(langCode) {
   <div class="hs-content">
     <div class="hs-logo" style="font-size: 64px; font-weight: bold; background: linear-gradient(135deg, #ffd700, #ff8c00); -webkit-background-clip: text; color: transparent; text-shadow: 0 4px 15px rgba(255,140,0,0.5); margin-bottom: 40px; text-align: center;">CHESS RNG</div>
     <div class="hs-buttons" style="display: flex; flex-direction: column; gap: 15px; width: 300px; margin: 0 auto;">
-      <button class="hs-btn" onclick="showGameView(); openModal('startgamemodal')">▶️ Start Game</button>
-      <button class="hs-btn" onclick="showGameView(); openModal('variantsmodal')" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">♟️ Variants</button>
-      <button class="hs-btn" onclick="showGameView(); openModal('puzzlemodal')" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">🧩 Puzzles</button>
-      <button class="hs-btn" onclick="showGameView(); openModal('welcomemodal')">📖 How to Play</button>
-      <button class="hs-btn" onclick="showGameView(); openModal('acctmodal')">👤 Profile</button>
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('startgamemodal'); })">▶️ Start Game</button>
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('variantsmodal'); })" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">♟️ Variants</button>
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('puzzlemodal'); })" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">🧩 Puzzles</button>
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('welcomemodal'); })">📖 How to Play</button>
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('acctmodal'); })">👤 Profile</button>
     </div>
   </div>
 </div>
@@ -716,7 +716,7 @@ function doCustomTranslate(langCode) {
 
 
 <div id="customvariantmodal" class="modal hidden">
-  <div class="modal-content">
+  <div class="mbox" style="width:400px;text-align:center;">
     <div class="mtitle">⚙️ Custom Variant Creator <button class="mclose" onclick="closeModal('customvariantmodal')">✕</button></div>
     <div style="padding:15px;color:#eee;">
       <label style="display:block;margin-bottom:10px;"><input type="checkbox" id="cv_nocastling"> Disable Castling</label>
@@ -727,5 +727,39 @@ function doCustomTranslate(langCode) {
     </div>
   </div>
 </div>
+
+<!-- Loading Screen -->
+<div id="loading-screen" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,10,15,0.95);z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+  <div class="spinner" style="width:60px;height:60px;border:6px solid #444;border-top:6px solid #ffd700;border-radius:50%;animation:spin 1s linear infinite;"></div>
+  <div style="color:#ffd700;font-size:24px;font-weight:bold;margin-top:20px;text-shadow:0 0 10px rgba(255,215,0,0.5);">Loading...</div>
+  <div id="loading-bar-container" style="width:300px;height:10px;background:#222;border-radius:5px;margin-top:20px;overflow:hidden;border:1px solid #444;">
+    <div id="loading-bar-fill" style="width:0%;height:100%;background:linear-gradient(90deg, #ff8c00, #ffd700);transition:width 0.1s linear;"></div>
+  </div>
+  <style>
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</div>
+
+<script>
+  window.showLoadingScreen = function(callback) {
+    const loader = document.getElementById('loading-screen');
+    const fill = document.getElementById('loading-bar-fill');
+    loader.classList.remove('hidden');
+    fill.style.width = '0%';
+    let progress = 0;
+    
+    // Simulate 10 seconds of loading
+    const interval = setInterval(() => {
+      progress += 1;
+      fill.style.width = progress + '%';
+      if(progress >= 100) {
+        clearInterval(interval);
+        loader.classList.add('hidden');
+        if(callback) callback();
+      }
+    }, 100); // 100 steps of 100ms = 10s
+  };
+</script>
+
 </body>
 </html>
