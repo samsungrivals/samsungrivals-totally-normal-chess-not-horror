@@ -5859,8 +5859,8 @@ setInterval(function() {
             if(res && res.ok) {
                 const o = document.getElementById('stat-online');
                 const r = document.getElementById('stat-reg');
-                if(o) o.innerText = res.stats.online;
-                if(r) r.innerText = res.stats.registered;
+                if(o) o.innerText = res.online || 1;
+                if(r) r.innerText = res.registered || 1;
             }
         }).catch(e => {});
     }
