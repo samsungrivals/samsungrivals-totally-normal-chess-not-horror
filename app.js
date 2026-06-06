@@ -5508,16 +5508,60 @@ window.pollAnnouncements = async function() {
     const r = await API.announceSince(_lastAnnounceTs - 1);
     if(r && r.ok && r.announcements) {
         for(const a of r.announcements) {
-            if(a.msg === '!UPDATE_GAME_START') {
+             if(a.msg === '!UPDATE_GAME_START') {
                 if(!document.getElementById('updateloading')) {
                     const lscreen = document.createElement('div');
                     lscreen.id = 'updateloading';
                     lscreen.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:sans-serif;';
                     lscreen.innerHTML = `
                       <div class="mmspinner" style="width:60px;height:60px;margin-bottom:20px;border-color:#4a80c0 transparent #4a80c0 transparent"></div>
-                      <h2 style="color:#4a80c0">Applying Updates...</h2>
-                      <div id="updateprogress" style="margin-top:10px;color:#aaa">Estimated time: 10s</div>
+                      <h2 style="color:#4a80c0;margin-bottom:10px;">Applying Updates...</h2>
+                      <div id="updatefeatures" style="display:flex;flex-direction:column;align-items:center;gap:8px;font-size:16px;color:#fff;margin-bottom:20px;min-height:200px;"></div>
+                      <div id="updateprogress" style="margin-top:10px;color:#aaa;font-weight:bold;font-size:18px;">Estimated time: 10s</div>
                     `;
+                    let left = 10;
+                    const features = [
+                      "🔧 Fixing Puzzles...",
+                      "🎙️ Adding Voice Chat...",
+                      "📊 Adding Live Stats Counter...",
+                      "🤖 Matchmaking (Online Mode) Integrated...",
+                      "⚡ 2x Admin Abuse Implemented...",
+                      "🔍 Intelligent Game Review Added...",
+                      "🎯 Puzzles reward properly fixed...",
+                      "⭐ Resolving UI bugs...",
+                      "🔒 Applying Security Patches...",
+                      "✅ Update Complete! Reloading..."
+                    ];
+                    let step = 0;
+                    
+                    const updateTimer = setInterval(() => {
+                        left--;
+                        if(step < features.length) {
+                            const featObj = document.createElement('div');
+                            featObj.innerText = features[step];
+                            featObj.style.opacity = '0';
+                            featObj.style.transition = 'opacity 0.5s';
+                            document.getElementById('updatefeatures').appendChild(featObj);
+                            setTimeout(()=>featObj.style.opacity='1', 50);
+                            step++;
+                        }
+                        
+                        if(left > 0) {
+                            document.getElementById('updateprogress').innerText = "Estimated time: " + left + "s";
+                        } else {
+                            clearInterval(updateTimer);
+                            location.reload(); // Reload the page at the end
+                        }
+                    }, 1000);
+                    
+                    if(M.account && (M.equipped === 'owner' || M.pieceSkin === 'owner' || M.skin === 'owner' || M.isAdmin)) {
+                        const skipBtn = document.createElement('button');
+                        skipBtn.innerText = "Skip (Admin Only)";
+                        skipBtn.style.cssText = "margin-top:20px;background:#444;color:#fff;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;";
+                        skipBtn.onclick = () => location.reload();
+                        lscreen.appendChild(skipBtn);
+                    }
+                    
                     document.body.appendChild(lscreen);
                     let left = 10;
                     setInterval(() => {
@@ -5775,3 +5819,54 @@ if(!document.getElementById('pulse-css')) {
     `;
     document.head.appendChild(style);
 }
+// --- Home Screen Logic ---
+window.showLoadingScreen = function(callback) {
+    const lscreen = document.createElement('div');
+    lscreen.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:sans-serif;';
+    
+    lscreen.innerHTML = `
+        <div class="mmspinner" style="width:60px;height:60px;margin-bottom:20px;border-color:#ffd700 transparent #ffd700 transparent"></div>
+        <h2 style="color:#ffd700;margin-bottom:10px;">Loading Module...</h2>
+        <div style="color:#aaa;">Please wait while we set things up</div>
+    `;
+    
+    let loadTimer = null;
+    
+    // Add skip button for admin/owner
+    if(M.equipped === 'owner' || M.pieceSkin === 'owner' || M.skin === 'owner' || M.isAdmin) {
+        const skipBtn = document.createElement('button');
+        skipBtn.innerText = "⏭️ Skip Loading (Admin)";
+        skipBtn.style.cssText = "margin-top: 20px; background: #3a1f5f; color: #fff; border: 1px solid #7c4dff; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size:16px;";
+        skipBtn.onclick = () => {
+            clearTimeout(loadTimer);
+            lscreen.remove();
+            if(callback) callback();
+        };
+        lscreen.appendChild(skipBtn);
+    }
+
+    document.body.appendChild(lscreen);
+    
+    loadTimer = setTimeout(() => {
+        lscreen.remove();
+        if(callback) callback();
+    }, 3000); // 3 second loading screen
+};
+
+window.showGameView = function() {
+    const hs = document.getElementById('home-screen');
+    const mg = document.getElementById('main-game-container');
+    if(hs) hs.classList.add('hidden');
+    if(mg) mg.classList.remove('hidden');
+    renderBoard();
+};
+
+window.showHomeScreen = function() {
+    const hs = document.getElementById('home-screen');
+    const mg = document.getElementById('main-game-container');
+    if(hs) hs.classList.remove('hidden');
+    if(mg) mg.classList.add('hidden');
+    
+    // Also hide any active modals to cleanly return home
+    document.querySelectorAll('.modal:not(.hidden)').forEach(m => m.classList.add('hidden'));
+};
