@@ -106,6 +106,8 @@ function doCustomTranslate(langCode) {
     <div class="hs-logo" style="font-size: 64px; font-weight: bold; background: linear-gradient(135deg, #ffd700, #ff8c00); -webkit-background-clip: text; color: transparent; text-shadow: 0 4px 15px rgba(255,140,0,0.5); margin-bottom: 40px; text-align: center;">CHESS RNG</div>
     <div class="hs-buttons" style="display: flex; flex-direction: column; gap: 15px; width: 300px; margin: 0 auto;">
       <button class="hs-btn" onclick="openModal('startgamemodal')">▶️ Start Game</button>
+      <button class="hs-btn" onclick="openModal('variantsmodal')" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">♟️ Variants</button>
+      <button class="hs-btn" onclick="openModal('puzzlemodal')" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">🧩 Puzzles</button>
       <button class="hs-btn" onclick="openModal('welcomemodal')">📖 How to Play</button>
       <button class="hs-btn" onclick="openModal('acctmodal')">👤 Profile</button>
     </div>
@@ -188,6 +190,17 @@ function doCustomTranslate(langCode) {
   </div>
 </div>
 
+<div class="modal hidden" id="puzzlemodal">
+  <div class="mbox">
+    <div class="mtitle">🧩 Chess Puzzles <button class="mclose" onclick="closeModal('puzzlemodal')">✕</button></div>
+    <div style="margin-bottom:15px;color:#aaa">Solve puzzles to boost your ELO and earn rewards!</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="settingchip" onclick="startDailyPuzzle()" style="background:#5a1f5f;border-color:#ff00ff;padding:15px;font-size:16px"><b>🌟 Global Daily Puzzle</b><br><span style="font-size:12px;opacity:0.7">Same puzzle for everyone, resets daily!</span></button>
+      <button class="settingchip" onclick="startRandomPuzzle()" style="background:#1f5a5f;border-color:#00ffff;padding:15px;font-size:16px"><b>🎲 Random Puzzle</b><br><span style="font-size:12px;opacity:0.7">Scales with your ELO!</span></button>
+    </div>
+  </div>
+</div>
+
 <div class="modal hidden" id="lbmodal">
   <div class="mbox">
     <div class="mtitle">🏆 Leaderboards <button class="mclose" onclick="closeModal('lbmodal')">✕</button></div>
@@ -226,6 +239,8 @@ function doCustomTranslate(langCode) {
 <div class="modal hidden" id="ownermodal">
   <div class="mbox">
     <div class="mtitle">👑 Owner Commands <button class="mclose" onclick="closeModal('ownermodal')">✕</button></div>
+    <div class="adminitem owner-only" onclick="adminAbuseGlobal()" style="background:linear-gradient(135deg,#ff00ff,#8800ff);border-color:#ff00ff;color:#fff"><b>⚡ Admin Abuse (Global 2x)</b> - Gives global 2x luck, money, elo, upgrades, and -50% shop</div>
+    <div class="adminitem owner-only" onclick="adminUpdateGame()" style="background:linear-gradient(135deg,#0055ff,#0022ff);border-color:#00ffff;color:#fff"><b>🔄 Update Game (Global)</b> - Forces the update into the game for everyone</div>
     <div class="adminitem owner-only" id="admin-grant" onclick="adminGrantAdmin()" style="background:#3a1f5f;border-color:#7c4dff"><b>👮 Give Admin to a Player</b> — owner only: type a username to grant admin</div>
     <div class="adminitem owner-only" id="admin-revoke" onclick="adminRemoveAdmin()" style="background:#5a1f1f;border-color:#aa4444"><b>🚫 Remove Admin from a Player</b> — owner only: type a username to revoke</div>
     <div class="adminitem owner-only" onclick="adminGrantOwner()" style="background:linear-gradient(135deg,#ffcc00,#ff9900);border-color:#ffffff;color:#000"><b>👑 Give Owner Commands</b> - grant owner to a player</div>
@@ -259,8 +274,6 @@ function doCustomTranslate(langCode) {
       <button class="hs-btn" onclick="closeModal('startgamemodal'); findMatchAsync()">🌍 Play Online</button>
       <button class="hs-btn" onclick="closeModal('startgamemodal'); openModal('frmodal')">👥 Play with Friends</button>
       <button class="hs-btn" onclick="closeModal('startgamemodal'); resetToLocal();showGameView()">🏠 Local Pass-and-Play</button>
-      <button class="hs-btn" onclick="closeModal('startgamemodal'); openModal('puzzlemodal')" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">🧩 Puzzles</button>
-      <button class="hs-btn" onclick="closeModal('startgamemodal'); openModal('variantsmodal')" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">♟️ Variants</button>
     </div>
   </div>
 </div>

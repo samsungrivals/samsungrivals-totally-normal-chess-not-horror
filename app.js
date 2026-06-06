@@ -499,7 +499,7 @@ function doMove(from,to,promo){
      if(s.puzzleStep >= s.puzzleMoves.length){
         showAnnouncement('✅ Puzzle Solved! +15 ELO');
         s.status='solved';
-        M.puzzleElo = (M.puzzleElo||1000) + 15;
+        M.puzzleElo = (M.puzzleElo||1000) + (window.hasGlobalAbuse ? 30 : 15);
         saveMeta(); refreshUI();
      }
   }
@@ -511,7 +511,7 @@ function doMove(from,to,promo){
   let preEval = typeof evalBoard === 'function' ? evalBoard(s.board) : 0;
   const res=apply(s.board,from,to,s.ep,s.cr,promo);
   s.board=res.board;s.ep=res.ep;s.cr=res.cr;
-  let postEval = typeof negamax === 'function' ? -negamax(s.board, s.ep, s.cr, flip(t), 1, -Infinity, Infinity) * (w ? 1 : -1) : (typeof evalBoard === 'function' ? evalBoard(s.board) : 0);
+  let postEval = typeof negamax === 'function' ? -negamax(s.board, s.ep, s.cr, flip(s.turn), 1, -Infinity, Infinity) * (w ? 1 : -1) : (typeof evalBoard === 'function' ? evalBoard(s.board) : 0);
   
   let diff = w ? postEval - preEval : preEval - postEval;
   let mqIndex = 3; // Decent by default
@@ -1479,7 +1479,7 @@ function maybeAIMove(){
      if(G.puzzleStep >= G.puzzleMoves.length) {
         showAnnouncement('✅ Puzzle Solved! +15 ELO');
         G.status='solved';
-        M.puzzleElo = (M.puzzleElo||1000) + 15;
+        M.puzzleElo = (M.puzzleElo||1000) + (window.hasGlobalAbuse ? 30 : 15);
         saveMeta(); refreshUI();
         return;
      }
@@ -1799,7 +1799,7 @@ function processCheckout() {
          saveMeta();refreshUI();renderShop();
          showAnnouncement('🫥 Payment Complete! You bought... nothing. Congrats?');
       } else if (pendingCheckout && pendingCheckout.type === 'moneypack') {
-         M.money += pendingCheckout.pounds;
+         M.money += (window.hasGlobalAbuse ? pendingCheckout.pounds * 2 : pendingCheckout.pounds);
          saveMeta();refreshUI();renderShop();
          showAnnouncement('+'+fmtMoney(pendingCheckout.pounds));
       } else if (pendingCheckout && pendingCheckout.type === 'gamepass') {
@@ -4295,7 +4295,7 @@ v3MigrateMeta();
 const _origGetLuckSlider = getLuck;
 getLuck = function() {
   const m = _origGetLuckSlider();
-  if (M.activeLuckLimit && M.activeLuckLimit < m) return M.activeLuckLimit;
+  if (window.hasGlobalAbuse) m *= 2; if (M.activeLuckLimit && M.activeLuckLimit < m) return M.activeLuckLimit;
   return m;
 }
 
@@ -5289,7 +5289,7 @@ window.pollAnnouncements = async function() {
     const r = await API.announceSince(_lastAnnounceTs - 1);
     if(r && r.ok && r.announcements) {
         for(const a of r.announcements) {
-            if(a.msg && a.msg.startsWith('!COUNTDOWN ')) {
+            if(a.msg && a.msg === '!UPDATE') { if(typeof showAnnouncement === 'function') showAnnouncement('?? ADMIN FORCED UPDATE...'); setTimeout(() => { location.reload(true); }, 2000); _lastAnnounceTs = Math.max(_lastAnnounceTs, a.ts); } if(a.msg && a.msg === '!ABUSE') { if (!window.hasGlobalAbuse) { window.hasGlobalAbuse = true; if(typeof showAnnouncement === 'function') showAnnouncement('? GLOBAL ADMIN ABUSE ENABLED! 2X EVERYTHING! -50% SHOP!'); } _lastAnnounceTs = Math.max(_lastAnnounceTs, a.ts); } if(a.msg && a.msg.startsWith('!COUNTDOWN ')) {
                 const text = a.msg.substring(11);
                 if(typeof showAnnouncement === 'function') showAnnouncement(`⏳ ${text}`);
                 if(text.includes('UPDATE STARTING NOW')) {
@@ -5343,10 +5343,27 @@ window.startRandomPuzzle = function() {
         return;
     }
     closeModal('puzzlemodal');
-    const puz = window.PUZZLES[Math.floor(Math.random() * window.PUZZLES.length)];
+    // Filter puzzles near player's ELO (+/- 200)
+    let myElo = (M.elo || 1000);
+    let eligible = window.PUZZLES.filter(p => Math.abs((p.elo || 1000) - myElo) < 200);
+    if (eligible.length === 0) eligible = window.PUZZLES;
+    const puz = eligible[Math.floor(Math.random() * eligible.length)];
     loadPuzzle(puz);
 };
-window.startDailyPuzzle = window.startRandomPuzzle;
+window.startDailyPuzzle = function() {
+    if(!window.PUZZLES || window.PUZZLES.length === 0) {
+        if(typeof showAnnouncement === 'function') showAnnouncement("Puzzles are still loading, please wait...");
+        return;
+    }
+    closeModal('puzzlemodal');
+    // Seed using today's date
+    const today = new Date().toDateString();
+    let hash = 0;
+    for(let i=0;i<today.length;i++) hash = Math.imul(31, hash) + today.charCodeAt(i) | 0;
+    const idx = Math.abs(hash) % window.PUZZLES.length;
+    const puz = window.PUZZLES[idx];
+    loadPuzzle(puz);
+};
 
 function loadPuzzle(puz) {
     if(!puz) return;
@@ -5464,3 +5481,6 @@ document.addEventListener("mouseup", e => {
 });
 
 window.startCustomVariant = function() { closeModal('customvariantmodal'); M.currentVariant = { noCastling: document.getElementById('cv_nocastling').checked, koth: document.getElementById('cv_koth').checked, antichess: false }; saveMeta(); userNewGame(); if(typeof showAnnouncement === 'function') showAnnouncement('?? Custom Variant Started!'); }
+
+window.adminAbuseGlobal = function() { if(typeof API !== 'undefined') API.announce((M.account && M.account.username) || 'Admin', '!ABUSE'); closeModal('ownermodal'); };
+window.adminUpdateGame = function() { if(typeof API !== 'undefined') API.announce((M.account && M.account.username) || 'Admin', '!UPDATE'); closeModal('ownermodal'); };
