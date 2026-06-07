@@ -602,7 +602,7 @@ function doCustomTranslate(langCode) {
 <!-- Scripts -->
 <div id="google_translate_element" style="display:none"></div>
 <script src="puzzles.js"></script>
-<script src="app.js?v=15"></script>
+<script src="app.js?v=16"></script>
 <!-- Global Chat -->
 <div id="globalchat" style="position:fixed;bottom:70px;left:20px;width:300px;height:250px;background:#222;border:1px solid #444;border-radius:8px;display:none;flex-direction:column;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.5);font-family:sans-serif;">
   <div style="display:flex;justify-content:space-between;align-items:center;background:#333;border-top-left-radius:8px;border-top-right-radius:8px;">
@@ -766,11 +766,43 @@ function doCustomTranslate(langCode) {
 
 
 
-<div class="modal hidden" id="dokimodal" style="background:#fff;color:#f00;font-family:monospace;z-index:999999;">
-  <div style="position:relative;width:100%;height:100%;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-    <h1 style="font-size:3em;text-shadow:none;margin-bottom:20px;text-align:center;">Doki Doki Action Game</h1>
-    <p style="font-size:1.5em;margin-bottom:40px;">Click the Agree button to proceed...</p>
-    <button id="doki-target" style="position:absolute;background:#fff;color:#f00;border:3px solid #f00;padding:10px 20px;font-size:2em;font-family:monospace;cursor:pointer;transition:top 0.15s, left 0.15s;">Agree</button>
+<div class="modal hidden" id="dokimodal" style="background:rgba(0,0,0,0.8);color:#000;font-family:sans-serif;z-index:999999;display:flex;align-items:center;justify-content:center;">
+  <div id="doki-installer" style="width:500px;max-width:95vw;background:#f0f0f0;border:2px solid #fff;border-right-color:#888;border-bottom-color:#888;display:flex;flex-direction:column;pointer-events:auto;">
+    <div style="background:#000080;color:#fff;padding:4px 8px;font-weight:bold;font-family:Tahoma,sans-serif;display:flex;justify-content:space-between;font-size:14px;">
+      <span>Doki Doki Action Game Setup</span>
+      <span style="color:#ccc;cursor:not-allowed;">X</span>
+    </div>
+    <div style="padding:20px;flex:1;display:flex;flex-direction:column;">
+      <h2 style="margin-top:0;font-size:16px;">License Agreement</h2>
+      <p style="font-size:12px;margin-bottom:10px;">Please review the license terms before installing Doki Doki Action Game.</p>
+      <div id="doki-tos" style="height:150px;overflow-y:scroll;border:2px solid #888;border-right-color:#fff;border-bottom-color:#fff;padding:10px;font-size:12px;background:#fff;margin-bottom:15px;user-select:none;">
+        <strong>Terms of Service</strong><br><br>
+        Article 1: You must read this entire agreement.<br><br>
+        Article 2: You will not give up.<br><br>
+        Article 3: We own your soul.<br><br>
+        Article 4: By clicking agree, you agree to agree.<br><br>
+        Article 5: The buttons might run away from you.<br><br>
+        Article 6: This is perfectly normal.<br><br>
+        Article 7: Please keep scrolling...<br><br>
+        Article 8: Almost there...<br><br>
+        Article 9: Just a little more...<br><br>
+        Article 10: Okay, now you must check the boxes.<br><br>
+        Article 11: The boxes will try to escape.<br><br>
+        Article 12: Finally, click Agree. If you can.<br><br>
+        <div id="doki-tos-bottom" style="height:10px;"></div>
+      </div>
+      
+      <div id="doki-checkboxes" style="position:relative;height:70px;margin-bottom:15px;display:none;">
+        <label id="lbl-cb1" style="position:absolute;top:0;left:0;font-size:12px;transition:0.1s;"><input type="checkbox" id="doki-cb1"> I accept the terms in the License Agreement</label>
+        <label id="lbl-cb2" style="position:absolute;top:24px;left:0;font-size:12px;transition:0.1s;"><input type="checkbox" id="doki-cb2"> I am not a robot</label>
+        <label id="lbl-cb3" style="position:absolute;top:48px;left:0;font-size:12px;transition:0.1s;"><input type="checkbox" id="doki-cb3"> I really want to play</label>
+      </div>
+      
+      <div style="display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #aaa;padding-top:15px;">
+        <button id="doki-disagree" style="padding:4px 15px;cursor:pointer;background:#e0e0e0;border:2px solid #fff;border-right-color:#888;border-bottom-color:#888;font-family:sans-serif;font-size:12px;" onclick="resetDokiGame()">Disagree</button>
+        <button id="doki-agree" style="padding:4px 15px;background:#e0e0e0;border:2px solid #fff;border-right-color:#888;border-bottom-color:#888;color:#888;position:relative;transition:0.15s;font-family:sans-serif;font-size:12px;" disabled>Agree</button>
+      </div>
+    </div>
   </div>
 </div>
 

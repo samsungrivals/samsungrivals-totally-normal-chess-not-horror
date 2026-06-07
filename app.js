@@ -5963,50 +5963,92 @@ window.openDokiGame = function() {
     closeModal('variantsmodal');
     closeModal('puzzlemodal');
     openModal('dokimodal');
-    window.dokiClicks = 0;
-    const target = document.getElementById('doki-target');
-    target.style.top = '50%';
-    target.style.left = '50%';
-    target.style.transform = 'translate(-50%, -50%)';
-    target.innerText = 'Agree';
+    
+    document.getElementById('doki-tos').scrollTop = 0;
+    document.getElementById('doki-checkboxes').style.display = 'none';
+    document.getElementById('doki-agree').disabled = true;
+    document.getElementById('doki-agree').style.color = '#888';
+    document.getElementById('doki-cb1').checked = false;
+    document.getElementById('doki-cb2').checked = false;
+    document.getElementById('doki-cb3').checked = false;
+    
+    window.dokiState = 0; // 0 = scrolling, 1 = checkboxes, 2 = agree button
 };
 
-let dokiTimeout;
-document.getElementById('doki-target').onmouseenter = function(e) {
-    if(window.dokiClicks >= 10) return;
-    const target = e.target;
-    clearTimeout(dokiTimeout);
-    dokiTimeout = setTimeout(() => {
-        const maxX = window.innerWidth - target.offsetWidth - 20;
-        const maxY = window.innerHeight - target.offsetHeight - 20;
-        target.style.top = Math.random() * maxY + 'px';
-        target.style.left = Math.random() * maxX + 'px';
-        target.style.transform = 'none';
-    }, 150); // 150ms delay makes it challenging but possible
+window.resetDokiGame = function() {
+    closeModal('dokimodal');
+    setTimeout(() => {
+        if(typeof showAnnouncement === 'function') showAnnouncement('🎮 Doki Doki Setup Canceled.', '#ff0000');
+    }, 500);
 };
 
-document.getElementById('doki-target').onclick = function(e) {
-    window.dokiClicks = (window.dokiClicks || 0) + 1;
-    const target = e.target;
-    if(window.dokiClicks < 10) {
-        target.innerText = 'Agree (' + window.dokiClicks + '/10)';
-        const maxX = window.innerWidth - target.offsetWidth - 20;
-        const maxY = window.innerHeight - target.offsetHeight - 20;
-        target.style.top = Math.random() * maxY + 'px';
-        target.style.left = Math.random() * maxX + 'px';
-        target.style.transform = 'none';
-    } else {
-        target.innerText = 'YOU WON! 35x MULTIPLIER!';
-        setTimeout(() => {
-            M.money = (M.money || 0) * 35;
-            M.elo = (M.elo || 500) * 35;
-            M.maxLuck = (M.maxLuck || 1) * 35;
-            M.totalUpgrades = (M.totalUpgrades || 0) * 35;
-            saveMeta();
-            refreshUI();
-            if(typeof showAnnouncement === 'function') showAnnouncement('🎮 DOKI DOKI COMPLETED: 35X STATS MULTIPLIER!');
-            closeModal('dokimodal');
-        }, 2000);
+// Stage 1: Scrolling
+document.getElementById('doki-tos').onscroll = function(e) {
+    if(window.dokiState > 0) return;
+    const el = e.target;
+    if(el.scrollHeight - el.scrollTop <= el.clientHeight + 10) {
+        window.dokiState = 1;
+        document.getElementById('doki-checkboxes').style.display = 'block';
     }
+};
+
+// Stage 2: Moving checkboxes
+let dokiCbTimeout1, dokiCbTimeout2, dokiCbTimeout3;
+function moveCheckbox(id, timeoutVar) {
+    const lbl = document.getElementById(id);
+    if(lbl.querySelector('input').checked) return;
+    clearTimeout(window[timeoutVar]);
+    window[timeoutVar] = setTimeout(() => {
+        lbl.style.top = (Math.random() * 50) + 'px';
+        lbl.style.left = (Math.random() * 200) + 'px';
+    }, 150);
+}
+document.getElementById('lbl-cb1').onmouseenter = () => moveCheckbox('lbl-cb1', 'dokiCbTimeout1');
+document.getElementById('lbl-cb2').onmouseenter = () => moveCheckbox('lbl-cb2', 'dokiCbTimeout2');
+document.getElementById('lbl-cb3').onmouseenter = () => moveCheckbox('lbl-cb3', 'dokiCbTimeout3');
+
+function checkDokiCheckboxes() {
+    const c1 = document.getElementById('doki-cb1').checked;
+    const c2 = document.getElementById('doki-cb2').checked;
+    const c3 = document.getElementById('doki-cb3').checked;
+    if(c1 && c2 && c3 && window.dokiState === 1) {
+        window.dokiState = 2;
+        const agreeBtn = document.getElementById('doki-agree');
+        agreeBtn.disabled = false;
+        agreeBtn.style.color = '#000';
+    }
+}
+document.getElementById('doki-cb1').onchange = checkDokiCheckboxes;
+document.getElementById('doki-cb2').onchange = checkDokiCheckboxes;
+document.getElementById('doki-cb3').onchange = checkDokiCheckboxes;
+
+// Stage 3: Moving Agree Button
+let dokiAgreeTimeout;
+document.getElementById('doki-agree').onmouseenter = function(e) {
+    if(window.dokiState !== 2) return;
+    const target = e.target;
+    clearTimeout(dokiAgreeTimeout);
+    dokiAgreeTimeout = setTimeout(() => {
+        const maxX = 400; // max distance it can jump within modal
+        const maxY = 200;
+        target.style.position = 'absolute';
+        target.style.top = '-' + (Math.random() * maxY) + 'px';
+        target.style.left = '-' + (Math.random() * maxX) + 'px';
+    }, 150);
+};
+
+document.getElementById('doki-agree').onclick = function(e) {
+    if(window.dokiState !== 2) return;
+    e.target.innerText = 'Installing...';
+    setTimeout(() => {
+        M.money = (M.money || 0) * 35;
+        M.elo = (M.elo || 500) * 35;
+        M.maxLuck = (M.maxLuck || 1) * 35;
+        M.totalUpgrades = (M.totalUpgrades || 0) * 35;
+        saveMeta();
+        refreshUI();
+        if(typeof showAnnouncement === 'function') showAnnouncement('🎮 DOKI DOKI COMPLETED: 35X STATS MULTIPLIER!');
+        closeModal('dokimodal');
+    }, 1500);
 };
 
