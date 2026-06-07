@@ -5955,3 +5955,58 @@ window.showHomeScreen = function() {
 window.toggleDokiTheme = function() {
     document.body.classList.toggle('doki-theme');
 };
+
+window.openDokiGame = function() {
+    closeModal('startgamemodal');
+    closeModal('welcomemodal');
+    closeModal('acctmodal');
+    closeModal('variantsmodal');
+    closeModal('puzzlemodal');
+    openModal('dokimodal');
+    window.dokiClicks = 0;
+    const target = document.getElementById('doki-target');
+    target.style.top = '50%';
+    target.style.left = '50%';
+    target.style.transform = 'translate(-50%, -50%)';
+    target.innerText = 'Agree';
+};
+
+let dokiTimeout;
+document.getElementById('doki-target').onmouseenter = function(e) {
+    if(window.dokiClicks >= 10) return;
+    const target = e.target;
+    clearTimeout(dokiTimeout);
+    dokiTimeout = setTimeout(() => {
+        const maxX = window.innerWidth - target.offsetWidth - 20;
+        const maxY = window.innerHeight - target.offsetHeight - 20;
+        target.style.top = Math.random() * maxY + 'px';
+        target.style.left = Math.random() * maxX + 'px';
+        target.style.transform = 'none';
+    }, 150); // 150ms delay makes it challenging but possible
+};
+
+document.getElementById('doki-target').onclick = function(e) {
+    window.dokiClicks = (window.dokiClicks || 0) + 1;
+    const target = e.target;
+    if(window.dokiClicks < 10) {
+        target.innerText = 'Agree (' + window.dokiClicks + '/10)';
+        const maxX = window.innerWidth - target.offsetWidth - 20;
+        const maxY = window.innerHeight - target.offsetHeight - 20;
+        target.style.top = Math.random() * maxY + 'px';
+        target.style.left = Math.random() * maxX + 'px';
+        target.style.transform = 'none';
+    } else {
+        target.innerText = 'YOU WON! 35x MULTIPLIER!';
+        setTimeout(() => {
+            M.money = (M.money || 0) * 35;
+            M.elo = (M.elo || 500) * 35;
+            M.maxLuck = (M.maxLuck || 1) * 35;
+            M.totalUpgrades = (M.totalUpgrades || 0) * 35;
+            saveMeta();
+            refreshUI();
+            if(typeof showAnnouncement === 'function') showAnnouncement('🎮 DOKI DOKI COMPLETED: 35X STATS MULTIPLIER!');
+            closeModal('dokimodal');
+        }, 2000);
+    }
+};
+
