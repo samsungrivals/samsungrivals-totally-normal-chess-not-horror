@@ -5991,8 +5991,36 @@ document.getElementById('doki-tos').onscroll = function(e) {
     if(window.dokiState > 0) return;
     const el = e.target;
     if(el.scrollHeight - el.scrollTop <= el.clientHeight + 10) {
-        window.dokiState = 1;
+                        window.dokiState = 1;
         document.getElementById('doki-checkboxes').style.display = 'block';
+        document.getElementById('doki-virus-bar').style.display = 'block';
+        window.dokiVirusInterval = setInterval(() => {
+            if(window.dokiState === 0 || document.getElementById('dokimodal').classList.contains('hidden')) {
+                clearInterval(window.dokiVirusInterval);
+                return;
+            }
+            let pct = parseInt(document.getElementById('doki-virus-fill').style.width || '0');
+            if(pct < 99) {
+                pct += Math.floor(Math.random() * 5) + 1;
+                if(pct > 99) pct = 99;
+                document.getElementById('doki-virus-fill').style.width = pct + '%';
+                document.getElementById('doki-virus-pct').innerText = pct + '%';
+            }
+        }, 1000);
+        document.getElementById('doki-virus-bar').style.display = 'block';
+        window.dokiVirusInterval = setInterval(() => {
+            if(window.dokiState === 0 || document.getElementById('dokimodal').classList.contains('hidden')) {
+                clearInterval(window.dokiVirusInterval);
+                return;
+            }
+            let pct = parseInt(document.getElementById('doki-virus-fill').style.width || '0');
+            if(pct < 99) {
+                pct += Math.floor(Math.random() * 5) + 1;
+                if(pct > 99) pct = 99;
+                document.getElementById('doki-virus-fill').style.width = pct + '%';
+                document.getElementById('doki-virus-pct').innerText = pct + '%';
+            }
+        }, 1000);
     }
 };
 
@@ -6085,4 +6113,5 @@ window.playAnnoyingSound = function() {
         }, 1000);
     } catch(e){}
 };
+
 
