@@ -5914,7 +5914,7 @@ window.showLoadingScreen = function(callback) {
         currentUpdate++;
         if (currentUpdate >= updates.length) {
             clearInterval(updateInterval);
-            lscreen.innerHTML = \`<h2 style="color:#0f0;">Updates Complete! Reloading...</h2>\`;
+            lscreen.innerHTML = `<h2 style="color:#0f0;">Updates Complete! Reloading...</h2>`;
             sessionStorage.setItem('updatesViewed', '1');
             setTimeout(() => {
                 location.reload();
