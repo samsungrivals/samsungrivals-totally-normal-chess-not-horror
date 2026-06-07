@@ -5768,17 +5768,10 @@ document.addEventListener("mouseup", e => {
 window.startCustomVariant = function() { closeModal('customvariantmodal'); M.currentVariant = { noCastling: document.getElementById('cv_nocastling').checked, koth: document.getElementById('cv_koth').checked, antichess: false }; saveMeta(); userNewGame(); if(typeof showAnnouncement === 'function') showAnnouncement('?? Custom Variant Started!'); }
 
 window.adminAbuseGlobal = function() { 
-  if(typeof API !== 'undefined') API.announce((M.account && M.account.username) || 'Admin', '!ABUSE'); 
-  closeModal('ownermodal'); 
-  M.money = Math.floor((M.money || 0) * 2) || 2;
-  M.elo = Math.floor((M.elo || 500) * 2);
-  M.maxLuck = (M.maxLuck || 1) * 2;
-  saveMeta();
-  refreshUI();
-  if(typeof updateLuckChip === 'function') updateLuckChip();
-  if(typeof showAnnouncement === 'function') showAnnouncement('⚠️ ADMIN ABUSE TRIGGERED: 2x All Stats!');
+  if(typeof API !== 'undefined') API.announce((M.account && M.account.username) || 'Admin', '!ADMIN_ABUSE_2X'); 
+  if(typeof closeModal === 'function') closeModal('ownermodal'); 
 };
-window.adminUpdateGame = function() { if(typeof API !== 'undefined') API.announce((M.account && M.account.username) || 'Admin', '!UPDATE'); closeModal('ownermodal'); };
+window.adminUpdateGame = function() { if(typeof API !== 'undefined') API.announce((M.account && M.account.username) || 'Admin', '!UPDATE_GAME_START'); closeModal('ownermodal'); };
 function triggerCrownPopup() { 
   const d = document.createElement('div'); 
   d.className='crown-popup'; 
