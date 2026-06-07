@@ -5951,3 +5951,7 @@ window.showHomeScreen = function() {
     // Also hide any active modals to cleanly return home
     document.querySelectorAll('.modal:not(.hidden)').forEach(m => m.classList.add('hidden'));
 };
+
+window.toggleDokiTheme = function() {
+    document.body.classList.toggle('doki-theme');
+};
