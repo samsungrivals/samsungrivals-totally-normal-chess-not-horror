@@ -1,4 +1,4 @@
-function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+﻿function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
 const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟','D':'🦆','M':'🫅'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
@@ -5917,7 +5917,7 @@ window.showLoadingScreen = function(callback) {
             lscreen.innerHTML = updateHTML();
             lscreen.appendChild(skipBtn);
         }
-    }, 10000);
+    }, 1000);
 };
 
 // --- Live Stats Polling ---
@@ -5965,6 +5965,10 @@ window.openDokiGame = function() {
     openModal('dokimodal');
     
     document.getElementById('doki-tos').scrollTop = 0;
+    document.getElementById('doki-installer').classList.add('doki-shake');
+    playAnnoyingSound();
+    document.getElementById('doki-installer').classList.add('doki-shake');
+    playAnnoyingSound();
     document.getElementById('doki-checkboxes').style.display = 'none';
     document.getElementById('doki-agree').disabled = true;
     document.getElementById('doki-agree').style.color = '#888';
@@ -6050,5 +6054,35 @@ document.getElementById('doki-agree').onclick = function(e) {
         if(typeof showAnnouncement === 'function') showAnnouncement('🎮 DOKI DOKI COMPLETED: 35X STATS MULTIPLIER!');
         closeModal('dokimodal');
     }, 1500);
+};
+
+
+window.playAnnoyingSound = function() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.5);
+        osc.frequency.linearRampToValueAtTime(800, ctx.currentTime + 1.0);
+        osc.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 1.0);
+        
+        window.dokiSoundInterval = setInterval(() => {
+            if(document.getElementById('dokimodal').classList.contains('hidden')) {
+                clearInterval(window.dokiSoundInterval);
+                return;
+            }
+            const osc2 = ctx.createOscillator();
+            osc2.type = 'sawtooth';
+            osc2.frequency.setValueAtTime(800, ctx.currentTime);
+            osc2.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.5);
+            osc2.frequency.linearRampToValueAtTime(800, ctx.currentTime + 1.0);
+            osc2.connect(ctx.destination);
+            osc2.start();
+            osc2.stop(ctx.currentTime + 1.0);
+        }, 1000);
+    } catch(e){}
 };
 
