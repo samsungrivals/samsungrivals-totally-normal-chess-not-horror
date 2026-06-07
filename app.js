@@ -5784,6 +5784,10 @@ function triggerCrownPopup() {
   d.className='crown-popup'; 
   d.innerHTML='👑'; 
   d.style.cursor='pointer';
+  d.style.position='fixed';
+  d.style.top = (Math.random() * 80 + 10) + '%';
+  d.style.left = (Math.random() * 80 + 10) + '%';
+  d.style.zIndex='99999';
   d.onclick = function() {
     d.remove();
     M.money = Math.floor((M.money || 0) * 1.1) || 1;
@@ -5798,9 +5802,7 @@ function triggerCrownPopup() {
   setTimeout(function(){ if(d.parentNode) d.remove() }, 4000); 
 }; 
 setInterval(function(){ 
-  if (typeof M !== 'undefined' && (M.equipped === 'owner' || M.pieceSkin === 'owner' || M.skin === 'owner')) { 
-    triggerCrownPopup(); 
-  } 
+  triggerCrownPopup(); 
 }, 60000);
 window.startCustomPuzzle = function() { const eloInput = document.getElementById('custompuzelo'); const elo = eloInput ? parseInt(eloInput.value) : (M.elo || 500); let eligible = window.PUZZLES.filter(p => Math.abs((p.elo || 1000) - elo) < 200); if (!eligible || eligible.length === 0) eligible = window.PUZZLES; const puz = eligible[Math.floor(Math.random() * eligible.length)]; loadPuzzle(puz); }; window.startPeriodicPuzzle = function(type) { if(!window.PUZZLES || window.PUZZLES.length === 0) return showAnnouncement('Puzzles are still loading...'); closeModal('puzzlemodal'); const d = new Date(); let seed = 0; if(type==='weekly'){seed = Math.floor(d.getTime()/(1000*60*60*24*7));} else if(type==='monthly'){seed = d.getFullYear()*12 + d.getMonth();} else if(type==='yearly'){seed = d.getFullYear();} else if(type==='decadely'){seed = Math.floor(d.getFullYear()/10);} let hash = Math.imul(31, seed) ^ 0x3a5b2c; const idx = Math.abs(hash) % window.PUZZLES.length; loadPuzzle(window.PUZZLES[idx]); }; window.requestVariant = function() { const val = document.getElementById('variant-request-input').value; if(!val) return; document.getElementById('variant-request-input').value = ''; const who = (M.account&&M.account.username)||'Guest'; showAnnouncement('?? ' + who + ' requested variant: ' + val); if(typeof API !== 'undefined') API.announce(who, 'requested to feature variant: ' + val).catch(()=>{}); };
 window.connectVoiceChat = function() { showAnnouncement('?? Connecting to Voice Server...'); setTimeout(() => { const actx = new (window.AudioContext || window.webkitAudioContext)(); if(actx.state === 'suspended') actx.resume(); const bufferSize = actx.sampleRate * 2; const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; } const noise = actx.createBufferSource(); noise.buffer = buffer; const bpf = actx.createBiquadFilter(); bpf.type = 'bandpass'; bpf.frequency.value = 1000; const gain = actx.createGain(); gain.gain.setValueAtTime(0.5, actx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 1.5); noise.connect(bpf); bpf.connect(gain); gain.connect(actx.destination); noise.start(); showAnnouncement('? Voice servers are currently full!'); }, 1500); };
@@ -5852,36 +5854,77 @@ if(!document.getElementById('pulse-css')) {
 }
 // --- Home Screen Logic ---
 window.showLoadingScreen = function(callback) {
+    if (sessionStorage.getItem('updatesViewed')) {
+        if(callback) callback();
+        return;
+    }
+    const updates = [
+        "Added Owner Crown Popup",
+        "Fixed Admin Abuse Stats Multiplier",
+        "Improved Voice Chat Stability",
+        "Skip Button Available to Everyone"
+    ];
+    
     const lscreen = document.createElement('div');
     lscreen.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:sans-serif;';
     
-    lscreen.innerHTML = `
-        <div class="mmspinner" style="width:60px;height:60px;margin-bottom:20px;border-color:#ffd700 transparent #ffd700 transparent"></div>
-        <h2 style="color:#ffd700;margin-bottom:10px;">Loading Module...</h2>
-        <div style="color:#aaa;">Please wait while we set things up</div>
+    let currentUpdate = 0;
+    
+    const updateHTML = () => `
+        <div class="mmspinner" style="width:60px;height:60px;margin-bottom:20px;border-color:#ffd700 transparent #ffd700 transparent; border-radius:50%; border-width:4px; border-style:solid;"></div>
+        <h2 style="color:#ffd700;margin-bottom:10px;">Downloading Updates...</h2>
+        <div style="color:#0f0;font-size:24px;margin-bottom:20px;text-align:center;">Applying:<br>${updates[currentUpdate]}</div>
+        <div style="color:#aaa;">Update ${currentUpdate + 1} of ${updates.length}</div>
+        <div style="color:#aaa;margin-top:10px;">(Taking 10 seconds per update to ensure maximum quality...)</div>
     `;
     
-    let loadTimer = null;
+    lscreen.innerHTML = updateHTML();
     
-    // Add skip button for admin/owner
-    if(M.equipped === 'owner' || M.pieceSkin === 'owner' || M.skin === 'owner' || M.isAdmin) {
-        const skipBtn = document.createElement('button');
-        skipBtn.innerText = "⏭️ Skip Loading (Admin)";
-        skipBtn.style.cssText = "margin-top: 20px; background: #3a1f5f; color: #fff; border: 1px solid #7c4dff; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size:16px;";
-        skipBtn.onclick = () => {
-            clearTimeout(loadTimer);
-            lscreen.remove();
-            if(callback) callback();
-        };
-        lscreen.appendChild(skipBtn);
-    }
+    let updateInterval = null;
+    
+    // Add skip button for EVERYBODY
+    const skipBtn = document.createElement('button');
+    skipBtn.innerText = "⏭️ Skip Loading";
+    skipBtn.style.cssText = "margin-top: 40px; background: #3a1f5f; color: #fff; border: 1px solid #7c4dff; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size:16px;";
+    skipBtn.onclick = () => {
+        clearInterval(updateInterval);
+        lscreen.remove();
+        sessionStorage.setItem('updatesViewed', '1');
+        if(callback) callback();
+    };
+    lscreen.appendChild(skipBtn);
 
     document.body.appendChild(lscreen);
     
-    loadTimer = setTimeout(() => {
-        lscreen.remove();
-        if(callback) callback();
-    }, 3000); // 3 second loading screen
+    const playUpdateSound = () => {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150 + Math.random()*200, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.2);
+            osc.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.2);
+        } catch(e){}
+    };
+    playUpdateSound();
+
+    updateInterval = setInterval(() => {
+        currentUpdate++;
+        if (currentUpdate >= updates.length) {
+            clearInterval(updateInterval);
+            lscreen.innerHTML = \`<h2 style="color:#0f0;">Updates Complete! Reloading...</h2>\`;
+            sessionStorage.setItem('updatesViewed', '1');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            playUpdateSound();
+            lscreen.innerHTML = updateHTML();
+            lscreen.appendChild(skipBtn);
+        }
+    }, 10000);
 };
 
 // --- Live Stats Polling ---
