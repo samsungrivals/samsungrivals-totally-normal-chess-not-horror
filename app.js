@@ -1,4 +1,4 @@
-﻿function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
 const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟','D':'🦆','M':'🫅'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
@@ -5437,6 +5437,7 @@ window.switchVariantsTab = function(tab) {
             <option value="bot_beg">Bot (Beginner)</option>
             <option value="bot_int">Bot (Intermediate)</option>
             <option value="bot_gm">Bot (Grandmaster)</option>
+            <option value="online">Online (Real Person)</option>
             
         `;
         
@@ -5983,7 +5984,24 @@ window.openDokiGame = function() {
     openModal('dokimodal');
     window.dokiLevel = 1;
 
-    
+    let adminBtn = document.getElementById('doki-admin-skip');
+    if(!adminBtn) {
+        adminBtn = document.createElement('button');
+        adminBtn.id = 'doki-admin-skip';
+        adminBtn.innerText = 'Admin Skip >>';
+        adminBtn.style.cssText = 'position:absolute; right:10px; top:10px; background:#f00; color:#fff; font-weight:bold; border:2px solid #fff; padding:5px 10px; cursor:pointer; z-index:99999999;';
+        adminBtn.onclick = () => {
+            if(window.dokiLevel < window.dokiMaxLevel) {
+                window.dokiLevel++;
+                startDokiLevel();
+            } else {
+                let okBtn = document.getElementById('doki-monika-ok');
+                if(okBtn) okBtn.click();
+            }
+        };
+        document.getElementById('dokimodal').appendChild(adminBtn);
+    }
+    adminBtn.style.display = (typeof M !== 'undefined' && M && M.isAdmin) ? 'block' : 'none';
 
     startDokiLevel();
 };
@@ -6208,40 +6226,42 @@ window.startDokiLevel = function() {
         return; // Skip normal mechanics
     }
     
-    // --- DDLC CUMULATIVE MECHANICS ---
-    window.dokiMonikaText = lvl >= 2 ? true : false;
-    window.dokiCbMovement = lvl >= 3 ? (10 + (lvl * 10)) : 0;
-    window.dokiObstacles = lvl >= 4 ? true : false; // **NEW: Obstacles you MUST avoid**
-    window.dokiPlayWithMe = lvl >= 5 ? true : false;
-    window.dokiRenpyErrors = lvl >= 6 ? Math.max(400, 3000 - (lvl * 100)) : 0;
+    // --- AGREEEE TERMS MECHANICS ---
+    window.dokiCbMovement = lvl >= 2 ? (20 + (lvl * 15)) : 0; // Checkboxes move faster
+    window.dokiAgreeJumps = lvl >= 3 ? true : false; // Agree button runs away
+    window.dokiUncheckSpeed = lvl >= 4 ? Math.max(200, 2000 - (lvl * 100)) : 0; // Unchecking boxes
+    window.dokiObstacles = lvl >= 5 ? true : false; // Fake popup traps
     
     let instTransform = '';
     let instFilter = '';
-    let bodyFilter = '';
     
-    if(lvl >= 7) instTransform += ' rotate(5deg)';
-    window.dokiZalgoText = lvl >= 8 ? true : false;
-    window.dokiFakeCursor = lvl >= 9 ? true : false;
-    window.dokiUncheckSpeed = lvl >= 10 ? Math.max(300, 2500 - (lvl * 100)) : 0;
+    if(lvl >= 6) {
+        // Agree button gets tiny
+        if(agreeBtn) {
+            agreeBtn.style.fontSize = Math.max(4, 12 - (lvl - 5)) + 'px';
+            agreeBtn.style.padding = '1px 5px';
+        }
+    }
+    
+    if(lvl >= 7) instTransform += ' rotate(' + ((lvl-6)*2) + 'deg)'; // Rotate window
+    
+    window.dokiFakeCursor = lvl >= 8 ? true : false; // Mouse cursor interference
+    window.dokiTeleportingTOS = lvl >= 9 ? true : false; // The TOS window scrolls away
     
     if(lvl >= 11 && vb) {
         vb.style.display = 'block';
         window.dokiVirusSpeed = Math.floor(lvl / 2);
-        vp.previousElementSibling.innerText = 'Deleting character files...';
+        vp.previousElementSibling.innerText = 'Reading Terms of Service...';
     } else {
         window.dokiVirusSpeed = 0;
     }
     
-    window.dokiAgreeJumps = lvl >= 12 ? true : false;
-    if(lvl >= 13) bodyFilter += ' invert(0.8)';
+    if(lvl >= 13) instFilter += ' invert(0.8)'; // Invert colors
     if(lvl >= 14) document.body.style.background = '#000';
-    if(lvl >= 15 && installer) installer.style.background = '#220000';
-    if(lvl >= 16) instFilter += ' blur(2px)';
-    window.dokiAreYouSure = lvl >= 17 ? true : false;
-    window.dokiCreepyEyes = lvl >= 18 ? true : false;
+    if(lvl >= 16) instFilter += ' blur(1px)';
+    window.dokiAreYouSure = lvl >= 17 ? true : false; // "Are you sure you want to Agree?" popups
     if(lvl >= 19 && installer) installer.classList.add('doki-shake');
     
-    document.body.style.filter = bodyFilter;
     if(installer) {
         installer.style.filter = instFilter;
         installer.style.transform = instTransform;
@@ -6514,5 +6534,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
+
 
 
