@@ -5900,20 +5900,98 @@ setInterval(function(){
   triggerCrownPopup(); 
 }, 60000);
 window.startCustomPuzzle = function() { const eloInput = document.getElementById('custompuzelo'); const elo = eloInput ? parseInt(eloInput.value) : (M.elo || 500); let eligible = window.PUZZLES.filter(p => Math.abs((p.elo || 1000) - elo) < 200); if (!eligible || eligible.length === 0) eligible = window.PUZZLES; const puz = eligible[Math.floor(Math.random() * eligible.length)]; loadPuzzle(puz); }; window.startPeriodicPuzzle = function(type) { if(!window.PUZZLES || window.PUZZLES.length === 0) return showAnnouncement('Puzzles are still loading...'); closeModal('puzzlemodal'); const d = new Date(); let seed = 0; if(type==='weekly'){seed = Math.floor(d.getTime()/(1000*60*60*24*7));} else if(type==='monthly'){seed = d.getFullYear()*12 + d.getMonth();} else if(type==='yearly'){seed = d.getFullYear();} else if(type==='decadely'){seed = Math.floor(d.getFullYear()/10);} let hash = Math.imul(31, seed) ^ 0x3a5b2c; const idx = Math.abs(hash) % window.PUZZLES.length; loadPuzzle(window.PUZZLES[idx]); }; window.requestVariant = function() { const val = document.getElementById('variant-request-input').value; if(!val) return; document.getElementById('variant-request-input').value = ''; const who = (M.account&&M.account.username)||'Guest'; showAnnouncement('💬 ' + who + ' requested variant: ' + val); if(typeof API !== 'undefined') API.announce(who, 'requested to feature variant: ' + val).catch(()=>{}); };
-window.connectVoiceChat = function() { 
-    showAnnouncement('🎤 Connecting to Voice Server...'); 
-    setTimeout(() => { 
-        showAnnouncement('🟢 Connected to Global Voice Lobby!'); 
-        setInterval(() => {
-            if(Math.random() < 0.2) {
-                const phrases = ['hello?', 'anyone there?', 'im pushing mid', 'knight to e4 bro', 'did you just blunder your queen?', 'my dad works at samsung', 'microphone check', '*cough*', '*heavy breathing*'];
-                const msg = new SpeechSynthesisUtterance(phrases[Math.floor(Math.random()*phrases.length)]);
-                msg.rate = 0.8 + Math.random()*0.5;
-                msg.pitch = 0.5 + Math.random()*1.0;
-                window.speechSynthesis.speak(msg);
+window.connectVoiceChat = async function() { 
+    if (!G || !G.opponent || !G.opponent.matchId) {
+        showAnnouncement('⚠️ Voice chat requires an active Online Match!');
+        return;
+    }
+    if (window.voiceStream) {
+        showAnnouncement('⚠️ Voice chat is already connected!');
+        return;
+    }
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        window.voiceStream = stream;
+        
+        const pc = new RTCPeerConnection({ iceServers: [{urls: 'stun:stun.l.google.com:19302'}] });
+        window.voicePeer = pc;
+        
+        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+        
+        pc.onicecandidate = e => {
+            if(e.candidate) wsSend({ type: 'webrtc', matchId: G.opponent.matchId, data: { candidate: e.candidate } });
+        };
+        
+        pc.ontrack = e => {
+            let audio = document.getElementById('voiceAudio');
+            if(!audio) {
+                audio = document.createElement('audio');
+                audio.id = 'voiceAudio';
+                audio.autoplay = true;
+                document.body.appendChild(audio);
             }
-        }, 3000);
-    }, 1500); 
+            audio.srcObject = e.streams[0];
+            showAnnouncement('🟢 Voice Chat Connected!');
+        };
+        
+        if (window.pendingVoiceOffer) {
+            await pc.setRemoteDescription(new RTCSessionDescription(window.pendingVoiceOffer));
+            window.pendingVoiceOffer = null;
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            wsSend({ type: 'webrtc', matchId: G.opponent.matchId, data: answer });
+            
+            if(window.pendingCandidates) {
+                window.pendingCandidates.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)));
+                window.pendingCandidates = [];
+            }
+        } else {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            wsSend({ type: 'webrtc', matchId: G.opponent.matchId, data: offer });
+            showAnnouncement('🎤 Calling opponent...');
+        }
+    } catch(err) {
+        console.error(err);
+        showAnnouncement('⚠️ Microphone access denied or error!');
+    }
+};
+
+window.handleWebrtcMessage = async function(msg) {
+    if(!G || !G.opponent || G.opponent.matchId !== msg.matchId) return;
+    const data = msg.data;
+    
+    if (data.type === 'offer') {
+        if (!window.voicePeer) {
+            window.pendingVoiceOffer = data;
+            showAnnouncement('📞 Opponent is calling! Click "Voice Chat" to answer.');
+            // Play a sound to alert
+            const actx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = actx.createOscillator();
+            osc.frequency.value = 600;
+            osc.connect(actx.destination);
+            osc.start(); setTimeout(()=>osc.stop(), 300);
+        } else {
+            if (G.opponent.mySide === 'black') {
+                await window.voicePeer.setRemoteDescription(new RTCSessionDescription(data));
+                const answer = await window.voicePeer.createAnswer();
+                await window.voicePeer.setLocalDescription(answer);
+                wsSend({ type: 'webrtc', matchId: G.opponent.matchId, data: answer });
+            }
+        }
+    } else if (data.type === 'answer') {
+        if (window.voicePeer) {
+            await window.voicePeer.setRemoteDescription(new RTCSessionDescription(data));
+        }
+    } else if (data.candidate) {
+        if (window.voicePeer) {
+            await window.voicePeer.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } else {
+            if(!window.pendingCandidates) window.pendingCandidates = [];
+            window.pendingCandidates.push(data.candidate);
+        }
+    }
 };
 // --- Voice Chat Logic ---
 var voiceStream = null;

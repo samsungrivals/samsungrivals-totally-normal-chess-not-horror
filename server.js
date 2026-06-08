@@ -1,4 +1,4 @@
-﻿// Tiny multiplayer backend for the chess app.
+// Tiny multiplayer backend for the chess app.
 // In-memory + JSON file. Endpoints power leaderboard, friends, announcements, matchmaking.
 
 const express = require('express');
@@ -692,6 +692,59 @@ function setupWebSockets() {
       if (m) {
         const otherKey = m.a === ws.userKey ? m.b : m.a;
         wsSend(sockets.get(otherKey), { type: 'gameover', matchId: msg.matchId, status: msg.status, winner: msg.winner });
+    }
+      wsSend(ws, { type: 'queueLeft' });
+      return;
+    }
+
+    // --- Friend challenges over WebSocket ---
+    if (msg.type === 'challenge') {
+      const targetKey = (msg.to || '').toLowerCase();
+      const targetWs = sockets.get(targetKey);
+      if (!targetWs) { wsSend(ws, { type: 'challengeFailed', to: msg.to, reason: 'offline' }); return; }
+      wsSend(targetWs, { type: 'challenge', from: ws.displayName, fromKey: ws.userKey, elo: ws.elo || 500 });
+      wsSend(ws, { type: 'challengeSent', to: msg.to });
+      return;
+    }
+    if (msg.type === 'challengeAccept') {
+      const challengerKey = (msg.fromKey || msg.from || '').toLowerCase();
+      const challengerWs = sockets.get(challengerKey);
+      if (!challengerWs) { wsSend(ws, { type: 'challengeFailed', to: msg.from, reason: 'offline' }); return; }
+      // Create a live match between challenger and me (acceptor)
+      const matchId = 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+      const meName = ws.displayName, oppName = challengerWs.displayName;
+      const whiteIsChallenger = Math.random() < 0.5;
+      const white = whiteIsChallenger ? oppName : meName;
+      const black = whiteIsChallenger ? meName : oppName;
+      liveMatches.set(matchId, { white, black, moves: [], a: ws.userKey, b: challengerWs.userKey });
+      ws.matchId = matchId; challengerWs.matchId = matchId;
+      wsSend(ws, { type: 'matched', matchId, opponent: { name: oppName, elo: challengerWs.elo || 500 }, side: white === meName ? 'white' : 'black' });
+      wsSend(challengerWs, { type: 'matched', matchId, opponent: { name: meName, elo: ws.elo || 500 }, side: white === oppName ? 'white' : 'black' });
+      console.log('[ws] challenge match ' + meName + ' vs ' + oppName);
+      return;
+    }
+    if (msg.type === 'challengeDecline') {
+      const challengerWs = sockets.get((msg.fromKey || msg.from || '').toLowerCase());
+      if (challengerWs) wsSend(challengerWs, { type: 'challengeDeclined', by: ws.displayName });
+      return;
+    }
+
+    if (msg.type === 'move') {
+      const m = liveMatches.get(msg.matchId);
+      if (!m) return;
+      m.moves.push({ from: msg.from, to: msg.to, promo: msg.promo || null, by: ws.userKey });
+      // Relay to the OTHER player
+      const otherKey = m.a === ws.userKey ? m.b : m.a;
+      const otherWs = sockets.get(otherKey);
+      wsSend(otherWs, { type: 'move', matchId: msg.matchId, from: msg.from, to: msg.to, promo: msg.promo || null });
+      return;
+    }
+
+    if (msg.type === 'gameover') {
+      const m = liveMatches.get(msg.matchId);
+      if (m) {
+        const otherKey = m.a === ws.userKey ? m.b : m.a;
+        wsSend(sockets.get(otherKey), { type: 'gameover', matchId: msg.matchId, status: msg.status, winner: msg.winner });
         liveMatches.delete(msg.matchId);
       }
       return;
@@ -702,6 +755,14 @@ function setupWebSockets() {
       if (!m) return;
       const otherKey = m.a === ws.userKey ? m.b : m.a;
       wsSend(sockets.get(otherKey), { type: 'chat', from: ws.displayName, text: String(msg.text || '').slice(0, 200) });
+      return;
+    }
+
+    if (msg.type === 'webrtc') {
+      const m = liveMatches.get(msg.matchId);
+      if (!m) return;
+      const otherKey = m.a === ws.userKey ? m.b : m.a;
+      wsSend(sockets.get(otherKey), { type: 'webrtc', data: msg.data });
       return;
     }
   });
