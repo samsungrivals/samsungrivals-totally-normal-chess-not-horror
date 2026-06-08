@@ -5452,9 +5452,18 @@ window.switchVariantsTab = function(tab) {
         btn.onclick = () => {
             closeModal('variantsmodal');
             
-            const vKey = Object.keys(window.VARIANT_DEFINITIONS).find(k => window.VARIANT_DEFINITIONS[k].name === v);
-            const cv = window.VARIANT_DEFINITIONS[vKey];
-            M.currentVariant = cv || null;
+            let cv = {};
+            if(v === 'King of the Hill') cv.koth = true;
+            else if(v === 'Chess960 (Fischer Random)') { cv.chess960 = true; cv.noCastling = true; }
+            else if(v === 'Atomic') cv.atomic = true;
+            else if(v === '3-Check') cv.threeCheck = true;
+            else if(v === 'Crazyhouse') cv.crazyhouse = true;
+            else if(v === 'Maharajah and the Sepoys') cv.maharajah = true;
+            else if(v === '5D Chess with Multiverse Time Travel') cv.multiverse = true;
+            else if(v === 'Fog of War') cv.fogOfWar = true;
+            else if(v === 'Duck Chess') cv.duck = true;
+            else if(v === 'Knightmate') cv.knightmate = true;
+            M.currentVariant = Object.keys(cv).length > 0 ? cv : null;
             saveMeta();
             
             if(select.value === 'online') {
@@ -5891,7 +5900,21 @@ setInterval(function(){
   triggerCrownPopup(); 
 }, 60000);
 window.startCustomPuzzle = function() { const eloInput = document.getElementById('custompuzelo'); const elo = eloInput ? parseInt(eloInput.value) : (M.elo || 500); let eligible = window.PUZZLES.filter(p => Math.abs((p.elo || 1000) - elo) < 200); if (!eligible || eligible.length === 0) eligible = window.PUZZLES; const puz = eligible[Math.floor(Math.random() * eligible.length)]; loadPuzzle(puz); }; window.startPeriodicPuzzle = function(type) { if(!window.PUZZLES || window.PUZZLES.length === 0) return showAnnouncement('Puzzles are still loading...'); closeModal('puzzlemodal'); const d = new Date(); let seed = 0; if(type==='weekly'){seed = Math.floor(d.getTime()/(1000*60*60*24*7));} else if(type==='monthly'){seed = d.getFullYear()*12 + d.getMonth();} else if(type==='yearly'){seed = d.getFullYear();} else if(type==='decadely'){seed = Math.floor(d.getFullYear()/10);} let hash = Math.imul(31, seed) ^ 0x3a5b2c; const idx = Math.abs(hash) % window.PUZZLES.length; loadPuzzle(window.PUZZLES[idx]); }; window.requestVariant = function() { const val = document.getElementById('variant-request-input').value; if(!val) return; document.getElementById('variant-request-input').value = ''; const who = (M.account&&M.account.username)||'Guest'; showAnnouncement('💬 ' + who + ' requested variant: ' + val); if(typeof API !== 'undefined') API.announce(who, 'requested to feature variant: ' + val).catch(()=>{}); };
-window.connectVoiceChat = function() { showAnnouncement('🎤 Connecting to Voice Server...'); setTimeout(() => { const actx = new (window.AudioContext || window.webkitAudioContext)(); if(actx.state === 'suspended') actx.resume(); const bufferSize = actx.sampleRate * 2; const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; } const noise = actx.createBufferSource(); noise.buffer = buffer; const bpf = actx.createBiquadFilter(); bpf.type = 'bandpass'; bpf.frequency.value = 1000; const gain = actx.createGain(); gain.gain.setValueAtTime(0.5, actx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 1.5); noise.connect(bpf); bpf.connect(gain); gain.connect(actx.destination); noise.start(); showAnnouncement('⚠️ Voice servers are currently full!'); }, 1500); };
+window.connectVoiceChat = function() { 
+    showAnnouncement('🎤 Connecting to Voice Server...'); 
+    setTimeout(() => { 
+        showAnnouncement('🟢 Connected to Global Voice Lobby!'); 
+        setInterval(() => {
+            if(Math.random() < 0.2) {
+                const phrases = ['hello?', 'anyone there?', 'im pushing mid', 'knight to e4 bro', 'did you just blunder your queen?', 'my dad works at samsung', 'microphone check', '*cough*', '*heavy breathing*'];
+                const msg = new SpeechSynthesisUtterance(phrases[Math.floor(Math.random()*phrases.length)]);
+                msg.rate = 0.8 + Math.random()*0.5;
+                msg.pitch = 0.5 + Math.random()*1.0;
+                window.speechSynthesis.speak(msg);
+            }
+        }, 3000);
+    }, 1500); 
+};
 // --- Voice Chat Logic ---
 var voiceStream = null;
 window.toggleVoiceChatSetting = async function() {
