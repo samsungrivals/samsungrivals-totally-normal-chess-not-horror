@@ -5622,8 +5622,10 @@ window.pollAnnouncements = async function() {
 // --- Puzzle Logic Redefine ---
 window.generateInfinitePuzzle = function(elo) {
     let board = [['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','','']];
-    let rType = Math.floor(Math.random() * 3);
+    let rType = Math.floor(Math.random() * 6);
     let moves = [];
+    
+    const toS = (r, c) => String.fromCharCode(97 + c) + (8 - r);
     
     if(rType === 0) { // Back rank mate
         let kCol = Math.floor(Math.random() * 6) + 1;
@@ -5632,8 +5634,7 @@ window.generateInfinitePuzzle = function(elo) {
         let rCol = Math.floor(Math.random() * 8);
         board[7][rCol] = 'R';
         board[7][0] = 'K';
-        let fromCol = String.fromCharCode(97 + rCol);
-        moves = [ fromCol + '1' + fromCol + '8' ];
+        moves = [ toS(7, rCol) + toS(0, rCol) ];
     } else if(rType === 1) { // Ladder mate
         let r1 = Math.floor(Math.random() * 8);
         let r2 = (r1 + 1) % 8;
@@ -5641,18 +5642,60 @@ window.generateInfinitePuzzle = function(elo) {
         board[0][Math.floor(Math.random() * 8)] = 'k'; 
         board[7][r2] = 'R'; 
         board[7][Math.floor(Math.random() * 8)] = 'K'; 
-        let fromCol = String.fromCharCode(97 + r2);
-        moves = [ fromCol + '1' + fromCol + '8' ];
-    } else { // Queen and King mate
+        moves = [ toS(7, r2) + toS(0, r2) ];
+    } else if (rType === 2) { // Queen and King mate
         let kCol = Math.floor(Math.random() * 6) + 1;
         board[0][kCol] = 'k';
         board[2][kCol] = 'K';
         let qCol = Math.floor(Math.random() * 8);
         if(qCol === kCol) qCol = (qCol + 1) % 8;
         board[7][qCol] = 'Q';
-        let fromCol = String.fromCharCode(97 + qCol);
-        let toCol = String.fromCharCode(97 + kCol);
-        moves = [ fromCol + '1' + toCol + '7' ];
+        moves = [ toS(7, qCol) + toS(1, kCol) ];
+    } else if(rType === 3) { // Back rank mate in 2 (Sacrifice Queen)
+        let kCol = Math.floor(Math.random() * 5) + 2;
+        board[0][kCol] = 'k';
+        board[1][kCol-1] = 'p'; board[1][kCol] = 'p'; board[1][kCol+1] = 'p';
+        let bRookCol = kCol - 2;
+        board[0][bRookCol] = 'r';
+        let wQueenCol = kCol + 1;
+        board[7][wQueenCol] = 'Q';
+        let wRookCol = bRookCol;
+        board[7][wRookCol] = 'R';
+        board[7][0] = 'K';
+        moves = [
+            toS(7, wQueenCol) + toS(0, wQueenCol),
+            toS(0, bRookCol) + toS(0, wQueenCol), 
+            toS(7, wRookCol) + toS(0, wRookCol)
+        ];
+    } else if(rType === 4) { // Knight Fork (Win Queen)
+        let destR = Math.floor(Math.random() * 3) + 3;
+        let destC = Math.floor(Math.random() * 4) + 2;
+        let startR = destR + 2; let startC = destC - 1;
+        board[startR][startC] = 'N';
+        let kR = destR - 2; let kC = destC - 1;
+        board[kR][kC] = 'k';
+        let qR = destR - 1; let qC = destC + 2;
+        board[qR][qC] = 'q';
+        board[7][0] = 'K';
+        let kR2 = kR; let kC2 = kC - 1;
+        moves = [
+            toS(startR, startC) + toS(destR, destC),
+            toS(kR, kC) + toS(kR2, kC2),
+            toS(destR, destC) + toS(qR, qC)
+        ];
+    } else if(rType === 5) { // Smothered Mate in 2
+        board[0][7] = 'k'; // Kh8
+        board[0][5] = 'r'; // Rf8
+        board[1][7] = 'p'; // h7
+        board[1][6] = 'p'; // g7
+        board[2][7] = 'N'; // Nh6
+        board[3][3] = 'Q'; // Qd5
+        board[7][0] = 'K'; // Ka1
+        moves = [
+            toS(3, 3) + toS(0, 6), // Qg8+
+            toS(0, 5) + toS(0, 6), // Rxg8
+            toS(2, 7) + toS(1, 5)  // Nf7#
+        ];
     }
 
     return {
