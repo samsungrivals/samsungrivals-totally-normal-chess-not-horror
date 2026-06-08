@@ -6045,6 +6045,7 @@ function checkDokiCheckboxes() {
     const c3 = document.getElementById('doki-cb3').checked;
     if(c1 && c2 && c3 && window.dokiState === 1) {
         window.dokiState = 2;
+        document.getElementById('doki-installer').classList.add('doki-spin');
         const agreeBtn = document.getElementById('doki-agree');
         agreeBtn.disabled = false;
         agreeBtn.style.color = '#000';
@@ -6061,11 +6062,9 @@ document.getElementById('doki-agree').onmouseenter = function(e) {
     const target = e.target;
     clearTimeout(dokiAgreeTimeout);
     dokiAgreeTimeout = setTimeout(() => {
-        const maxX = 400; // max distance it can jump within modal
-        const maxY = 200;
-        target.style.position = 'absolute';
-        target.style.top = '-' + (Math.random() * maxY) + 'px';
-        target.style.left = '-' + (Math.random() * maxX) + 'px';
+        const maxX = 300;
+        const maxY = 150;
+        target.style.transform = 'translate(' + (-(Math.random() * maxX)) + 'px, ' + (-(Math.random() * Math.min(maxY, target.offsetTop - 50))) + 'px)';
     }, 150);
 };
 
@@ -6114,4 +6113,34 @@ window.playAnnoyingSound = function() {
     } catch(e){}
 };
 
+
+
+
+window.spawnDokiError = function() {
+    if(document.getElementById('dokimodal').classList.contains('hidden')) return;
+    const err = document.createElement('div');
+    err.style.cssText = 'position:absolute;width:250px;height:120px;background:#ece9d8;border:2px solid #0055ea;border-radius:4px;z-index:9999999;box-shadow:2px 2px 5px rgba(0,0,0,0.5);display:flex;flex-direction:column;font-family:Tahoma,sans-serif;top:' + (Math.random()*80) + '%;left:' + (Math.random()*80) + '%;';
+    err.innerHTML = '<div style="background:linear-gradient(to right, #0058e6, #3a93ff);color:#fff;padding:2px 5px;font-size:12px;font-weight:bold;display:flex;justify-content:space-between;"><span>System Error</span><span style="cursor:pointer;background:#ff0000;padding:0 4px;" onclick="this.parentElement.parentElement.remove()">X</span></div><div style="padding:15px;font-size:12px;color:#000;display:flex;align-items:center;gap:10px;"><div style="font-size:30px;">âŒ</div><div>Fatal Exception 0E has occurred at 0028:C0011E36.</div></div><div style="text-align:center;"><button style="padding:2px 15px;border:1px solid #000;" onclick="this.parentElement.parentElement.remove()">OK</button></div>';
+    document.getElementById('dokimodal').appendChild(err);
+};
+
+if(!window.dokiCrazyActive) {
+    window.dokiCrazyActive = true;
+    setInterval(() => {
+        if(window.dokiState >= 1 && !document.getElementById('dokimodal').classList.contains('hidden')) {
+            spawnDokiError();
+        }
+    }, 2500);
+
+    setInterval(() => {
+        if(window.dokiState === 1 && !document.getElementById('dokimodal').classList.contains('hidden')) {
+            const boxes = ['doki-cb1', 'doki-cb2', 'doki-cb3'];
+            const checkedBoxes = boxes.filter(id => document.getElementById(id).checked);
+            if(checkedBoxes.length > 0) {
+                const randomBox = checkedBoxes[Math.floor(Math.random() * checkedBoxes.length)];
+                document.getElementById(randomBox).checked = false;
+            }
+        }
+    }, 4000);
+}
 

@@ -619,3 +619,12 @@ body.doki-theme button { background: #fff !important; color: #f00 !important; bo
   animation: dokishake 0.5s;
   animation-iteration-count: infinite;
 }
+
+@keyframes dokispin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(0.8); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+.doki-spin {
+  animation: dokispin 3s linear infinite !important;
+}
