@@ -5962,6 +5962,9 @@ window.dokiMaxLevel = 20;
 window.dokiLevel = 1;
 window.dokiMaxLevel = 20;
 
+window.dokiLevel = 1;
+window.dokiMaxLevel = 20;
+
 window.openDokiGame = function() {
     closeModal('startgamemodal');
     closeModal('welcomemodal');
@@ -5974,11 +5977,27 @@ window.openDokiGame = function() {
 };
 
 window.startDokiLevel = function() {
-    document.getElementById('doki-tos').scrollTop = 0;
-    document.getElementById('doki-checkboxes').style.display = 'none';
-    document.getElementById('doki-agree').disabled = true;
-    document.getElementById('doki-agree').style.color = '#888';
-    document.getElementById('doki-agree').style.transform = 'none';
+    let tos = document.getElementById('doki-tos');
+    if(tos) tos.scrollTop = 0;
+    
+    let cbx = document.getElementById('doki-checkboxes');
+    if(cbx) cbx.style.display = 'none';
+    
+    let agreeBtn = document.getElementById('doki-agree');
+    if(agreeBtn) {
+        agreeBtn.disabled = true;
+        agreeBtn.style.color = '#888';
+        agreeBtn.style.transform = 'none';
+    }
+    
+    let vb = document.getElementById('doki-virus-bar');
+    if(vb) vb.style.display = 'none';
+    
+    let vf = document.getElementById('doki-virus-fill');
+    if(vf) vf.style.width = '0%';
+    
+    let vp = document.getElementById('doki-virus-pct');
+    if(vp) vp.innerText = '0%';
     
     for(let i=1; i<=3; i++) {
         let cb = document.getElementById('doki-cb'+i);
@@ -5992,10 +6011,52 @@ window.startDokiLevel = function() {
     
     cleanupDoki();
     window.dokiState = 0; 
-    document.getElementById('doki-installer').classList.remove('doki-spin', 'doki-shake');
+    
+    let installer = document.getElementById('doki-installer');
+    if(installer) {
+        installer.className = '';
+        installer.style.transform = 'none';
+        installer.style.filter = 'none';
+        installer.style.animation = 'none';
+    }
+    document.body.style.filter = 'none';
     
     let titleEl = document.querySelector('#doki-installer div span');
     if(titleEl) titleEl.innerText = 'Doki Doki Action Game - Level ' + window.dokiLevel;
+    
+    window.dokiCbMovement = 0;
+    window.dokiAgreeJumps = false;
+    window.dokiUncheckSpeed = 0;
+    window.dokiErrorSpeed = 0;
+    window.dokiVirusSpeed = 0;
+    
+    let lvl = window.dokiLevel;
+    if(lvl === 2) { window.dokiAgreeJumps = true; }
+    else if(lvl === 3) { window.dokiCbMovement = 100; }
+    else if(lvl === 4) { window.dokiUncheckSpeed = 1500; }
+    else if(lvl === 5) { installer.classList.add('doki-shake'); playAnnoyingSound(); }
+    else if(lvl === 6) { installer.style.transform = 'rotate(180deg)'; window.dokiAgreeJumps = true; }
+    else if(lvl === 7) { window.dokiErrorSpeed = 1500; }
+    else if(lvl === 8) { vb.style.display = 'block'; window.dokiVirusSpeed = 3; }
+    else if(lvl === 9) { installer.style.filter = 'blur(3px)'; window.dokiCbMovement = 80; }
+    else if(lvl === 10) { installer.style.transform = 'scale(0.5)'; window.dokiErrorSpeed = 1200; }
+    else if(lvl === 11) { installer.style.transform = 'rotate(180deg) scale(0.5)'; window.dokiUncheckSpeed = 1200; }
+    else if(lvl === 12) { window.dokiUncheckSpeed = 1000; window.dokiVirusSpeed = 4; vb.style.display = 'block'; }
+    else if(lvl === 13) { window.dokiCbMovement = 200; window.dokiAgreeJumps = true; }
+    else if(lvl === 14) { installer.style.animation = 'dokispin 6s linear infinite'; }
+    else if(lvl === 15) { window.dokiErrorSpeed = 600; window.dokiVirusSpeed = 6; vb.style.display = 'block'; installer.classList.add('doki-shake'); }
+    else if(lvl === 16) { installer.style.animation = 'dokispin 2s linear infinite'; window.dokiCbMovement = 100; }
+    else if(lvl === 17) { window.dokiCbMovement = 350; window.dokiAgreeJumps = true; }
+    else if(lvl === 18) { document.body.style.filter = 'invert(1)'; window.dokiErrorSpeed = 800; window.dokiUncheckSpeed = 1000; }
+    else if(lvl === 19) { window.dokiErrorSpeed = 200; window.dokiAgreeJumps = true; window.dokiCbMovement = 150; }
+    else if(lvl === 20) { 
+        document.body.style.filter = 'invert(1) hue-rotate(90deg)'; 
+        installer.style.animation = 'dokispin 0.8s linear infinite'; 
+        window.dokiErrorSpeed = 300; window.dokiVirusSpeed = 10; 
+        vb.style.display = 'block'; 
+        window.dokiCbMovement = 250; window.dokiAgreeJumps = true; 
+        window.dokiUncheckSpeed = 500; playAnnoyingSound(); 
+    }
 };
 
 window.cleanupDoki = function() {
@@ -6009,6 +6070,7 @@ window.cleanupDoki = function() {
     clearTimeout(window.dokiCbTimeout2);
     clearTimeout(window.dokiCbTimeout3);
     document.querySelectorAll('.doki-fake-error').forEach(el => el.remove());
+    document.body.style.filter = 'none';
 };
 
 window.resetDokiGame = function() {
@@ -6019,12 +6081,7 @@ window.resetDokiGame = function() {
 };
 
 window.startDokiChaos = function() {
-    let lvl = window.dokiLevel;
-    if(lvl >= 5) {
-        document.getElementById('doki-installer').classList.add('doki-shake');
-        playAnnoyingSound();
-    }
-    if(lvl >= 3) {
+    if(window.dokiUncheckSpeed > 0) {
         window.dokiUncheckInterval = setInterval(() => {
             if(window.dokiState === 1 && !document.getElementById('dokimodal').classList.contains('hidden')) {
                 const boxes = ['doki-cb1', 'doki-cb2', 'doki-cb3'];
@@ -6034,47 +6091,43 @@ window.startDokiChaos = function() {
                     document.getElementById(randomBox).checked = false;
                 }
             }
-        }, Math.max(500, 4000 - (lvl * 150))); 
+        }, window.dokiUncheckSpeed); 
     }
-    if(lvl >= 7) {
+    
+    if(window.dokiErrorSpeed > 0) {
         window.dokiErrorInterval = setInterval(() => {
             if(window.dokiState >= 1 && !document.getElementById('dokimodal').classList.contains('hidden')) {
                 spawnDokiError();
             }
-        }, Math.max(1000, 3000 - (lvl * 100)));
+        }, window.dokiErrorSpeed);
     }
-    let virusBar = document.getElementById('doki-virus-bar');
-    if(lvl >= 10 && virusBar) {
-        virusBar.style.display = 'block';
-        document.getElementById('doki-virus-fill').style.width = '0%';
+    
+    if(window.dokiVirusSpeed > 0) {
         window.dokiVirusInterval = setInterval(() => {
             if(window.dokiState === 0 || document.getElementById('dokimodal').classList.contains('hidden')) return;
             let pct = parseInt(document.getElementById('doki-virus-fill').style.width || '0');
             if(pct < 99) {
-                pct += Math.floor(Math.random() * Math.max(1, lvl/2)) + 1;
+                pct += window.dokiVirusSpeed;
                 if(pct > 99) pct = 99;
                 document.getElementById('doki-virus-fill').style.width = pct + '%';
                 let pctEl = document.getElementById('doki-virus-pct');
                 if(pctEl) pctEl.innerText = pct + '%';
             }
         }, 1000);
-    } else if(virusBar) {
-        virusBar.style.display = 'none';
     }
 };
 
 function moveCheckbox(id, timeoutVar) {
     const lbl = document.getElementById(id);
     if(lbl.querySelector('input').checked) return;
-    let lvl = window.dokiLevel;
-    if(lvl < 2) return; 
+    if(window.dokiCbMovement === 0) return; 
     
     clearTimeout(window[timeoutVar]);
     window[timeoutVar] = setTimeout(() => {
-        let maxJump = Math.min(200, 20 * lvl);
+        let maxJump = window.dokiCbMovement;
         lbl.style.top = (Math.random() * maxJump/4) + 'px';
         lbl.style.left = (Math.random() * maxJump) + 'px';
-    }, Math.max(50, 200 - (lvl * 8)));
+    }, 100);
 }
 
 function checkDokiCheckboxes() {
@@ -6086,9 +6139,6 @@ function checkDokiCheckboxes() {
         const agreeBtn = document.getElementById('doki-agree');
         agreeBtn.disabled = false;
         agreeBtn.style.color = '#000';
-        if(window.dokiLevel >= 15) {
-            document.getElementById('doki-installer').classList.add('doki-spin');
-        }
     }
 }
 
@@ -6162,16 +6212,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let agreeBtn = document.getElementById('doki-agree');
     if(agreeBtn) {
         agreeBtn.onmouseenter = function(e) {
-            if(window.dokiState !== 2) return;
-            let lvl = window.dokiLevel;
-            if(lvl < 4) return;
+            if(window.dokiState !== 2 || !window.dokiAgreeJumps) return;
             const target = e.target;
             clearTimeout(window.dokiAgreeTimeout);
             window.dokiAgreeTimeout = setTimeout(() => {
-                const maxX = Math.min(300, 30 * lvl);
-                const maxY = Math.min(150, 15 * lvl);
+                const maxX = 250;
+                const maxY = 150;
                 target.style.transform = 'translate(' + (-(Math.random() * maxX)) + 'px, ' + (-(Math.random() * Math.min(maxY, target.offsetTop - 50))) + 'px)';
-            }, Math.max(30, 200 - (lvl * 8)));
+            }, 80);
         };
 
         agreeBtn.onclick = function(e) {

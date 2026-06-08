@@ -1,4 +1,4 @@
-// Tiny multiplayer backend for the chess app.
+﻿// Tiny multiplayer backend for the chess app.
 // In-memory + JSON file. Endpoints power leaderboard, friends, announcements, matchmaking.
 
 const express = require('express');
@@ -581,7 +581,7 @@ const server = http.createServer(app);
 // user(lowercase) -> ws socket
 const sockets = new Map();
 const liveMatches = new Map();
-let waiting = null;
+let waiting = {};
 let WebSocket = null;
 
 function wsSend(ws, obj) {
@@ -635,7 +635,11 @@ function setupWebSockets() {
     }
 
     if (msg.type === 'leaveQueue') {
-      if (waiting && waiting.ws === ws) waiting = null;
+      for(let key in waiting) {
+      if(waiting[key] && waiting[key].ws === ws) {
+        waiting[key] = null;
+      }
+    }
       wsSend(ws, { type: 'queueLeft' });
       return;
     }
@@ -703,7 +707,11 @@ function setupWebSockets() {
   });
 
   ws.on('close', () => {
-    if (waiting && waiting.ws === ws) waiting = null;
+    for(let key in waiting) {
+      if(waiting[key] && waiting[key].ws === ws) {
+        waiting[key] = null;
+      }
+    }
     if (ws.userKey) sockets.delete(ws.userKey);
     // Notify opponent if in a live match
     if (ws.matchId) {
@@ -731,3 +739,4 @@ server.listen(port, '0.0.0.0', () => {
 // Last-resort guard: don't let an unexpected error crash the whole process/site
 process.on('uncaughtException', (e) => console.error('[uncaught]', e));
 process.on('unhandledRejection', (e) => console.error('[unhandledRejection]', e));
+
