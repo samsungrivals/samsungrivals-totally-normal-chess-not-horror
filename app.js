@@ -5968,6 +5968,9 @@ window.dokiMaxLevel = 20;
 window.dokiLevel = 1;
 window.dokiMaxLevel = 20;
 
+window.dokiLevel = 1;
+window.dokiMaxLevel = 20;
+
 window.openDokiGame = function() {
     closeModal('startgamemodal');
     closeModal('welcomemodal');
@@ -6000,7 +6003,10 @@ window.startDokiLevel = function() {
     if(vf) vf.style.width = '0%';
     
     let vp = document.getElementById('doki-virus-pct');
-    if(vp) vp.innerText = '0%';
+    if(vp) {
+        vp.innerText = '0%';
+        vp.previousElementSibling.innerText = 'Downloading Malware...';
+    }
     
     for(let i=1; i<=3; i++) {
         let cb = document.getElementById('doki-cb'+i);
@@ -6021,58 +6027,56 @@ window.startDokiLevel = function() {
         installer.style.transform = 'none';
         installer.style.filter = 'none';
         installer.style.animation = 'none';
+        installer.style.background = '#ece9d8';
     }
     document.body.style.filter = 'none';
     document.body.style.transform = 'none';
+    document.body.style.background = 'url("chess_bg.png") repeat';
     
     let titleEl = document.querySelector('#doki-installer div span');
     if(titleEl) titleEl.innerText = 'Doki Doki Action Game - Level ' + window.dokiLevel;
     
-    // --- CUMULATIVE MECHANICS ---
+    // --- DDLC CUMULATIVE MECHANICS ---
     let lvl = window.dokiLevel;
     
-    window.dokiCbMovement = lvl >= 2 ? (20 + (lvl * 15)) : 0;
-    window.dokiAgreeJumps = lvl >= 3 ? true : false;
-    window.dokiUncheckSpeed = lvl >= 4 ? Math.max(300, 2500 - (lvl * 100)) : 0;
-    window.dokiCheckmate = lvl >= 5 ? true : false;
-    if(lvl >= 6 && installer) installer.classList.add('doki-shake');
-    window.dokiGlitchText = lvl >= 7 ? true : false;
-    window.dokiErrorSpeed = lvl >= 8 ? Math.max(200, 3000 - (lvl * 120)) : 0;
-    window.dokiChessSound = lvl >= 9 ? true : false;
+    window.dokiMonikaText = lvl >= 2 ? true : false;
+    window.dokiCbMovement = lvl >= 3 ? (10 + (lvl * 10)) : 0;
+    window.dokiPlayWithMe = lvl >= 4 ? true : false;
+    window.dokiRenpyErrors = lvl >= 5 ? Math.max(400, 3000 - (lvl * 100)) : 0;
+    
+    let instTransform = '';
+    let instFilter = '';
+    let bodyFilter = '';
+    
+    if(lvl >= 6) instTransform += ' rotate(5deg)';
+    window.dokiZalgoText = lvl >= 7 ? true : false;
+    window.dokiFakeCursor = lvl >= 8 ? true : false;
+    window.dokiUncheckSpeed = lvl >= 9 ? Math.max(300, 2500 - (lvl * 100)) : 0;
     
     if(lvl >= 10 && vb) {
         vb.style.display = 'block';
         window.dokiVirusSpeed = Math.floor(lvl / 2);
+        vp.previousElementSibling.innerText = 'Deleting character files...';
     } else {
         window.dokiVirusSpeed = 0;
     }
     
-    if(lvl >= 11 && installer) {
-        installer.style.animation = 'dokispin ' + Math.max(0.5, 5 - (lvl*0.2)) + 's linear infinite';
-    }
-    
-    let bodyFilter = '';
-    let bodyTransform = '';
-    let instTransform = '';
-    let instFilter = '';
-    
-    if(lvl >= 12) bodyFilter += ' invert(1)';
-    // lvl 13 is just faster everything automatically
-    if(lvl >= 14) bodyTransform += ' rotate(180deg)';
+    window.dokiAgreeJumps = lvl >= 11 ? true : false;
+    if(lvl >= 12) bodyFilter += ' invert(0.8)';
+    if(lvl >= 13) document.body.style.background = '#000';
+    if(lvl >= 14 && installer) installer.style.background = '#220000';
     if(lvl >= 15) instFilter += ' blur(2px)';
-    if(lvl >= 16) instTransform += ' scale(0.5)';
-    window.dokiRainPieces = lvl >= 17 ? true : false;
-    if(lvl >= 18) bodyFilter += ' hue-rotate(90deg)';
-    if(lvl >= 19 && installer) {
-        bodyTransform += ' rotate(-90deg)';
-    }
+    window.dokiAreYouSure = lvl >= 16 ? true : false;
+    window.dokiCreepyEyes = lvl >= 17 ? true : false;
+    if(lvl >= 18 && installer) installer.classList.add('doki-shake');
+    window.dokiJustMonikaSpam = lvl >= 19 ? true : false;
+    
     if(lvl >= 20) {
+        instTransform += ' scale(0.8)';
         bodyFilter += ' contrast(200%)';
-        instTransform += ' scale(0.3)';
     }
     
     document.body.style.filter = bodyFilter;
-    document.body.style.transform = bodyTransform;
     if(installer) {
         installer.style.filter = instFilter;
         installer.style.transform = instTransform;
@@ -6082,22 +6086,23 @@ window.startDokiLevel = function() {
 
 window.cleanupDoki = function() {
     clearInterval(window.dokiVirusInterval);
-    clearInterval(window.dokiErrorInterval);
     clearInterval(window.dokiUncheckInterval);
-    clearInterval(window.dokiSoundInterval);
-    clearInterval(window.dokiGlitchInterval);
-    clearInterval(window.dokiCheckmateInterval);
-    clearInterval(window.dokiRainInterval);
-    window.dokiSoundInterval = null;
+    clearInterval(window.dokiRenpyErrorInterval);
+    clearInterval(window.dokiZalgoInterval);
+    clearInterval(window.dokiEyeInterval);
+    clearInterval(window.dokiCursorInterval);
     clearTimeout(window.dokiAgreeTimeout);
     clearTimeout(window.dokiCbTimeout1);
     clearTimeout(window.dokiCbTimeout2);
     clearTimeout(window.dokiCbTimeout3);
-    document.querySelectorAll('.doki-fake-error').forEach(el => el.remove());
-    document.querySelectorAll('.doki-fake-checkmate').forEach(el => el.remove());
-    document.querySelectorAll('.doki-rain').forEach(el => el.remove());
+    document.querySelectorAll('.doki-renpy-error').forEach(el => el.remove());
+    document.querySelectorAll('.doki-eye').forEach(el => el.remove());
+    document.querySelectorAll('.doki-are-you-sure').forEach(el => el.remove());
+    let fc = document.getElementById('doki-fake-cursor');
+    if(fc) fc.remove();
     document.body.style.filter = 'none';
     document.body.style.transform = 'none';
+    document.body.style.background = 'url("chess_bg.png") repeat';
 };
 
 window.resetDokiGame = function() {
@@ -6116,74 +6121,85 @@ window.startDokiChaos = function() {
                 if(checkedBoxes.length > 0) {
                     const randomBox = checkedBoxes[Math.floor(Math.random() * checkedBoxes.length)];
                     document.getElementById(randomBox).checked = false;
+                    let lbl = document.getElementById('lbl-' + randomBox.replace('doki-', ''));
+                    if(lbl && Math.random() < 0.5) lbl.style.color = 'red';
                 }
             }
         }, window.dokiUncheckSpeed); 
     }
     
-    if(window.dokiErrorSpeed > 0) {
-        window.dokiErrorInterval = setInterval(() => {
+    if(window.dokiRenpyErrors > 0) {
+        window.dokiRenpyErrorInterval = setInterval(() => {
             if(window.dokiState >= 1 && !document.getElementById('dokimodal').classList.contains('hidden')) {
-                spawnDokiError();
+                spawnRenpyError();
             }
-        }, window.dokiErrorSpeed);
+        }, window.dokiRenpyErrors);
     }
     
-    if(window.dokiCheckmate) {
-        window.dokiCheckmateInterval = setInterval(() => {
-            if(window.dokiState >= 1 && !document.getElementById('dokimodal').classList.contains('hidden')) {
-                let d = document.createElement('div');
-                d.className = 'doki-fake-checkmate';
-                d.innerText = 'CHECKMATE!';
-                d.style.cssText = 'position:fixed; font-size:'+(Math.random()*100+30)+'px; font-weight:bold; color:red; z-index:999999; top:'+(Math.random()*80)+'%; left:'+(Math.random()*80)+'%; transform:rotate('+(Math.random()*360)+'deg); pointer-events:none; opacity:0.8; text-shadow: 2px 2px 0 #000;';
-                document.body.appendChild(d);
-                setTimeout(() => d.remove(), 2000);
-            }
-        }, 3000);
-    }
-    
-    if(window.dokiGlitchText) {
-        window.dokiGlitchInterval = setInterval(() => {
+    if(window.dokiZalgoText || window.dokiMonikaText || window.dokiJustMonikaSpam) {
+        window.dokiZalgoInterval = setInterval(() => {
             if(window.dokiState >= 1) {
                 let t = document.querySelector('#doki-installer div span');
                 if(t) {
-                    const chars = '!@#$%^&*()_+-=[]{}|;:,.<>?/~Zalgo';
-                    let str = 'Doki Doki Action Game - Level ' + window.dokiLevel;
-                    let out = '';
-                    for(let i=0; i<str.length; i++) {
-                        out += Math.random() < 0.2 ? chars[Math.floor(Math.random()*chars.length)] : str[i];
+                    if(window.dokiJustMonikaSpam) {
+                        t.innerText = 'JUST MONIKA JUST MONIKA JUST MONIKA';
+                        return;
                     }
-                    t.innerText = out;
+                    const chars = 'Â¡Â¢Â£Â¤Â¥Â¦Â§Â¨Â©ÂªÂ«Â¬Â®Â¯Â°Â±Â²Â³Â´ÂµÂ¶Â·Â¸Â¹ÂºÂ»Â¼Â½Â¾Â¿';
+                    let str = window.dokiMonikaText && Math.random() < 0.1 ? 'Just Monika.' : 'Doki Doki Action Game - Level ' + window.dokiLevel;
+                    if(window.dokiZalgoText) {
+                        let out = '';
+                        for(let i=0; i<str.length; i++) {
+                            out += Math.random() < 0.15 ? chars[Math.floor(Math.random()*chars.length)] : str[i];
+                        }
+                        t.innerText = out;
+                    } else {
+                        t.innerText = str;
+                    }
+                }
+                
+                if(window.dokiPlayWithMe && Math.random() < 0.05) {
+                    let agreeBtn = document.getElementById('doki-agree');
+                    if(agreeBtn) {
+                        let oldText = agreeBtn.innerText;
+                        agreeBtn.innerText = 'Play with me';
+                        setTimeout(() => { if(agreeBtn.innerText === 'Play with me') agreeBtn.innerText = oldText; }, 500);
+                    }
+                }
+                
+                if(window.dokiAreYouSure && Math.random() < 0.02) {
+                    spawnAreYouSure();
                 }
             }
         }, 150);
     }
     
-    if(window.dokiChessSound) {
-        window.dokiSoundInterval = setInterval(() => {
-            if(window.dokiState >= 1) {
-                try {
-                    let a = new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-self.mp3');
-                    a.volume = 0.5;
-                    a.play();
-                }catch(e){}
-            }
-        }, 1500);
-    }
-    
-    if(window.dokiRainPieces) {
-        window.dokiRainInterval = setInterval(() => {
+    if(window.dokiCreepyEyes) {
+        window.dokiEyeInterval = setInterval(() => {
             if(window.dokiState >= 1) {
                 let d = document.createElement('div');
-                d.className = 'doki-rain';
-                let pieces = ['â™”','â™•','â™–','â™—','â™˜','â™™','â™š','â™›','â™œ','â™','â™ž','â™Ÿ'];
-                d.innerText = pieces[Math.floor(Math.random()*pieces.length)];
-                d.style.cssText = 'position:fixed; font-size:60px; color:#000; z-index:999998; top:-60px; left:'+(Math.random()*100)+'%; transition: top 2s linear; pointer-events:none;';
+                d.className = 'doki-eye';
+                d.innerText = 'ðŸ‘ï¸';
+                d.style.cssText = 'position:fixed; font-size:'+(Math.random()*100+50)+'px; z-index:999998; top:'+(Math.random()*90)+'%; left:'+(Math.random()*90)+'%; pointer-events:none; opacity:0; transition: opacity 0.5s;';
                 document.body.appendChild(d);
-                setTimeout(() => { d.style.top = '120%'; }, 50);
-                setTimeout(() => d.remove(), 2000);
+                setTimeout(() => d.style.opacity = '0.7', 10);
+                setTimeout(() => { d.style.opacity = '0'; setTimeout(()=>d.remove(), 500); }, 1500);
             }
-        }, 300);
+        }, 800);
+    }
+    
+    if(window.dokiFakeCursor) {
+        let fc = document.createElement('div');
+        fc.id = 'doki-fake-cursor';
+        fc.innerText = 'ðŸ–²ï¸';
+        fc.style.cssText = 'position:fixed; font-size:24px; z-index:9999999; top:50%; left:50%; pointer-events:none; transition: all 0.2s linear;';
+        document.body.appendChild(fc);
+        window.dokiCursorInterval = setInterval(() => {
+            if(window.dokiState >= 1 && fc) {
+                fc.style.top = (Math.random() * 90) + '%';
+                fc.style.left = (Math.random() * 90) + '%';
+            }
+        }, 500);
     }
     
     if(window.dokiVirusSpeed > 0) {
@@ -6228,13 +6244,24 @@ function checkDokiCheckboxes() {
     }
 }
 
-window.spawnDokiError = function() {
+window.spawnRenpyError = function() {
     if(document.getElementById('dokimodal').classList.contains('hidden')) return;
     const err = document.createElement('div');
-    err.className = 'doki-fake-error';
-    err.style.cssText = 'position:absolute;width:250px;height:120px;background:#ece9d8;border:2px solid #0055ea;border-radius:4px;z-index:9999999;box-shadow:2px 2px 5px rgba(0,0,0,0.5);display:flex;flex-direction:column;font-family:Tahoma,sans-serif;top:' + (Math.random()*80) + '%;left:' + (Math.random()*80) + '%;';
-    err.innerHTML = '<div style="background:linear-gradient(to right, #0058e6, #3a93ff);color:#fff;padding:2px 5px;font-size:12px;font-weight:bold;display:flex;justify-content:space-between;"><span>System Error</span><span style="cursor:pointer;background:#ff0000;padding:0 4px;" onclick="this.parentElement.parentElement.remove()">X</span></div><div style="padding:15px;font-size:12px;color:#000;display:flex;align-items:center;gap:10px;"><div style="font-size:30px;">âŒ</div><div>Fatal Exception 0E has occurred at 0028:C0011E36.</div></div><div style="text-align:center;"><button style="padding:2px 15px;border:1px solid #000;" onclick="this.parentElement.parentElement.remove()">OK</button></div>';
+    err.className = 'doki-renpy-error';
+    err.style.cssText = 'position:absolute;width:300px;background:#ddd;border:2px solid #000;z-index:9999999;font-family:monospace;top:' + (Math.random()*80) + '%;left:' + (Math.random()*80) + '%;';
+    let files = ['monika.chr', 'sayori.chr', 'yuri.chr', 'natsuki.chr', 'script-ch5.rpyc'];
+    let f = files[Math.floor(Math.random()*files.length)];
+    err.innerHTML = '<div style="background:#800;color:#fff;padding:2px 5px;font-size:12px;">Exception Occurred</div><div style="padding:10px;font-size:12px;color:#000;">File "' + f + '" is missing or corrupt.<br><br>Please reinstall the game.</div><div style="text-align:right;padding:5px;"><button onclick="this.parentElement.parentElement.remove()">Ignore</button></div>';
     document.getElementById('dokimodal').appendChild(err);
+};
+
+window.spawnAreYouSure = function() {
+    if(document.getElementById('dokimodal').classList.contains('hidden')) return;
+    const err = document.createElement('div');
+    err.className = 'doki-are-you-sure';
+    err.style.cssText = 'position:fixed;width:200px;background:#000;color:#fff;border:1px solid #fff;z-index:9999999;font-family:serif;top:' + (Math.random()*80) + '%;left:' + (Math.random()*80) + '%;text-align:center;padding:20px;';
+    err.innerHTML = '<div style="font-size:18px;margin-bottom:15px;">Are you sure?</div><button style="margin-right:10px;background:#000;color:#fff;border:1px solid #fff;" onclick="this.parentElement.remove()">Yes</button><button style="background:#000;color:#fff;border:1px solid #fff;" onclick="this.parentElement.remove()">No</button>';
+    document.body.appendChild(err);
 };
 
 document.addEventListener('DOMContentLoaded', () => {
