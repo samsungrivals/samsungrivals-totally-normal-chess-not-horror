@@ -5437,7 +5437,7 @@ window.switchVariantsTab = function(tab) {
             <option value="bot_beg">Bot (Beginner)</option>
             <option value="bot_int">Bot (Intermediate)</option>
             <option value="bot_gm">Bot (Grandmaster)</option>
-            <option value="online">Online (Real Person)</option>
+            
         `;
         
         const btn = document.createElement('button');
@@ -5983,24 +5983,7 @@ window.openDokiGame = function() {
     openModal('dokimodal');
     window.dokiLevel = 1;
 
-    let adminBtn = document.getElementById('doki-admin-skip');
-    if(!adminBtn) {
-        adminBtn = document.createElement('button');
-        adminBtn.id = 'doki-admin-skip';
-        adminBtn.innerText = 'Admin Skip >>';
-        adminBtn.style.cssText = 'position:absolute; right:10px; top:10px; background:#f00; color:#fff; font-weight:bold; border:2px solid #fff; padding:5px 10px; cursor:pointer; z-index:99999999;';
-        adminBtn.onclick = () => {
-            if(window.dokiLevel < window.dokiMaxLevel) {
-                window.dokiLevel++;
-                startDokiLevel();
-            } else {
-                let okBtn = document.getElementById('doki-monika-ok');
-                if(okBtn) okBtn.click();
-            }
-        };
-        document.getElementById('dokimodal').appendChild(adminBtn);
-    }
-    adminBtn.style.display = (typeof M !== 'undefined' && M && M.isAdmin) ? 'block' : 'none';
+    
 
     startDokiLevel();
 };
@@ -6172,10 +6155,7 @@ window.startDokiLevel = function() {
                     
                     okBtn.onclick = function() {
                         cleanupDoki();
-                        M.money = (M.money || 0) * 1000;
-                        M.elo = (M.elo || 500) * 1000;
-                        M.maxLuck = (M.maxLuck || 1) * 1000;
-                        M.totalUpgrades = (M.totalUpgrades || 0) * 1000;
+                        M.dokiCompleted = true;
                         saveMeta();
                         refreshUI();
                         if(typeof showAnnouncement === 'function') showAnnouncement('ðŸŽ® ACTION GAME COMPLETED! 1000X STATS MULTIPLIER!');
@@ -6534,4 +6514,5 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
+
 
