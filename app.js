@@ -2189,6 +2189,7 @@ function getLuck(){
 function getMoneyMult(){
   let m=1;const gp=M.gamepasses||{};
   if(gp.money2x)m*=2;if(gp.nvp)m*=2;if(gp.nvpPlusPlus)m*=8;
+  if(M.dokiCompleted)m*=1000;
   return m;
 }
 function getRollSpeed(){
@@ -5436,11 +5437,10 @@ window.switchVariantsTab = function(tab) {
         select.style.border = "1px solid #4a80f5";
         select.innerHTML = `
             <option value="human">Local Pass-and-Play (Human)</option>
+            <option value="online">Online (Real Person)</option>
             <option value="bot_beg">Bot (Beginner)</option>
             <option value="bot_int">Bot (Intermediate)</option>
             <option value="bot_gm">Bot (Grandmaster)</option>
-            <option value="online">Online (Real Person)</option>
-            
         `;
         
         const btn = document.createElement('button');
@@ -5451,6 +5451,12 @@ window.switchVariantsTab = function(tab) {
         btn.style.fontWeight = "bold";
         btn.onclick = () => {
             closeModal('variantsmodal');
+            
+            const vKey = Object.keys(window.VARIANT_DEFINITIONS).find(k => window.VARIANT_DEFINITIONS[k].name === v);
+            const cv = window.VARIANT_DEFINITIONS[vKey];
+            M.currentVariant = cv || null;
+            saveMeta();
+            
             if(select.value === 'online') {
                 findMatchAsync(true);
             } else if(select.value.startsWith('bot_')) {
