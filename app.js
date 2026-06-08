@@ -971,6 +971,9 @@ function openModal(id){
     setOwnerItemsVisible(!!window._openedAsOwner);
     window._openedAsOwner=false;
   }
+  if(id==='variantsmodal'){
+    setTimeout(() => { if(typeof switchVariantsTab === 'function') switchVariantsTab('popular'); }, 50);
+  }
   if(id==='itemmodal')renderItems();
   if(id==='lbmodal'){syncLb();renderLeaderboard()}
   if(id==='vsmodal'&&typeof renderBotList==='function')renderBotList();
