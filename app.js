@@ -6061,32 +6061,169 @@ window.startDokiLevel = function() {
     
     let lvl = window.dokiLevel;
     
-    // --- LEVEL 20: JUST MONIKA ENDING ---
+    // --- LEVEL 20: THE REAL ACTION GAME ---
     if(lvl >= 20) {
-        window.dokiState = 2; // Auto-pass conditions
+        cleanupDoki();
+        window.dokiState = 2;
         if(installer) {
-            installer.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;"><h1 style="color:#fff;font-size:48px;text-shadow:0 0 10px #fff;">Just Monika.</h1><button id="doki-monika-ok" style="padding:10px 30px;font-size:24px;margin-top:20px;cursor:pointer;background:#000;color:#fff;border:2px solid #fff;">OK</button></div>';
-            document.body.style.background = '#000 url("https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Space_Room.png/800px-Space_Room.png") center/cover no-repeat';
+            installer.innerHTML = '<canvas id="dokicanvas" width="500" height="300" style="background:#87CEEB;border:2px solid #000;display:block;margin:0 auto;"></canvas>';
+            document.body.style.background = '#333';
             document.body.style.filter = 'none';
-            installer.style.background = 'transparent';
+            document.body.style.transform = 'none';
+            installer.style.background = 'none';
             installer.style.boxShadow = 'none';
             installer.style.border = 'none';
+            installer.style.transform = 'none';
+            installer.style.animation = 'none';
+            installer.style.filter = 'none';
             
-            let btn = document.getElementById('doki-monika-ok');
-            if(btn) {
-                btn.onclick = function() {
-                    cleanupDoki();
-                    M.money = (M.money || 0) * 100;
-                    M.elo = (M.elo || 500) * 100;
-                    M.maxLuck = (M.maxLuck || 1) * 100;
-                    M.totalUpgrades = (M.totalUpgrades || 0) * 100;
-                    saveMeta();
-                    refreshUI();
-                    if(typeof showAnnouncement === 'function') showAnnouncement('ðŸŽ® DOKI DOKI COMPLETED: JUST MONIKA. 100X STATS MULTIPLIER!');
-                    closeModal('dokimodal');
-                    setTimeout(() => { location.reload(); }, 2000);
-                };
+            let canvas = document.getElementById('dokicanvas');
+            let ctx = canvas.getContext('2d');
+
+            let p = { x: 50, y: 200, width: 20, height: 20, vy: 0, gravity: 0.6, jump: -10, speed: 4 };
+            let keys = {};
+            let keydownHandler = e => { keys[e.code] = true; if(['ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault(); };
+            let keyupHandler = e => keys[e.code] = false;
+            window.addEventListener('keydown', keydownHandler);
+            window.addEventListener('keyup', keyupHandler);
+
+            let platforms = [
+                {x: 0, y: 250, w: 2000, h: 50}, // ground
+                {x: 200, y: 200, w: 50, h: 10},
+                {x: 350, y: 150, w: 50, h: 10},
+                {x: 500, y: 100, w: 50, h: 10},
+                {x: 700, y: 200, w: 50, h: 50}, // block
+                {x: 900, y: 150, w: 50, h: 100}, // block
+                {x: 1100, y: 100, w: 150, h: 10}
+            ];
+            
+            let spikes = [
+                {x: 250, y: 230, w: 100, h: 20},
+                {x: 750, y: 230, w: 150, h: 20}
+            ];
+
+            let goal = {x: 1200, y: 50, w: 30, h: 50};
+            
+            let cameraX = 0;
+            let won = false;
+
+            function gameLoop() {
+                if(won) return;
+                window.dokiGameReq = requestAnimationFrame(gameLoop);
+                
+                // Physics
+                p.vy += p.gravity;
+                p.y += p.vy;
+                
+                if(keys['ArrowRight'] || keys['KeyD']) p.x += p.speed;
+                if(keys['ArrowLeft'] || keys['KeyA']) p.x -= p.speed;
+
+                let onGround = false;
+                for(let plat of platforms) {
+                    if(p.x < plat.x + plat.w && p.x + p.width > plat.x &&
+                       p.y < plat.y + plat.h && p.y + p.height > plat.y) {
+                        if(p.vy > 0 && p.y + p.height - p.vy <= plat.y + 0.1) {
+                            p.y = plat.y - p.height;
+                            p.vy = 0;
+                            onGround = true;
+                        } else if(p.vy < 0) {
+                            p.y = plat.y + plat.h;
+                            p.vy = 0;
+                        } else {
+                            if(keys['ArrowRight'] || keys['KeyD']) p.x = plat.x - p.width;
+                            if(keys['ArrowLeft'] || keys['KeyA']) p.x = plat.x + plat.w;
+                        }
+                    }
+                }
+
+                if(onGround && (keys['ArrowUp'] || keys['KeyW'] || keys['Space'])) {
+                    p.vy = p.jump;
+                }
+                
+                // Check Spikes
+                for(let s of spikes) {
+                    if(p.x < s.x + s.w && p.x + p.width > s.x && p.y < s.y + s.h && p.y + p.height > s.y) {
+                        p.x = 50; p.y = 200; p.vy = 0; // die
+                    }
+                }
+
+                // Camera
+                cameraX = p.x - 100;
+                if(cameraX < 0) cameraX = 0;
+
+                // Win
+                if(p.x < goal.x + goal.w && p.x + p.width > goal.x &&
+                   p.y < goal.y + goal.h && p.y + p.height > goal.y) {
+                    won = true;
+                    window.removeEventListener('keydown', keydownHandler);
+                    window.removeEventListener('keyup', keyupHandler);
+                    ctx.fillStyle = "rgba(0,0,0,0.8)";
+                    ctx.fillRect(0,0,canvas.width,canvas.height);
+                    ctx.fillStyle = "#fff";
+                    ctx.font = "24px sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText("YOU WON! 1000x MULTIPLIER!", canvas.width/2, canvas.height/2);
+                    
+                    // Call the fake OK button hidden click
+                    let okBtn = document.createElement('button');
+                    okBtn.id = 'doki-monika-ok';
+                    okBtn.style.display = 'none';
+                    document.body.appendChild(okBtn);
+                    
+                    okBtn.onclick = function() {
+                        cleanupDoki();
+                        M.money = (M.money || 0) * 1000;
+                        M.elo = (M.elo || 500) * 1000;
+                        M.maxLuck = (M.maxLuck || 1) * 1000;
+                        M.totalUpgrades = (M.totalUpgrades || 0) * 1000;
+                        saveMeta();
+                        refreshUI();
+                        if(typeof showAnnouncement === 'function') showAnnouncement('ðŸŽ® ACTION GAME COMPLETED! 1000X STATS MULTIPLIER!');
+                        closeModal('dokimodal');
+                        setTimeout(() => { location.reload(); }, 2000);
+                    };
+                    
+                    setTimeout(() => okBtn.click(), 2500);
+                    return;
+                }
+
+                // Death pit
+                if(p.y > 400) {
+                    p.x = 50; p.y = 200; p.vy = 0;
+                }
+
+                // Draw
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                ctx.save();
+                ctx.translate(-cameraX, 0);
+
+                ctx.fillStyle = '#228B22'; // platforms
+                for(let plat of platforms) ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+
+                ctx.fillStyle = '#FF0000'; // spikes
+                for(let s of spikes) {
+                    ctx.beginPath();
+                    ctx.moveTo(s.x, s.y + s.h);
+                    ctx.lineTo(s.x + s.w/2, s.y);
+                    ctx.lineTo(s.x + s.w, s.y + s.h);
+                    ctx.fill();
+                }
+
+                ctx.fillStyle = '#FFD700'; // goal
+                ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
+
+                ctx.fillStyle = '#0000FF'; // player
+                ctx.fillRect(p.x, p.y, p.width, p.height);
+
+                ctx.restore();
+                
+                ctx.fillStyle = '#000';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText("Use Arrow Keys to reach the golden flag!", 10, 20);
+                ctx.fillText("Avoid red spikes!", 10, 40);
             }
+            gameLoop();
         }
         return; // Skip normal mechanics
     }
@@ -6397,3 +6534,4 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
+
