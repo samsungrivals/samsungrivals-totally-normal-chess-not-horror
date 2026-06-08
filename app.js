@@ -5971,6 +5971,9 @@ window.dokiMaxLevel = 20;
 window.dokiLevel = 1;
 window.dokiMaxLevel = 20;
 
+window.dokiLevel = 1;
+window.dokiMaxLevel = 20;
+
 window.openDokiGame = function() {
     closeModal('startgamemodal');
     closeModal('welcomemodal');
@@ -5979,6 +5982,26 @@ window.openDokiGame = function() {
     closeModal('puzzlemodal');
     openModal('dokimodal');
     window.dokiLevel = 1;
+
+    let adminBtn = document.getElementById('doki-admin-skip');
+    if(!adminBtn) {
+        adminBtn = document.createElement('button');
+        adminBtn.id = 'doki-admin-skip';
+        adminBtn.innerText = 'Admin Skip >>';
+        adminBtn.style.cssText = 'position:absolute; right:10px; top:10px; background:#f00; color:#fff; font-weight:bold; border:2px solid #fff; padding:5px 10px; cursor:pointer; z-index:99999999;';
+        adminBtn.onclick = () => {
+            if(window.dokiLevel < window.dokiMaxLevel) {
+                window.dokiLevel++;
+                startDokiLevel();
+            } else {
+                let okBtn = document.getElementById('doki-monika-ok');
+                if(okBtn) okBtn.click();
+            }
+        };
+        document.getElementById('dokimodal').appendChild(adminBtn);
+    }
+    adminBtn.style.display = (typeof M !== 'undefined' && M && M.isAdmin) ? 'block' : 'none';
+
     startDokiLevel();
 };
 
@@ -6036,24 +6059,55 @@ window.startDokiLevel = function() {
     let titleEl = document.querySelector('#doki-installer div span');
     if(titleEl) titleEl.innerText = 'Doki Doki Action Game - Level ' + window.dokiLevel;
     
-    // --- DDLC CUMULATIVE MECHANICS ---
     let lvl = window.dokiLevel;
     
+    // --- LEVEL 20: JUST MONIKA ENDING ---
+    if(lvl >= 20) {
+        window.dokiState = 2; // Auto-pass conditions
+        if(installer) {
+            installer.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;"><h1 style="color:#fff;font-size:48px;text-shadow:0 0 10px #fff;">Just Monika.</h1><button id="doki-monika-ok" style="padding:10px 30px;font-size:24px;margin-top:20px;cursor:pointer;background:#000;color:#fff;border:2px solid #fff;">OK</button></div>';
+            document.body.style.background = '#000 url("https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Space_Room.png/800px-Space_Room.png") center/cover no-repeat';
+            document.body.style.filter = 'none';
+            installer.style.background = 'transparent';
+            installer.style.boxShadow = 'none';
+            installer.style.border = 'none';
+            
+            let btn = document.getElementById('doki-monika-ok');
+            if(btn) {
+                btn.onclick = function() {
+                    cleanupDoki();
+                    M.money = (M.money || 0) * 100;
+                    M.elo = (M.elo || 500) * 100;
+                    M.maxLuck = (M.maxLuck || 1) * 100;
+                    M.totalUpgrades = (M.totalUpgrades || 0) * 100;
+                    saveMeta();
+                    refreshUI();
+                    if(typeof showAnnouncement === 'function') showAnnouncement('ðŸŽ® DOKI DOKI COMPLETED: JUST MONIKA. 100X STATS MULTIPLIER!');
+                    closeModal('dokimodal');
+                    setTimeout(() => { location.reload(); }, 2000);
+                };
+            }
+        }
+        return; // Skip normal mechanics
+    }
+    
+    // --- DDLC CUMULATIVE MECHANICS ---
     window.dokiMonikaText = lvl >= 2 ? true : false;
     window.dokiCbMovement = lvl >= 3 ? (10 + (lvl * 10)) : 0;
-    window.dokiPlayWithMe = lvl >= 4 ? true : false;
-    window.dokiRenpyErrors = lvl >= 5 ? Math.max(400, 3000 - (lvl * 100)) : 0;
+    window.dokiObstacles = lvl >= 4 ? true : false; // **NEW: Obstacles you MUST avoid**
+    window.dokiPlayWithMe = lvl >= 5 ? true : false;
+    window.dokiRenpyErrors = lvl >= 6 ? Math.max(400, 3000 - (lvl * 100)) : 0;
     
     let instTransform = '';
     let instFilter = '';
     let bodyFilter = '';
     
-    if(lvl >= 6) instTransform += ' rotate(5deg)';
-    window.dokiZalgoText = lvl >= 7 ? true : false;
-    window.dokiFakeCursor = lvl >= 8 ? true : false;
-    window.dokiUncheckSpeed = lvl >= 9 ? Math.max(300, 2500 - (lvl * 100)) : 0;
+    if(lvl >= 7) instTransform += ' rotate(5deg)';
+    window.dokiZalgoText = lvl >= 8 ? true : false;
+    window.dokiFakeCursor = lvl >= 9 ? true : false;
+    window.dokiUncheckSpeed = lvl >= 10 ? Math.max(300, 2500 - (lvl * 100)) : 0;
     
-    if(lvl >= 10 && vb) {
+    if(lvl >= 11 && vb) {
         vb.style.display = 'block';
         window.dokiVirusSpeed = Math.floor(lvl / 2);
         vp.previousElementSibling.innerText = 'Deleting character files...';
@@ -6061,27 +6115,20 @@ window.startDokiLevel = function() {
         window.dokiVirusSpeed = 0;
     }
     
-    window.dokiAgreeJumps = lvl >= 11 ? true : false;
-    if(lvl >= 12) bodyFilter += ' invert(0.8)';
-    if(lvl >= 13) document.body.style.background = '#000';
-    if(lvl >= 14 && installer) installer.style.background = '#220000';
-    if(lvl >= 15) instFilter += ' blur(2px)';
-    window.dokiAreYouSure = lvl >= 16 ? true : false;
-    window.dokiCreepyEyes = lvl >= 17 ? true : false;
-    if(lvl >= 18 && installer) installer.classList.add('doki-shake');
-    window.dokiJustMonikaSpam = lvl >= 19 ? true : false;
-    
-    if(lvl >= 20) {
-        instTransform += ' scale(0.8)';
-        bodyFilter += ' contrast(200%)';
-    }
+    window.dokiAgreeJumps = lvl >= 12 ? true : false;
+    if(lvl >= 13) bodyFilter += ' invert(0.8)';
+    if(lvl >= 14) document.body.style.background = '#000';
+    if(lvl >= 15 && installer) installer.style.background = '#220000';
+    if(lvl >= 16) instFilter += ' blur(2px)';
+    window.dokiAreYouSure = lvl >= 17 ? true : false;
+    window.dokiCreepyEyes = lvl >= 18 ? true : false;
+    if(lvl >= 19 && installer) installer.classList.add('doki-shake');
     
     document.body.style.filter = bodyFilter;
     if(installer) {
         installer.style.filter = instFilter;
         installer.style.transform = instTransform;
     }
-    // -----------------------------
 };
 
 window.cleanupDoki = function() {
@@ -6091,6 +6138,7 @@ window.cleanupDoki = function() {
     clearInterval(window.dokiZalgoInterval);
     clearInterval(window.dokiEyeInterval);
     clearInterval(window.dokiCursorInterval);
+    clearInterval(window.dokiObstacleInterval);
     clearTimeout(window.dokiAgreeTimeout);
     clearTimeout(window.dokiCbTimeout1);
     clearTimeout(window.dokiCbTimeout2);
@@ -6098,6 +6146,7 @@ window.cleanupDoki = function() {
     document.querySelectorAll('.doki-renpy-error').forEach(el => el.remove());
     document.querySelectorAll('.doki-eye').forEach(el => el.remove());
     document.querySelectorAll('.doki-are-you-sure').forEach(el => el.remove());
+    document.querySelectorAll('.doki-obstacle').forEach(el => el.remove());
     let fc = document.getElementById('doki-fake-cursor');
     if(fc) fc.remove();
     document.body.style.filter = 'none';
@@ -6136,15 +6185,30 @@ window.startDokiChaos = function() {
         }, window.dokiRenpyErrors);
     }
     
-    if(window.dokiZalgoText || window.dokiMonikaText || window.dokiJustMonikaSpam) {
+    if(window.dokiObstacles) {
+        window.dokiObstacleInterval = setInterval(() => {
+            if(window.dokiState >= 1 && Math.random() < 0.4) {
+                let d = document.createElement('div');
+                d.className = 'doki-obstacle';
+                let obs = ['Natsuki.chr', 'Yuri.chr', 'Sayori.chr', 'Glitch_0x00A'];
+                d.innerText = obs[Math.floor(Math.random()*obs.length)];
+                d.style.cssText = 'position:fixed; background:#000; color:red; padding:15px; font-weight:bold; font-size:18px; z-index:9999998; top:'+(Math.random()*80)+'%; left:'+(Math.random()*80)+'%; cursor:not-allowed; border:2px solid red;';
+                d.onmouseenter = function() {
+                    alert("FATAL ERROR: You touched the glitch! Restarting.");
+                    window.dokiLevel = 1;
+                    startDokiLevel();
+                };
+                document.body.appendChild(d);
+                setTimeout(() => d.remove(), 2500);
+            }
+        }, 1500);
+    }
+    
+    if(window.dokiZalgoText || window.dokiMonikaText) {
         window.dokiZalgoInterval = setInterval(() => {
             if(window.dokiState >= 1) {
                 let t = document.querySelector('#doki-installer div span');
                 if(t) {
-                    if(window.dokiJustMonikaSpam) {
-                        t.innerText = 'JUST MONIKA JUST MONIKA JUST MONIKA';
-                        return;
-                    }
                     const chars = 'Â¡Â¢Â£Â¤Â¥Â¦Â§Â¨Â©ÂªÂ«Â¬Â®Â¯Â°Â±Â²Â³Â´ÂµÂ¶Â·Â¸Â¹ÂºÂ»Â¼Â½Â¾Â¿';
                     let str = window.dokiMonikaText && Math.random() < 0.1 ? 'Just Monika.' : 'Doki Doki Action Game - Level ' + window.dokiLevel;
                     if(window.dokiZalgoText) {
@@ -6180,7 +6244,7 @@ window.startDokiChaos = function() {
                 let d = document.createElement('div');
                 d.className = 'doki-eye';
                 d.innerText = 'ðŸ‘ï¸';
-                d.style.cssText = 'position:fixed; font-size:'+(Math.random()*100+50)+'px; z-index:999998; top:'+(Math.random()*90)+'%; left:'+(Math.random()*90)+'%; pointer-events:none; opacity:0; transition: opacity 0.5s;';
+                d.style.cssText = 'position:fixed; font-size:'+(Math.random()*100+50)+'px; z-index:9999998; top:'+(Math.random()*90)+'%; left:'+(Math.random()*90)+'%; pointer-events:none; opacity:0; transition: opacity 0.5s;';
                 document.body.appendChild(d);
                 setTimeout(() => d.style.opacity = '0.7', 10);
                 setTimeout(() => { d.style.opacity = '0'; setTimeout(()=>d.remove(), 500); }, 1500);
