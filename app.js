@@ -6066,8 +6066,13 @@ window.openDokiGame = function() {
                 window.dokiLevel++;
                 startDokiLevel();
             } else {
-                let okBtn = document.getElementById('doki-monika-ok');
-                if(okBtn) okBtn.click();
+                cleanupDoki();
+                M.dokiCompleted = true;
+                saveMeta();
+                refreshUI();
+                if(typeof showAnnouncement === 'function') showAnnouncement('🎉 ACTION GAME COMPLETED! 1000X STATS MULTIPLIER!');
+                closeModal('dokimodal');
+                setTimeout(() => { location.reload(); }, 2000);
             }
         };
         document.getElementById('dokimodal').appendChild(adminBtn);
@@ -6297,43 +6302,105 @@ window.startDokiLevel = function() {
         return; // Skip normal mechanics
     }
     
-    // --- AGREEEE TERMS MECHANICS ---
-    window.dokiCbMovement = lvl >= 2 ? (20 + (lvl * 15)) : 0; // Checkboxes move faster
-    window.dokiAgreeJumps = lvl >= 3 ? true : false; // Agree button runs away
-    window.dokiUncheckSpeed = lvl >= 4 ? Math.max(200, 2000 - (lvl * 100)) : 0; // Unchecking boxes
-    window.dokiObstacles = lvl >= 5 ? true : false; // Fake popup traps
+    // --- DISTINCT AGREEEE TERMS MECHANICS (LEVELS 1-19) ---
+    window.dokiCbMovement = lvl >= 2 ? (20 + (lvl * 15)) : 0;
+    window.dokiAgreeJumps = lvl >= 3 ? true : false;
+    window.dokiUncheckSpeed = lvl >= 4 ? Math.max(200, 2000 - (lvl * 100)) : 0;
+    window.dokiObstacles = lvl >= 5 ? true : false;
     
     let instTransform = '';
     let instFilter = '';
+    let bodyBg = 'url("chess_bg.png") repeat';
+    let modalBg = '#ece9d8';
     
-    if(lvl >= 6) {
-        // Agree button gets tiny
-        if(agreeBtn) {
-            agreeBtn.style.fontSize = Math.max(4, 12 - (lvl - 5)) + 'px';
-            agreeBtn.style.padding = '1px 5px';
-        }
+    if(agreeBtn) {
+        agreeBtn.style.fontSize = '12px';
+        agreeBtn.style.padding = '2px 8px';
     }
     
-    if(lvl >= 7) instTransform += ' rotate(' + ((lvl-6)*2) + 'deg)'; // Rotate window
-    
-    window.dokiFakeCursor = lvl >= 8 ? true : false; // Mouse cursor interference
-    window.dokiTeleportingTOS = lvl >= 9 ? true : false; // The TOS window scrolls away
-    
-    if(lvl >= 11 && vb) {
-        vb.style.display = 'block';
-        window.dokiVirusSpeed = Math.floor(lvl / 2);
-        vp.previousElementSibling.innerText = 'Reading Terms of Service...';
-    } else {
-        window.dokiVirusSpeed = 0;
+    switch(lvl) {
+        case 1:
+            // Normal
+            break;
+        case 2:
+            modalBg = '#ffe0e0';
+            break;
+        case 3:
+            modalBg = '#e0ffe0';
+            break;
+        case 4:
+            modalBg = '#e0e0ff';
+            instTransform = 'skew(5deg, 5deg)';
+            break;
+        case 5:
+            bodyBg = '#330000';
+            modalBg = '#ffcccc';
+            if(agreeBtn) agreeBtn.style.fontSize = '8px';
+            break;
+        case 6:
+            instFilter = 'hue-rotate(90deg)';
+            break;
+        case 7:
+            instTransform = 'scale(0.8) rotate(10deg)';
+            break;
+        case 8:
+            instFilter = 'invert(1)';
+            break;
+        case 9:
+            window.dokiFakeCursor = true;
+            modalBg = '#000';
+            document.body.style.color = '#fff';
+            break;
+        case 10:
+            window.dokiTeleportingTOS = true;
+            instTransform = 'scale(1.2)';
+            break;
+        case 11:
+            if(vb) {
+                vb.style.display = 'block';
+                window.dokiVirusSpeed = Math.floor(lvl / 2);
+                vp.previousElementSibling.innerText = 'Reading Terms of Service...';
+            }
+            break;
+        case 12:
+            instFilter = 'blur(1px)';
+            break;
+        case 13:
+            instFilter = 'sepia(1) hue-rotate(180deg)';
+            instTransform = 'rotate(-10deg)';
+            break;
+        case 14:
+            bodyBg = '#000';
+            modalBg = '#333';
+            if(agreeBtn) agreeBtn.style.fontSize = '5px';
+            break;
+        case 15:
+            instFilter = 'contrast(300%)';
+            instTransform = 'skew(-10deg, -10deg) scale(0.9)';
+            break;
+        case 16:
+            instFilter = 'blur(2px) invert(0.8)';
+            break;
+        case 17:
+            window.dokiAreYouSure = true;
+            modalBg = '#550000';
+            break;
+        case 18:
+            window.dokiFakeCursor = true;
+            window.dokiTeleportingTOS = true;
+            instFilter = 'hue-rotate(270deg) contrast(200%)';
+            break;
+        case 19:
+            if(installer) installer.classList.add('doki-shake');
+            instFilter = 'invert(1) blur(1px)';
+            instTransform = 'scale(0.8) rotate(180deg)';
+            bodyBg = '#f00';
+            break;
     }
     
-    if(lvl >= 13) instFilter += ' invert(0.8)'; // Invert colors
-    if(lvl >= 14) document.body.style.background = '#000';
-    if(lvl >= 16) instFilter += ' blur(1px)';
-    window.dokiAreYouSure = lvl >= 17 ? true : false; // "Are you sure you want to Agree?" popups
-    if(lvl >= 19 && installer) installer.classList.add('doki-shake');
-    
+    document.body.style.background = bodyBg;
     if(installer) {
+        installer.style.background = modalBg;
         installer.style.filter = instFilter;
         installer.style.transform = instTransform;
     }
