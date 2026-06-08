@@ -4289,21 +4289,23 @@ maybeApplyElo=function(){
 };
 
 // Rewire Find Match to use WebSocket (falls back to old HTTP flow if ws down)
-findMatchAsync=function(){
+findMatchAsync=function(keepVariant = false){
+  if(!keepVariant) { M.currentVariant = null; saveMeta(); }
   document.getElementById('myeloshow').textContent=M.elo;
   document.getElementById('mmsearching').classList.remove('hidden');
   document.getElementById('mmfound').classList.add('hidden');
   openModal('mmmodal');
   const sub=document.querySelector('#mmsearching .mmsearchsub');
+  let vStr = M.currentVariant ? JSON.stringify(M.currentVariant) : 'standard';
   if(_wsReady){
     if(sub)sub.textContent='Connecting to a real player…';
     // refresh identity (in case they logged in after connecting)
     wsSend({type:'hello',user:(M.account&&M.account.username)||('guest_'+Math.floor(Math.random()*100000)),elo:M.elo||500});
-    wsSend({type:'queue',elo:M.elo||500});
+    wsSend({type:'queue',elo:M.elo||500, variant:vStr});
   }else{
     if(sub)sub.textContent='Connecting… (retrying)';
     wsConnect();
-    setTimeout(()=>{if(_wsReady){wsSend({type:'hello',user:(M.account&&M.account.username)||'guest',elo:M.elo||500});wsSend({type:'queue',elo:M.elo||500})}},1200);
+    setTimeout(()=>{if(_wsReady){wsSend({type:'hello',user:(M.account&&M.account.username)||'guest',elo:M.elo||500});wsSend({type:'queue',elo:M.elo||500, variant:vStr})}},1200);
   }
 };
 
@@ -5450,13 +5452,13 @@ window.switchVariantsTab = function(tab) {
         btn.onclick = () => {
             closeModal('variantsmodal');
             if(select.value === 'online') {
-                findMatchAsync();
+                findMatchAsync(true);
             } else if(select.value.startsWith('bot_')) {
-                s.opponent = {type:'ai', side:'black', behavior:'normal', depth: select.value==='bot_gm'?2:select.value==='bot_int'?1:0};
+                G={...G, opponent: {type:'ai', side:'black', behavior:'normal', depth: select.value==='bot_gm'?2:select.value==='bot_int'?1:0}};
                 showGameView();
                 userNewGame();
             } else {
-                s.opponent = null;
+                G={...G, opponent: null};
                 showGameView();
                 userNewGame();
             }
@@ -5564,11 +5566,6 @@ window.pollAnnouncements = async function() {
                     }
                     
                     document.body.appendChild(lscreen);
-                    setInterval(() => {
-                        left--;
-                        if(left > 0) document.getElementById('updateprogress').innerText = "Estimated time: " + left + "s";
-                        else location.href = location.pathname + "?v=" + Date.now();
-                    }, 1000);
                 }
                 _lastAnnounceTs = Math.max(_lastAnnounceTs, a.ts);
             }
@@ -5623,13 +5620,61 @@ window.pollAnnouncements = async function() {
 };
 
 // --- Puzzle Logic Redefine ---
+window.generateInfinitePuzzle = function(elo) {
+    let board = [['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','','']];
+    let rType = Math.floor(Math.random() * 3);
+    let moves = [];
+    
+    if(rType === 0) { // Back rank mate
+        let kCol = Math.floor(Math.random() * 6) + 1;
+        board[0][kCol] = 'k';
+        board[1][kCol-1] = 'p'; board[1][kCol] = 'p'; board[1][kCol+1] = 'p';
+        let rCol = Math.floor(Math.random() * 8);
+        board[7][rCol] = 'R';
+        board[7][0] = 'K';
+        let fromCol = String.fromCharCode(97 + rCol);
+        moves = [ fromCol + '1' + fromCol + '8' ];
+    } else if(rType === 1) { // Ladder mate
+        let r1 = Math.floor(Math.random() * 8);
+        let r2 = (r1 + 1) % 8;
+        board[1][r1] = 'R'; 
+        board[0][Math.floor(Math.random() * 8)] = 'k'; 
+        board[7][r2] = 'R'; 
+        board[7][Math.floor(Math.random() * 8)] = 'K'; 
+        let fromCol = String.fromCharCode(97 + r2);
+        moves = [ fromCol + '1' + fromCol + '8' ];
+    } else { // Queen and King mate
+        let kCol = Math.floor(Math.random() * 6) + 1;
+        board[0][kCol] = 'k';
+        board[2][kCol] = 'K';
+        let qCol = Math.floor(Math.random() * 8);
+        if(qCol === kCol) qCol = (qCol + 1) % 8;
+        board[7][qCol] = 'Q';
+        let fromCol = String.fromCharCode(97 + qCol);
+        let toCol = String.fromCharCode(97 + kCol);
+        moves = [ fromCol + '1' + toCol + '7' ];
+    }
+
+    return {
+        id: "inf_" + Math.floor(Math.random()*100000),
+        elo: elo || (1000 + Math.floor(Math.random()*1000)),
+        turn: 'white',
+        board: board,
+        moves: moves
+    };
+};
+
 window.startRandomPuzzle = function() {
-    if(!window.PUZZLES || window.PUZZLES.length === 0) {
-        if(typeof showAnnouncement === 'function') showAnnouncement("Puzzles are still loading, please wait...");
+    closeModal('puzzlemodal');
+    if(Math.random() > 0.3) {
+        // Generate infinite puzzle 70% of the time
+        loadPuzzle(window.generateInfinitePuzzle(M.elo || 500));
         return;
     }
-    closeModal('puzzlemodal');
-    // Filter puzzles near player's ELO (+/- 200)
+    if(!window.PUZZLES || window.PUZZLES.length === 0) {
+        loadPuzzle(window.generateInfinitePuzzle(M.elo || 500));
+        return;
+    }
     let myElo = (M.elo || 1000);
     let eligible = window.PUZZLES.filter(p => Math.abs((p.elo || 1000) - myElo) < 200);
     if (eligible.length === 0) eligible = window.PUZZLES;
@@ -5766,8 +5811,6 @@ document.addEventListener("mouseup", e => {
   _arrowStart = null;
 });
 
-window.startCustomVariant = function() { closeModal('customvariantmodal'); M.currentVariant = { noCastling: document.getElementById('cv_nocastling').checked, koth: document.getElementById('cv_koth').checked, antichess: false }; saveMeta(); userNewGame(); if(typeof showAnnouncement === 'function') showAnnouncement('?? Custom Variant Started!'); }
-
 window.adminAbuseGlobal = function() { 
   if(typeof API !== 'undefined') API.announce((M.account && M.account.username) || 'Admin', '!ADMIN_ABUSE_2X'); 
   if(typeof closeModal === 'function') closeModal('ownermodal'); 
@@ -5798,8 +5841,8 @@ function triggerCrownPopup() {
 setInterval(function(){ 
   triggerCrownPopup(); 
 }, 60000);
-window.startCustomPuzzle = function() { const eloInput = document.getElementById('custompuzelo'); const elo = eloInput ? parseInt(eloInput.value) : (M.elo || 500); let eligible = window.PUZZLES.filter(p => Math.abs((p.elo || 1000) - elo) < 200); if (!eligible || eligible.length === 0) eligible = window.PUZZLES; const puz = eligible[Math.floor(Math.random() * eligible.length)]; loadPuzzle(puz); }; window.startPeriodicPuzzle = function(type) { if(!window.PUZZLES || window.PUZZLES.length === 0) return showAnnouncement('Puzzles are still loading...'); closeModal('puzzlemodal'); const d = new Date(); let seed = 0; if(type==='weekly'){seed = Math.floor(d.getTime()/(1000*60*60*24*7));} else if(type==='monthly'){seed = d.getFullYear()*12 + d.getMonth();} else if(type==='yearly'){seed = d.getFullYear();} else if(type==='decadely'){seed = Math.floor(d.getFullYear()/10);} let hash = Math.imul(31, seed) ^ 0x3a5b2c; const idx = Math.abs(hash) % window.PUZZLES.length; loadPuzzle(window.PUZZLES[idx]); }; window.requestVariant = function() { const val = document.getElementById('variant-request-input').value; if(!val) return; document.getElementById('variant-request-input').value = ''; const who = (M.account&&M.account.username)||'Guest'; showAnnouncement('?? ' + who + ' requested variant: ' + val); if(typeof API !== 'undefined') API.announce(who, 'requested to feature variant: ' + val).catch(()=>{}); };
-window.connectVoiceChat = function() { showAnnouncement('?? Connecting to Voice Server...'); setTimeout(() => { const actx = new (window.AudioContext || window.webkitAudioContext)(); if(actx.state === 'suspended') actx.resume(); const bufferSize = actx.sampleRate * 2; const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; } const noise = actx.createBufferSource(); noise.buffer = buffer; const bpf = actx.createBiquadFilter(); bpf.type = 'bandpass'; bpf.frequency.value = 1000; const gain = actx.createGain(); gain.gain.setValueAtTime(0.5, actx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 1.5); noise.connect(bpf); bpf.connect(gain); gain.connect(actx.destination); noise.start(); showAnnouncement('? Voice servers are currently full!'); }, 1500); };
+window.startCustomPuzzle = function() { const eloInput = document.getElementById('custompuzelo'); const elo = eloInput ? parseInt(eloInput.value) : (M.elo || 500); let eligible = window.PUZZLES.filter(p => Math.abs((p.elo || 1000) - elo) < 200); if (!eligible || eligible.length === 0) eligible = window.PUZZLES; const puz = eligible[Math.floor(Math.random() * eligible.length)]; loadPuzzle(puz); }; window.startPeriodicPuzzle = function(type) { if(!window.PUZZLES || window.PUZZLES.length === 0) return showAnnouncement('Puzzles are still loading...'); closeModal('puzzlemodal'); const d = new Date(); let seed = 0; if(type==='weekly'){seed = Math.floor(d.getTime()/(1000*60*60*24*7));} else if(type==='monthly'){seed = d.getFullYear()*12 + d.getMonth();} else if(type==='yearly'){seed = d.getFullYear();} else if(type==='decadely'){seed = Math.floor(d.getFullYear()/10);} let hash = Math.imul(31, seed) ^ 0x3a5b2c; const idx = Math.abs(hash) % window.PUZZLES.length; loadPuzzle(window.PUZZLES[idx]); }; window.requestVariant = function() { const val = document.getElementById('variant-request-input').value; if(!val) return; document.getElementById('variant-request-input').value = ''; const who = (M.account&&M.account.username)||'Guest'; showAnnouncement('💬 ' + who + ' requested variant: ' + val); if(typeof API !== 'undefined') API.announce(who, 'requested to feature variant: ' + val).catch(()=>{}); };
+window.connectVoiceChat = function() { showAnnouncement('🎤 Connecting to Voice Server...'); setTimeout(() => { const actx = new (window.AudioContext || window.webkitAudioContext)(); if(actx.state === 'suspended') actx.resume(); const bufferSize = actx.sampleRate * 2; const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; } const noise = actx.createBufferSource(); noise.buffer = buffer; const bpf = actx.createBiquadFilter(); bpf.type = 'bandpass'; bpf.frequency.value = 1000; const gain = actx.createGain(); gain.gain.setValueAtTime(0.5, actx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 1.5); noise.connect(bpf); bpf.connect(gain); gain.connect(actx.destination); noise.start(); showAnnouncement('⚠️ Voice servers are currently full!'); }, 1500); };
 // --- Voice Chat Logic ---
 var voiceStream = null;
 window.toggleVoiceChatSetting = async function() {
@@ -5960,21 +6003,6 @@ window.toggleDokiTheme = function() {
 window.dokiLevel = 1;
 window.dokiMaxLevel = 20;
 
-window.dokiLevel = 1;
-window.dokiMaxLevel = 20;
-
-window.dokiLevel = 1;
-window.dokiMaxLevel = 20;
-
-window.dokiLevel = 1;
-window.dokiMaxLevel = 20;
-
-window.dokiLevel = 1;
-window.dokiMaxLevel = 20;
-
-window.dokiLevel = 1;
-window.dokiMaxLevel = 20;
-
 window.openDokiGame = function() {
     closeModal('startgamemodal');
     closeModal('welcomemodal');
@@ -6001,7 +6029,7 @@ window.openDokiGame = function() {
         };
         document.getElementById('dokimodal').appendChild(adminBtn);
     }
-    adminBtn.style.display = (typeof M !== 'undefined' && M && M.isAdmin) ? 'block' : 'none';
+    adminBtn.style.display = (typeof M !== 'undefined' && M && (M.isAdmin || M.adminUnlocked)) ? 'block' : 'none';
 
     startDokiLevel();
 };
@@ -6534,6 +6562,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
+
 
 
 
