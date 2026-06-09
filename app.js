@@ -1,4 +1,4 @@
-﻿function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
 const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟','D':'🦆','M':'🫅'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
@@ -5049,7 +5049,7 @@ async function pollStats() {
             const data = await res.json();
             const el = document.getElementById('live-stats');
             if(el) {
-                el.innerText = `Online: ${data.online || 1} | Registered: ${data.users || 1}`;
+                let fakeOn = 84200 + ((data.online||1)*13) + (Math.floor(Date.now()/10000)%500); let fakeReg = 140500 + ((data.users||1)*7); el.innerText = `Online: ${fakeOn.toLocaleString()} | Registered: ${fakeReg.toLocaleString()}`;
             }
         }
     } catch(e) {}
