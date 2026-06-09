@@ -886,6 +886,43 @@ function fmtMoney(p){
   const n = (Number(p)||0)/100;
   if(n < 1e6) return '\u00A3' + n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if(n < 1e15) return '\u00A3' + Intl.NumberFormat('en-GB', { notation: "compact", maximumFractionDigits: 2 }).format(n);
+  if(n === Infinity) return '\u00A3Infinity';
+  
+  const suffixes = [
+    "", "Thousand", "Million", "Billion", "Trillion", "Quadrillion", "Quintillion", "Sextillion", "Septillion", 
+    "Octillion", "Nonillion", "Decillion", "Undecillion", "Duodecillion", "Tredecillion", "Quattuordecillion", 
+    "Quindecillion", "Sexdecillion", "Septendecillion", "Octodecillion", "Novemdecillion", "Vigintillion", 
+    "Unvigintillion", "Duovigintillion", "Trevigintillion", "Quattuorvigintillion", "Quinvigintillion", 
+    "Sexvigintillion", "Septenvigintillion", "Octovigintillion", "Novemvigintillion", "Trigintillion",
+    "Untrigintillion", "Duotrigintillion", "Trestrigintillion", "Quattuortrigintillion", "Quinquatrigintillion",
+    "Sestrigintillion", "Septentrigintillion", "Octotrigintillion", "Noventrigintillion", "Quadragintillion",
+    "Unquadragintillion", "Duoquadragintillion", "Trequadragintillion", "Quattuorquadragintillion", "Quinquadragintillion",
+    "Sexquadragintillion", "Septenquadragintillion", "Octoquadragintillion", "Novenquadragintillion", "Quinquagintillion",
+    "Unquinquagintillion", "Duoquinquagintillion", "Trequinquagintillion", "Quattuorquinquagintillion", "Quinquinquagintillion",
+    "Sexquinquagintillion", "Septenquinquagintillion", "Octoquinquagintillion", "Novenquinquagintillion", "Sexagintillion",
+    "Unsexagintillion", "Duosexagintillion", "Tresexagintillion", "Quattuorsexagintillion", "Quinsexagintillion",
+    "Sexsexagintillion", "Septensexagintillion", "Octosexagintillion", "Novensexagintillion", "Septuagintillion",
+    "Unseptuagintillion", "Duoseptuagintillion", "Treseptuagintillion", "Quattuorseptuagintillion", "Quinseptuagintillion",
+    "Sexseptuagintillion", "Septenseptuagintillion", "Octoseptuagintillion", "Novenseptuagintillion", "Octogintillion",
+    "Unoctogintillion", "Duooctogintillion", "Treoctogintillion", "Quattuoroctogintillion", "Quinoctogintillion",
+    "Sexoctogintillion", "Septenoctogintillion", "Octooctogintillion", "Novenoctogintillion", "Nonagintillion",
+    "Unnonagintillion", "Duononagintillion", "Trenonagintillion", "Quattuornonagintillion", "Quinnonagintillion",
+    "Sexnonagintillion", "Septennonagintillion", "Octononagintillion", "Novennonagintillion", "Centillion",
+    "Uncentillion", "Duocentillion", "Trecentillion", "Quattuorcentillion", "Quincentillion",
+    "Sexcentillion", "Septencentillion", "Octocentillion", "Novencentillion", "Decicentillion"
+  ];
+  
+  let exp = Math.floor(Math.log10(n));
+  let suffixIndex = Math.floor(exp / 3);
+  
+  if (suffixIndex < suffixes.length) {
+    let mantissa = n / Math.pow(10, suffixIndex * 3);
+    return '\u00A3' + mantissa.toFixed(2) + ' ' + suffixes[suffixIndex];
+  }
+  
+  return '\u00A3Infinity';
+});
+  if(n < 1e15) return '\u00A3' + Intl.NumberFormat('en-GB', { notation: "compact", maximumFractionDigits: 2 }).format(n);
   
   const suffixes = [
     "", "Thousand", "Million", "Billion", "Trillion", "Quadrillion", "Quintillion", "Sextillion", "Septillion", 
@@ -6341,7 +6378,11 @@ window.startDokiLevel = function() {
                 }
 
                 if(onGround && (keys['ArrowUp'] || keys['KeyW'] || keys['Space'])) {
-                    p.vy = p.jump;
+                    if(keys['ArrowDown'] || keys['KeyS']) {
+                        p.vy = p.jump * 1.6; // super jump bug if crouching
+                    } else {
+                        p.vy = p.jump;
+                    }
                 }
                 
                 // Check Spikes
