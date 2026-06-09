@@ -1,6 +1,6 @@
-function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+﻿function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
-const SYM={'K':'â™”','Q':'â™•','R':'â™–','B':'â™—','N':'â™˜','P':'â™™','k':'â™š','q':'â™›','r':'â™œ','b':'â™','n':'â™ž','p':'â™Ÿ','D':'ðŸ¦†','M':'ðŸ«…'};
+const SYM={'K':'\u2654','Q':'\u2655','R':'\u2656','B':'\u2657','N':'\u2658','P':'\u2659','k':'\u265A','q':'\u265B','r':'\u265C','b':'\u265D','n':'\u265E','p':'\u265F','D':'\uD83E\uDD86','M':'\uD83D\uDC18'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
 const OPENINGS = {
   "e4 c5": "Sicilian Defense",
@@ -556,7 +556,7 @@ function doMove(from,to,promo){
   // Real Move Quality Evaluation using evalBoard
   const qualities = ['Blunder', 'Bad Move', 'Inaccuracy', 'Decent', 'Good', 'Great', 'Brilliant', 'Only Move'];
   const colors = ['#ff4444', '#ff8844', '#ffcc00', '#aaaaaa', '#88cc88', '#44ff44', '#00ffff', '#cc88ff'];
-  const symbols = ['??', '?', '?!', '', '!', '!!', '!!!', 'â˜…'];
+  const symbols = ['??', '?', '?!', '', '!', '!!', '!!!', '\u2B50'];
   
   let preEval = typeof evalBoard === 'function' ? evalBoard(s.board) : 0;
   const res=apply(s.board,from,to,s.ep,s.cr,promo);
@@ -884,9 +884,26 @@ function applySkinPreview(el,skin){
 
 function fmtMoney(p){
   const n = (Number(p)||0)/100;
-  if(n < 1e6) return '£' + n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if(n > 1e15) return '£' + n.toExponential(2).replace('e+', 'e');
-  return '£' + Intl.NumberFormat('en-GB', { notation: "compact", maximumFractionDigits: 2 }).format(n);
+  if(n < 1e6) return '\u00A3' + n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if(n < 1e15) return '\u00A3' + Intl.NumberFormat('en-GB', { notation: "compact", maximumFractionDigits: 2 }).format(n);
+  
+  const suffixes = [
+    "", "Thousand", "Million", "Billion", "Trillion", "Quadrillion", "Quintillion", "Sextillion", "Septillion", 
+    "Octillion", "Nonillion", "Decillion", "Undecillion", "Duodecillion", "Tredecillion", "Quattuordecillion", 
+    "Quindecillion", "Sexdecillion", "Septendecillion", "Octodecillion", "Novemdecillion", "Vigintillion", 
+    "Unvigintillion", "Duovigintillion", "Trevigintillion", "Quattuorvigintillion", "Quinvigintillion", 
+    "Sexvigintillion", "Septenvigintillion", "Octovigintillion", "Novemvigintillion", "Trigintillion"
+  ];
+  
+  let exp = Math.floor(Math.log10(n));
+  let suffixIndex = Math.floor(exp / 3);
+  
+  if (suffixIndex < suffixes.length) {
+    let mantissa = n / Math.pow(10, suffixIndex * 3);
+    return '\u00A3' + mantissa.toFixed(2) + ' ' + suffixes[suffixIndex];
+  }
+  
+  return '\u00A3' + n.toExponential(2).replace('e+', 'e');
 }
 function refreshUI(){
   document.getElementById('moneydisp').textContent=fmtMoney(M.money);
@@ -6800,7 +6817,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
-
 
 
 
