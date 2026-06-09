@@ -884,8 +884,9 @@ function applySkinPreview(el,skin){
 
 function fmtMoney(p){
   const n = (Number(p)||0)/100;
-  if(n < 1e6) return 'Â£' + n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return 'Â£' + Intl.NumberFormat('en-GB', { notation: "compact", maximumFractionDigits: 2 }).format(n);
+  if(n < 1e6) return '£' + n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if(n > 1e15) return '£' + n.toExponential(2).replace('e+', 'e');
+  return '£' + Intl.NumberFormat('en-GB', { notation: "compact", maximumFractionDigits: 2 }).format(n);
 }
 function refreshUI(){
   document.getElementById('moneydisp').textContent=fmtMoney(M.money);
