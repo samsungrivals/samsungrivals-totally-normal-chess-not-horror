@@ -1,103 +1,163 @@
-const PUZZLES = [
-  {
-    id: "puz_800",
-    elo: 800,
-    turn: 'white',
-    // Back rank mate in 1
-    fen: "6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1",
-    moves: ["a1a8"]
-  },
-  {
-    id: "puz_1500",
-    elo: 1500,
-    turn: 'white',
-    // Knight fork
-    fen: "2k5/8/8/8/3n4/8/3Q4/2K5 b - - 0 1",
-    moves: ["d4b3", "c1c2", "b3d2"]
-  },
-  {
-    id: "puz_2500",
-    elo: 2500,
-    turn: 'white',
-    // Deflection mate in 2
-    fen: "r1bqkb1r/pppp1ppp/2n5/4p3/2B1n3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 5",
-    moves: ["c4f7", "e8f7", "f3e5"]
-  },
-  {
-    id: "puz_3500",
-    elo: 3500,
-    turn: 'white',
-    // Queen sacrifice mate (Morphy's Opera Game ending)
-    fen: "1n1Rkb1r/p4ppp/4q3/4p1B1/4P3/8/PPP2PPP/2K5 b k - 1 17",
-    moves: ["e8d8"] // Wait, this is black to move, black is forced to e8d8, wait, no. The puzzle should start with the player's move.
-  },
-  {
-    id: "puz_4500",
-    elo: 4500,
-    turn: 'white',
-    // Ridiculous deep engine calculation
-    fen: "rnbqkb1r/pppp1ppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    moves: ["e2e4", "e7e5", "g1f3"]
-  }
-];
+// Infinite Puzzle Generator
 
-// Re-write the puzzles to correctly reflect standard tactical patterns with 'player' to move.
-const ACTUAL_PUZZLES = [
-  { id:"1", elo:800, turn:'white', board:[
-    ['','','','','','','k',''],
-    ['','','','','','p','p','p'],
-    ['','','','','','','',''],
-    ['','','','','','','',''],
-    ['','','','','','','',''],
-    ['','','','','','','',''],
-    ['','','','','','','',''],
-    ['R','','','','','','K','']
-  ], moves:["a1a8"] }, // White R to a8 mate
-  
-  { id:"2", elo:1500, turn:'black', board:[
-    ['','','k','','','','',''],
-    ['','','','','','','',''],
-    ['','','','','','','',''],
-    ['','','','','','','',''],
-    ['','','','n','','','',''],
-    ['','','','','','','',''],
-    ['','','','Q','','','',''],
-    ['','','K','','','','','']
-  ], moves:["d4b3", "c1c2", "b3d2"] }, // Black fork
-  
-  { id:"3", elo:2500, turn:'white', board:[
-    ['r','','b','q','k','b','','r'],
-    ['p','p','p','p','','p','p','p'],
-    ['','','n','','','','',''],
-    ['','','','','p','','',''],
-    ['','','B','','n','','',''],
-    ['','','','','','N','',''],
-    ['P','P','P','P','','P','P','P'],
-    ['R','N','B','Q','K','','','R']
-  ], moves:["c4f7", "e8f7", "f3e5"] }, // Deflection
+function createEmptyBoard() {
+    return [
+        ['','','','','','','',''],
+        ['','','','','','','',''],
+        ['','','','','','','',''],
+        ['','','','','','','',''],
+        ['','','','','','','',''],
+        ['','','','','','','',''],
+        ['','','','','','','',''],
+        ['','','','','','','','']
+    ];
+}
 
-  { id:"4", elo:3500, turn:'white', board:[
-    ['','n','','r','k','b','','r'],
-    ['p','','','','','p','p','p'],
-    ['','','','','q','','',''],
-    ['','','','','p','','B',''],
-    ['','','','','P','','',''],
-    ['','','','','','','',''],
-    ['P','P','P','','','P','P','P'],
-    ['','','K','R','','','','']
-  ], moves:["d1d8", "e8d8"] }, // Wait, Rd8# in Morphy
+function genBackRank() {
+    // Back rank mate in 1 or 2
+    let b = createEmptyBoard();
+    // Randomize king position on back rank (g8, h8 or c8, b8, a8)
+    let kCol = Math.random() < 0.5 ? 6 : 1; // g or b
+    b[0][kCol] = 'k';
+    
+    // Blocking pawns
+    if(kCol === 6) {
+        b[1][5] = 'p'; b[1][6] = 'p'; b[1][7] = 'p';
+    } else {
+        b[1][0] = 'p'; b[1][1] = 'p'; b[1][2] = 'p';
+    }
+    
+    // White rook on the same file but bottom, wait, back rank mate means rook attacks rank 8.
+    // So Rook is on rank 1-7, but file doesn't matter much as long as it's open.
+    let rCol = Math.floor(Math.random()*8);
+    let rRow = Math.floor(Math.random()*6) + 2; // rank 1 to 6
+    b[rRow][rCol] = 'R';
+    
+    // Add white king somewhere
+    b[7][4] = 'K';
+    
+    // Moves: Rook moves to back rank
+    let cols = "abcdefgh";
+    let startSq = cols[rCol] + (8 - rRow);
+    let endSq = cols[rCol] + "8";
+    
+    return {
+        id: "gen_backrank_" + Date.now(),
+        elo: 800 + Math.floor(Math.random()*400),
+        turn: 'white',
+        board: b,
+        moves: [startSq + endSq]
+    };
+}
 
-  { id:"5", elo:4500, turn:'white', board:[
-    ['','k','','','','','',''],
-    ['','p','','','','','',''],
-    ['p','','p','','','','',''],
-    ['','P','','','','','',''],
-    ['P','','','','','','',''],
-    ['','','','','','','',''],
-    ['','','','','','','',''],
-    ['','K','','','','','','']
-  ], moves:["a4a5"] } // Zugzwang
-];
+function genKnightFork() {
+    // Knight forks King and Queen
+    let b = createEmptyBoard();
+    let nRow = 4, nCol = 4; // Knight on e4
+    b[nRow][nCol] = 'N'; // White knight
+    
+    // Fork targets: e.g. King on c5 (row 3, col 2), Queen on g5 (row 3, col 6)
+    // The previous move was black moving into the fork or white moving the knight
+    // Let's make it a 1-move puzzle: White to move and fork
+    b[nRow][nCol] = ''; // remove knight, place it where it can jump to e4
+    let startMoves = [[6,3],[6,5],[5,2],[5,6]]; // d2, f2, c3, g3
+    let s = startMoves[Math.floor(Math.random()*startMoves.length)];
+    b[s[0]][s[1]] = 'N';
+    
+    b[3][2] = 'k'; // c5
+    b[3][6] = 'q'; // g5
+    
+    b[7][0] = 'K'; // White king
+    
+    let cols = "abcdefgh";
+    let startSq = cols[s[1]] + (8 - s[0]);
+    let endSq = "e4";
+    // We expect the user to find the fork
+    return {
+        id: "gen_fork_" + Date.now(),
+        elo: 1200 + Math.floor(Math.random()*400),
+        turn: 'white',
+        board: b,
+        moves: [startSq + endSq]
+    };
+}
 
-if(typeof module!=='undefined') module.exports=ACTUAL_PUZZLES;
-if(typeof window!=='undefined') window.PUZZLES=ACTUAL_PUZZLES;
+function genSmotheredMate() {
+    let b = createEmptyBoard();
+    b[0][7] = 'k';
+    b[1][6] = 'p';
+    b[1][7] = 'p';
+    b[0][6] = 'r'; // Rook blocking king
+    
+    // Knight can jump to f7
+    let nRow = 3, nCol = 5; // f5
+    b[nRow][nCol] = 'N';
+    
+    b[7][0] = 'K';
+    
+    let cols = "abcdefgh";
+    return {
+        id: "gen_smothered_" + Date.now(),
+        elo: 2000 + Math.floor(Math.random()*500),
+        turn: 'white',
+        board: b,
+        moves: ["f5f7"] // Wait, the notation is start to end
+    };
+}
+
+function genDeflection() {
+    let b = createEmptyBoard();
+    b[0][0] = 'r'; b[0][3] = 'q'; b[0][4] = 'k'; b[0][7] = 'r';
+    b[1][0] = 'p'; b[1][1] = 'p'; b[1][2] = 'p'; b[1][5] = 'p'; b[1][6] = 'p'; b[1][7] = 'p';
+    
+    b[7][0] = 'R'; b[7][4] = 'K'; b[7][7] = 'R';
+    b[3][2] = 'B'; // Bc4
+    b[5][5] = 'N'; // Nf3
+    b[3][4] = 'n'; // Ne4 (black knight)
+    
+    return {
+        id: "gen_deflect_" + Date.now(),
+        elo: 2500 + Math.floor(Math.random()*500),
+        turn: 'white',
+        board: b,
+        moves: ["c4f7", "e8f7", "f3e5"]
+    };
+}
+
+function generatePuzzle() {
+    let r = Math.random();
+    if(r < 0.25) return genBackRank();
+    if(r < 0.50) return genKnightFork();
+    if(r < 0.75) return genSmotheredMate();
+    return genDeflection();
+}
+
+// Keep the global array dynamic! We will expose a Proxy or a getter so it generates infinitely
+const InfinitePuzzles = new Proxy([], {
+    get: function(target, prop) {
+        if (prop === 'length') return 999999;
+        if (prop === 'filter') return function() { return [generatePuzzle()]; };
+        if (prop === 'find') return function() { return generatePuzzle(); };
+        let idx = parseInt(prop);
+        if (!isNaN(idx)) {
+            return generatePuzzle();
+        }
+        return target[prop];
+    }
+});
+
+// Since the old code expects a normal array, we might just expose an array with 100 random puzzles
+// and refresh them if needed. But a Proxy array is true infinity!
+let ACTUAL_PUZZLES = [];
+for(let i=0; i<100; i++) {
+    ACTUAL_PUZZLES.push(generatePuzzle());
+}
+
+if(typeof window !== 'undefined') {
+    // Override puzzle fetching to always get fresh ones
+    window.PUZZLES = ACTUAL_PUZZLES;
+    window.getRandomPuzzle = function() {
+        return generatePuzzle();
+    };
+}
+if(typeof module !== 'undefined') module.exports = ACTUAL_PUZZLES;
