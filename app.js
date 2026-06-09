@@ -1,4 +1,4 @@
-function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+﻿function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
 const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟','D':'🦆','M':'🫅'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
@@ -6355,7 +6355,11 @@ window.startDokiLevel = function() {
                 }
 
                 if(onGround && (keys['ArrowUp'] || keys['KeyW'] || keys['Space'])) {
-                    p.vy = p.jump;
+                    if(keys['ArrowDown'] || keys['KeyS']) {
+                        p.vy = p.jump * 1.6; // super jump bug if crouching
+                    } else {
+                        p.vy = p.jump;
+                    }
                 }
                 
                 // Check Spikes
