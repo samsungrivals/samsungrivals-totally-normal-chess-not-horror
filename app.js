@@ -1,4 +1,4 @@
-function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+﻿function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
 const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟','D':'🦆','M':'🫅'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
@@ -921,26 +921,6 @@ function fmtMoney(p){
   }
   
   return '\u00A3Infinity';
-});
-  if(n < 1e15) return '\u00A3' + Intl.NumberFormat('en-GB', { notation: "compact", maximumFractionDigits: 2 }).format(n);
-  
-  const suffixes = [
-    "", "Thousand", "Million", "Billion", "Trillion", "Quadrillion", "Quintillion", "Sextillion", "Septillion", 
-    "Octillion", "Nonillion", "Decillion", "Undecillion", "Duodecillion", "Tredecillion", "Quattuordecillion", 
-    "Quindecillion", "Sexdecillion", "Septendecillion", "Octodecillion", "Novemdecillion", "Vigintillion", 
-    "Unvigintillion", "Duovigintillion", "Trevigintillion", "Quattuorvigintillion", "Quinvigintillion", 
-    "Sexvigintillion", "Septenvigintillion", "Octovigintillion", "Novemvigintillion", "Trigintillion"
-  ];
-  
-  let exp = Math.floor(Math.log10(n));
-  let suffixIndex = Math.floor(exp / 3);
-  
-  if (suffixIndex < suffixes.length) {
-    let mantissa = n / Math.pow(10, suffixIndex * 3);
-    return '\u00A3' + mantissa.toFixed(2) + ' ' + suffixes[suffixIndex];
-  }
-  
-  return '\u00A3' + n.toExponential(2).replace('e+', 'e');
 }
 function refreshUI(){
   document.getElementById('moneydisp').textContent=fmtMoney(M.money);
@@ -6335,15 +6315,21 @@ window.startDokiLevel = function() {
             window.addEventListener('keyup', keyupHandler);
 
             let platforms = [
-                {x: 0, y: 250, w: 7000, h: 50, c: '#4CAF50'} // ground
+                {x: 0, y: 250, w: 2000, h: 50}, // ground
+                {x: 200, y: 200, w: 50, h: 10},
+                {x: 350, y: 150, w: 50, h: 10},
+                {x: 500, y: 100, w: 50, h: 10},
+                {x: 700, y: 200, w: 50, h: 50}, // block
+                {x: 900, y: 150, w: 50, h: 100}, // block
+                {x: 1100, y: 100, w: 150, h: 10}
             ];
-            let spikes = [];
-            for(let i=300; i<6000; i+=400) {
-                platforms.push({x: i, y: 150 + (Math.random()*50 - 25), w: 60, h: 10, c: '#8B4513'});
-                if(Math.random() > 0.3) spikes.push({x: i + 150, y: 230, w: 100 + Math.random()*100, h: 20});
-                if(Math.random() > 0.7) platforms.push({x: i + 200, y: 100, w: 40, h: 10, c: '#555'});
-            }
-            let goal = {x: 6200, y: 50, w: 30, h: 50};
+            
+            let spikes = [
+                {x: 250, y: 230, w: 100, h: 20},
+                {x: 750, y: 230, w: 150, h: 20}
+            ];
+
+            let goal = {x: 1200, y: 50, w: 30, h: 50};
             
             let cameraX = 0;
             let won = false;
@@ -6378,11 +6364,7 @@ window.startDokiLevel = function() {
                 }
 
                 if(onGround && (keys['ArrowUp'] || keys['KeyW'] || keys['Space'])) {
-                    if(keys['ArrowDown'] || keys['KeyS']) {
-                        p.vy = p.jump * 1.6; // super jump bug if crouching
-                    } else {
-                        p.vy = p.jump;
-                    }
+                    p.vy = p.jump;
                 }
                 
                 // Check Spikes
