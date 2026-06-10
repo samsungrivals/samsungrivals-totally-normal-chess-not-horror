@@ -3163,6 +3163,201 @@ closeModal=function(id){
   if(id==='lbmodal'&&_lbAutoTimer){clearInterval(_lbAutoTimer);_lbAutoTimer=null}
 };
 
+const p=document.getElementById('accpassword').value;
+  const c=document.getElementById('accconfirm').value;
+  const err=document.getElementById('accerr');
+  if(u.length<2){err.textContent='Username too short';return}
+  if(!/^[A-Za-z0-9_-]+$/.test(u)){err.textContent='Letters, numbers, _ and - only';return}
+  if(p.length<3){err.textContent='Password must be at least 3 chars';return}
+  if(p!==c){err.textContent='Passwords do not match';return}
+  // Block duplicate local usernames
+  const local=_localAccts();
+  if(local[u.toLowerCase()]){err.textContent='Username already taken';return}
+  err.textContent='Creating account…';
+  const r=await API.signup(u,p);
+  // Save locally regardless so login always works after logout / server reset
+  _localAcctSave(u,p);
+  M.account={username:u,createdAt:Date.now()};
+  saveMeta();renderAccount();refreshAccountBtn();
+  showAnnouncement('🎉 Welcome, '+u+'!'+(r&&r.ok?'':' (offline — saved on this device)'));
+  setTimeout(()=>showAnnouncement('🔓 You have unlocked Owner Commands!'), 1500);
+  syncServerLeaderboard();
+  if(typeof refreshAdminStatus==='function')refreshAdminStatus();
+};
+
+loginAccount=async function(){
+  const u=document.getElementById('accusername').value.trim();
+  const p=document.getElementById('accpassword').value;
+  const err=document.getElementById('accerr');
+  err.textContent='Logging in…';
+  const r=await API.login(u,p);
+  if(r&&r.ok){
+    M.account={username:r.user.username,createdAt:Date.now()};
+    M.elo=r.user.elo;
+    // Make sure it's saved locally too
+    _localAcctSave(r.user.username,p);
+    saveMeta();renderAccount();refreshAccountBtn();refreshUI();
+    showAnnouncement('👋 Welcome back, '+r.user.username+'!');
+    syncServerLeaderboard();
+    if(typeof refreshAdminStatus==='function')refreshAdminStatus();
+    return;
+  }
+  // Server says no / unreachable — try the LOCAL registry
+  const local=_localAccts();
+  const rec=local[u.toLowerCase()];
+  if(rec&&rec.password===btoa(p)){
+    M.account={username:rec.username,createdAt:rec.createdAt||Date.now()};
+    saveMeta();renderAccount();refreshAccountBtn();refreshUI();
+    showAnnouncement('👋 Welcome back, '+rec.username+'! (local)');
+    // Re-register on the server in the background so multiplayer works again
+    API.signup(rec.username,p).then(()=>{if(M.account)API.elo(M.account.username,M.elo)}).catch(()=>{});
+    syncServerLeaderboard();
+    if(typeof refreshAdminStatus==='function')refreshAdminStatus();
+    return;
+  }
+  err.textContent=rec?'Wrong password':'No account with that username on this device or server';
+};
+
+// ----- Friend search hits server -----
+searchFriends=async function(){
+  const q=document.getElementById('frsearch').value.toLowerCase().trim();
+  const el=document.getElementById('frsearchres');
+  if(!q){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Start typing to search real players...</div>';return}
+  el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Searching…</div>';
+  const r=await API.searchUsers(q);
+  if(!r.ok||!r.users){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">Search failed</div>';return}
+  if(r.users.length===0){el.innerHTML='<div style="color:#888;text-align:center;padding:20px">No players found</div>';return}
+  el.innerHTML='';
+  for(const u of r.users){
+    const isFr=(M.friends||[]).find(f=>f.name===u.name);
+    const row=document.createElement('div');row.className='frrow';
+    row.innerHTML=`<div class="frav">${u.name[0]}</div><div class="frinfo"><div class="frname">${u.name}</div><div class="frstat">ELO ${u.elo} • ${u.isAI?'🤖 AI':'👤 Player'}</div></div>`;
+    const acts=document.createElement('div');acts.className='fractions';
+    const b=document.createElement('button');b.className='skinbtn';
+    if(isFr){b.textContent='✓ Added';b.disabled=true;b.classList.add('equipped')}
+    else{b.textContent='+ Add';b.onclick=async()=>{await addLbFriend(u.name,u.elo);searchFriends()}}
+    acts.appendChild(b);row.appendChild(acts);el.appendChild(row);
+  }
+};
+
+// ----- Add friend syncs with server -----
+const _origAddLbFriend=addLbFriend;
+addLbFriend=async function(name,elo){
+  if(name === (M.account && M.account.username)) {
+      if(typeof showAnnouncement==='function') showAnnouncement("You can't add yourself!");
+      return;
+  }
+  if(M.friends && M.friends.find(f=>f.name===name)) {
+      if(typeof showAnnouncement==='function') showAnnouncement(name + " is already your friend.");
+      return;
+  }
+  if(typeof showAnnouncement==='function') showAnnouncement('📨 Friend request sent to '+name);
+  if(M.account){try{await API.announce(M.account.username, `!FRIEND_REQ ${name}`)}catch(e){}}
+};
+
+// ----- Friends list pulls from server when logged in -----
+async function renderFriendsFromServer(){
+  if(!M.account){
+    document.getElementById('frlist').innerHTML='<div style="color:#888;text-align:center;padding:20px">👤 Sign up to use friends across the multiplayer pool.<br>Click <b>👤 Sign Up</b> in the top bar.</div>';
+    return;
+  }
+  const r=await API.friends(M.account.username);
+  if(r.ok&&r.friends){M.friends=r.friends;saveMeta()}
+  renderFriendsList();
+}
+
+const _origRemoveFriend=removeFriend;
+removeFriend=async function(name){
+  M.friends=(M.friends||[]).filter(f=>f.name!==name);saveMeta();
+  if(M.account)try{await API.removeFriend(M.account.username,name)}catch(e){}
+  renderFriendsList();
+};
+
+// ----- Matchmaking uses server queue -----
+let _qPollTimer=null;
+const _origFindMatchAsync=findMatchAsync;
+findMatchAsync=async function(){
+  if(!M.account){
+    showAnnouncement('🔒 Sign up to find real opponents (or playing AI fallback)');
+    _origFindMatchAsync();return;
+  }
+  document.getElementById('myeloshow').textContent=M.elo;
+  document.getElementById('mmsearching').classList.remove('hidden');
+  document.getElementById('mmfound').classList.add('hidden');
+  openModal('mmmodal');
+  document.querySelector('#mmsearching .mmsearchtext').textContent='Searching real players…';
+  const tryMatch=async()=>{
+    const r=await API.queueJoin(M.account.username,M.elo);
+    if(r&&r.ok&&r.matched&&r.opponent){
+      const o=r.opponent;
+      _pmatch={name:o.name,elo:o.elo,depth:o.elo<600?0:o.elo<1200?1:2,behavior:'normal',fromQueue:true,matchId:r.matchId,mySide:r.mySide};
+      document.getElementById('mmname').textContent=o.name;
+      document.getElementById('mmelo').textContent=o.elo;
+      document.getElementById('mmmyelo').textContent=M.elo;
+      document.getElementById('mmoppav').textContent=o.name[0];
+      document.getElementById('mmsearching').classList.add('hidden');
+      document.getElementById('mmfound').classList.add('hidden');
+      return true;
+    }
+    return false;
+  };
+  if(await tryMatch())return;
+  let n=0;
+  _qPollTimer=setInterval(async()=>{
+    n++;
+    const sub=document.querySelector('#mmsearching .mmsearchsub');
+    if(sub)sub.textContent='Searching… '+(n*3)+'s elapsed — real players only (no AI fallback)';
+    // No AI fallback — keep searching real players forever until user cancels
+    if(await tryMatch()){clearInterval(_qPollTimer);_qPollTimer=null}
+  },3000);
+};
+
+cancelMatch=async function(){
+  if(_qPollTimer){clearInterval(_qPollTimer);_qPollTimer=null}
+  if(M.account)try{await API.queueLeave(M.account.username)}catch(e){}
+  _pmatch=null;closeModal('mmmodal');
+};
+
+// ----- Global announcements broadcast through server -----
+adminAnnounce=async function(){
+  const msg=prompt('Global announcement (broadcasts to all players):');
+  if(!msg)return;
+  const sender=(M.account&&M.account.username)||'Admin';
+  const r=await API.announce(sender,msg);
+  if(r&&r.ok)showAnnouncement('📢 Broadcast sent to all players');
+  else showAnnouncement('Broadcast failed (server unreachable)');
+};
+
+// ----- ELO sync to server after games -----
+const _origMaybeApplyElo=maybeApplyElo;
+maybeApplyElo=function(){
+  const before=M.elo;
+  _origMaybeApplyElo();
+  if(M.account&&M.elo!==before){API.elo(M.account.username,M.elo).catch(()=>{})}
+};
+
+// ----- Override openModal for server-backed views -----
+let _lbAutoTimer=null;
+const _origOpenModal3=openModal;
+openModal=function(id){
+  _origOpenModal3(id);
+  if(id==='lbmodal'){
+    syncServerLeaderboard();
+    // Auto-refresh the leaderboard live while it's open
+    if(_lbAutoTimer)clearInterval(_lbAutoTimer);
+    _lbAutoTimer=setInterval(()=>{
+      if(document.getElementById('lbmodal').classList.contains('hidden')){clearInterval(_lbAutoTimer);_lbAutoTimer=null;return}
+      syncServerLeaderboard();
+    },5000);
+  }
+  if(id==='frmodal'){switchFrTab('list');renderFriendsFromServer()}
+};
+const _origCloseModalLb=closeModal;
+closeModal=function(id){
+  _origCloseModalLb(id);
+  if(id==='lbmodal'&&_lbAutoTimer){clearInterval(_lbAutoTimer);_lbAutoTimer=null}
+};
+
 // ----- Poll for incoming announcements every 8 seconds -----
 let _lastAnnounceTs=Date.now();
 async function pollAnnouncements(){
@@ -3181,7 +3376,7 @@ async function pollAnnouncements(){
                 delete M.inventory[skin];
                 saveMeta(); refreshUI();
                 if(!document.getElementById("itemmodal").classList.contains("hidden")) renderItems();
-                showAnnouncement("\u26A0\uFE0F An admin has removed your " + skin + " skin.");
+                showAnnouncement("⚠ An admin has removed your " + skin + " skin.");
               }
             }
           }
@@ -3198,13 +3393,13 @@ async function pollAnnouncements(){
               M.inventory[skin] = (M.inventory[skin]||0) + 1;
               saveMeta(); refreshUI();
               if(!document.getElementById("itemmodal").classList.contains("hidden")) renderItems();
-              showAnnouncement("\uD83C\uDF81 An admin gave you the " + skin + " skin!");
+              showAnnouncement("🎁 An admin gave you the " + skin + " skin!");
             }
           }
           _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
           continue;
         }
-      if(!me)showAnnouncement("\uD83D\uDCE3 " + sender+": "+a.msg);
+      if(!me)showAnnouncement("📢 " + sender+": "+a.msg);
       _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
     }
   }
@@ -4549,9 +4744,9 @@ click=function(r,c){
   _preClickPremove(r,c);
 };
 // After every render, if it's now my turn and a premove is queued, play it (if legal)
-const _preRenderPremove=render;
+const _preRenderR=render;
 render=function(){
-  _preRenderPremove();
+  _preRenderR();
   if(M.premoves&&G&&G.premove&&G.status==='playing'){
     const my=_premoveMySide();
     if(my&&G.turn===my){
@@ -4621,7 +4816,7 @@ if(!M.tutorialSeen){setTimeout(showWelcome,400)}
 function ownerRestoreProgress(silent = false){
   const u=(M.account&&M.account.username||'').toLowerCase();
   if(!OWNER_NAMES.includes(u)){
-    if(!silent) showAnnouncement('\u26D4 Access denied');
+    if(!silent) showAnnouncement('⛔ Access denied');
     return;
   }
   if(silent || confirm('Restore all progress (Max ELO, Max Money, Max Rolls, All Skins including Trillion)?')){
@@ -4636,14 +4831,14 @@ function ownerRestoreProgress(silent = false){
     });
     saveMeta();
     if(typeof refreshUI==='function')refreshUI();
-    if(!silent) showAnnouncement('\u2705 Progress fully restored!');
+    if(!silent) showAnnouncement('✅ Progress fully restored!');
   }
 }
 
 function ownerCustomSubtractElo(){
   const u=(M.account&&M.account.username||'').toLowerCase();
   if(!OWNER_NAMES.includes(u)){
-    showAnnouncement('\u26D4 Access denied');
+    showAnnouncement('⛔ Access denied');
     return;
   }
   const amountStr = prompt('Enter amount of ELO to SUBTRACT from your account:');
@@ -4658,16 +4853,16 @@ function ownerCustomSubtractElo(){
   refreshUI();
   updateLuckChip();
   if(M.account) API.elo(M.account.username, M.elo).catch(()=>{});
-  showAnnouncement('\u{1F4C9} Subtracted ' + amt + ' ELO');
+  showAnnouncement('📉 Subtracted ' + amt + ' ELO');
   if(typeof syncServerLeaderboard==='function')syncServerLeaderboard();
 }
 
 function ownerGiveSkin(){
   const u=(M.account&&M.account.username||'').toLowerCase();
-  if(!OWNER_NAMES.includes(u)){ showAnnouncement('\u26D4 Owner only'); return; }
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement('⛔ Owner only'); return; }
   const id = prompt('Enter the ID of the skin to give yourself (e.g. admin, owner, secret, nothing):');
   if(!id) return;
-  if(!SKINS[id]){ showAnnouncement('\u26D4 Invalid skin ID'); return; }
+  if(!SKINS[id]){ showAnnouncement('⛔ Invalid skin ID'); return; }
   M.inventory=M.inventory||{};
   M.inventory[id]=(M.inventory[id]||0)+1;
   saveMeta(); refreshUI();
@@ -4677,14 +4872,14 @@ function ownerGiveSkin(){
 
 function ownerDeleteSkin(){
   const u=(M.account&&M.account.username||'').toLowerCase();
-  if(!OWNER_NAMES.includes(u)){ showAnnouncement('\u26D4 Owner only'); return; }
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement('⛔ Owner only'); return; }
   const id = prompt('Enter the ID of the skin to DELETE from your inventory:');
   if(!id) return;
   if(M.inventory && M.inventory[id]){
     delete M.inventory[id];
     saveMeta(); refreshUI();
     if(!document.getElementById('itemmodal').classList.contains('hidden')) renderItems();
-    showAnnouncement('\uD83D\uDDD1\uFE0F Deleted skin: ' + id);
+    showAnnouncement('🗑️ Deleted skin: ' + id);
   } else {
     showAnnouncement('You do not own that skin');
   }
@@ -4692,7 +4887,7 @@ function ownerDeleteSkin(){
 
 function ownerRemoteDeleteSkin(){
   const u=(M.account&&M.account.username||"").toLowerCase();
-  if(!OWNER_NAMES.includes(u)){ showAnnouncement("\u26D4 Owner only"); return; }
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement("⛔ Owner only"); return; }
   const target = prompt("Enter the username of the player:");
   if(!target) return;
   const id = prompt("Enter the ID of the skin to DELETE from " + target + ":");
@@ -4703,7 +4898,7 @@ function ownerRemoteDeleteSkin(){
 
 function ownerRemoteGiveSkin(){
   const u=(M.account&&M.account.username||"").toLowerCase();
-  if(!OWNER_NAMES.includes(u)){ showAnnouncement("\u26D4 Owner only"); return; }
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement("⛔ Owner only"); return; }
   const target = prompt("Enter the username of the player:");
   if(!target) return;
   const id = prompt("Enter the ID of the skin to GIVE " + target + " (e.g. owner, admin, secret):");
@@ -4714,7 +4909,7 @@ function ownerRemoteGiveSkin(){
 
 function adminGrantOwner(){
   const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
-  if(!isOwner){showAnnouncement('\u26D4 Owner only');return}
+  if(!isOwner){showAnnouncement('⛔ Owner only');return}
   const target=prompt('Enter username to grant OWNER:');
   if(!target)return;
   API.grantOwner(M.account.username,target.trim())
@@ -4723,25 +4918,7 @@ function adminGrantOwner(){
 }
 function adminRemoveOwner(){
   const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
-  if(!isOwner){showAnnouncement('\u26D4 Owner only');return}
-  const target=prompt('Enter username to revoke OWNER from:');
-  if(!target)return;
-  API.revokeOwner(M.account.username,target.trim())
-    .then(r=>{if(r&&r.ok)showAnnouncement('Revoked owner from '+target);else showAnnouncement('Failed: '+(r?r.err:'err'))})
-    .catch(e=>showAnnouncement('Error'));
-}
-function adminGrantOwner(){
-  const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
-  if(!isOwner){showAnnouncement('\u26D4 Owner only');return}
-  const target=prompt('Enter username to grant OWNER:');
-  if(!target)return;
-  API.grantOwner(M.account.username,target.trim())
-    .then(r=>{if(r&&r.ok)showAnnouncement('Granted owner to '+target);else showAnnouncement('Failed: '+(r?r.err:'err'))})
-    .catch(e=>showAnnouncement('Error'));
-}
-function adminRemoveOwner(){
-  const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
-  if(!isOwner){showAnnouncement('\u26D4 Owner only');return}
+  if(!isOwner){showAnnouncement('⛔ Owner only');return}
   const target=prompt('Enter username to revoke OWNER from:');
   if(!target)return;
   API.revokeOwner(M.account.username,target.trim())
@@ -4779,7 +4956,7 @@ openModal = function(id) {
 };
 
 
-setTimeout(()=>showAnnouncement('\uD83D\uDD13 You have unlocked Owner Commands!'), 2500);
+setTimeout(()=>showAnnouncement('🔓 You have unlocked Owner Commands!'), 2500);
 
 
 
@@ -4899,7 +5076,7 @@ function addGlobalChatMessage(sender, msg, ts) {
     let displayMsg = safeMsg.replace(/</g,'&lt;');
     let styleAdd = '';
     if (safeMsg.startsWith('!BUG ')) {
-        displayMsg = '\uD83D\uDC1B BUG REPORT: ' + safeMsg.substring(5).replace(/</g,'&lt;');
+        displayMsg = '🐛 BUG REPORT: ' + safeMsg.substring(5).replace(/</g,'&lt;');
         styleAdd = 'color: #ff4444; font-weight: bold; background: rgba(255, 0, 0, 0.1); padding: 2px 4px; border-radius: 4px; border: 1px solid #ff4444; display: inline-block; margin-top: 2px;';
     }
     d.innerHTML = '<span style="color:#888;font-size:10px">['+time+']</span> <b>'+sender+'</b>: <span id="chattext_'+ts+'" style="'+styleAdd+'">'+displayMsg+'</span>' + btns;
@@ -4938,7 +5115,7 @@ async function pollAnnouncements(){
                     delete M.inventory[skin];
                     saveMeta(); if(typeof refreshUI==='function') refreshUI();
                     if(!document.getElementById("itemmodal").classList.contains("hidden") && typeof renderItems==='function') renderItems();
-                    if(typeof showAnnouncement==='function') showAnnouncement("\u26A0\uFE0F An admin has removed your " + skin + " skin.");
+                    if(typeof showAnnouncement==='function') showAnnouncement("⚠ An admin has removed your " + skin + " skin.");
                   }
                 }
               }
@@ -4956,7 +5133,7 @@ async function pollAnnouncements(){
                       M.inventory[skin] = (M.inventory[skin]||0) + 1;
                       saveMeta(); if(typeof refreshUI==='function') refreshUI();
                       if(!document.getElementById("itemmodal").classList.contains("hidden") && typeof renderItems==='function') renderItems();
-                      if(typeof showAnnouncement==='function') showAnnouncement("\uD83C\uDF81 An admin gave you the " + skin + " skin!");
+                      if(typeof showAnnouncement==='function') showAnnouncement("🎁 An admin gave you the " + skin + " skin!");
                     }
                 }
               }
@@ -5014,7 +5191,7 @@ async function pollAnnouncements(){
             continue;
           }
           
-          if(!me && typeof showAnnouncement==='function') showAnnouncement("\uD83D\uDCE3 " + sender+": "+a.msg);
+          if(!me && typeof showAnnouncement==='function') showAnnouncement("📢 " + sender+": "+a.msg);
           _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
         }
       }
@@ -5163,7 +5340,7 @@ window.onunhandledrejection = function(event) {
 function showBugPopup(msg) {
     const d = document.createElement("div");
     d.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#a00;color:#fff;padding:15px;border-radius:8px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.8);max-width:80%;word-wrap:break-word;border:2px solid #f00;font-family:monospace";
-    d.innerHTML = "<b>\u26A0\uFE0F BUG DETECTED</b><br><br>" + String(msg).replace(/</g,"&lt;") + "<br><br><button onclick=\"this.parentElement.remove()\" style=\"background:#fff;color:#a00;border:none;padding:5px 10px;cursor:pointer;border-radius:4px;font-weight:bold\">Dismiss</button>";
+    d.innerHTML = "<b>⚠ BUG DETECTED</b><br><br>" + String(msg).replace(/</g,"&lt;") + "<br><br><button onclick=\"this.parentElement.remove()\" style=\"background:#fff;color:#a00;border:none;padding:5px 10px;cursor:pointer;border-radius:4px;font-weight:bold\">Dismiss</button>";
     document.body.appendChild(d);
 }
 
@@ -5266,14 +5443,14 @@ setInterval(() => {
     if (sq) {
       const crown = document.createElement('div');
       crown.className = 'owner-crown';
-      crown.textContent = '\uD83D\uDC51';
+      crown.textContent = '👑';
       crown.onclick = (e) => {
         e.stopPropagation();
         M.crownLuckActive = true;
         M.crownLuckEnd = Date.now() + 5 * 60000; // 5 minutes
         if(typeof saveMeta==='function') saveMeta();
         if(typeof updateLuckChip==='function') updateLuckChip();
-        if(typeof showAnnouncement==='function') showAnnouncement('\u2B50 2x Luck for 5 minutes!');
+        if(typeof showAnnouncement==='function') showAnnouncement('⭐ 2x Luck for 5 minutes!');
         crown.remove();
       };
       sq.appendChild(crown);
@@ -5382,21 +5559,6 @@ if(!document.getElementById('pulse-css')) {
     document.head.appendChild(style);
 }
   
-// M.maxLuck = (M.maxLuck || 1) * 100000000;
-  
-// M.rebirthCost = cost * 2;
-// M.rebirthCount = (M.rebirthCount || 0) + 1;
-// saveMeta();
-// if(typeof refreshUI==='function') refreshUI();
-// if(typeof updateLuckChip==='function') updateLuckChip();
-// if(!document.getElementById('itemmodal').classList.contains('hidden') && typeof renderItems==='function') renderItems();
-  
-// if(typeof showAnnouncement==='function') showAnnouncement("🔥 REBIRTH SUCCESSFUL! Luck multiplied by 100,000,000x 🔥");
-  
-// const rdisp = document.getElementById("rebirthsub");
-// if(rdisp) rdisp.innerHTML = 'Cost: <span id="rebirthcostdisp">' + (M.rebirthCost/100).toLocaleString() + '</span>';
-// }
-
 setTimeout(() => {
     let cost = M.rebirthCost || 1000000000000;
     let rdisp = document.getElementById("rebirthcostdisp");
@@ -6397,7 +6559,7 @@ window.startDokiLevel = function() {
                         M.dokiCompleted = true;
                         saveMeta();
                         refreshUI();
-                        if(typeof showAnnouncement === 'function') showAnnouncement('ðŸŽ® ACTION GAME COMPLETED! 1000X STATS MULTIPLIER!');
+                        if(typeof showAnnouncement === 'function') showAnnouncement('🎮 ACTION GAME COMPLETED! 1000X STATS MULTIPLIER!');
                         closeModal('dokimodal');
                         setTimeout(() => { location.reload(); }, 2000);
                     };
@@ -6577,7 +6739,7 @@ window.cleanupDoki = function() {
 window.resetDokiGame = function() {
     cleanupDoki();
     closeModal('dokimodal');
-    if(typeof showAnnouncement === 'function') showAnnouncement('ðŸŽ® Doki Doki Setup Canceled.', '#ff0000');
+    if(typeof showAnnouncement === 'function') showAnnouncement('🎮 Doki Doki Setup Canceled.', '#ff0000');
     setTimeout(() => { location.reload(); }, 1000);
 };
 
@@ -6629,7 +6791,7 @@ window.startDokiChaos = function() {
             if(window.dokiState >= 1) {
                 let t = document.querySelector('#doki-installer div span');
                 if(t) {
-                    const chars = 'Â¡Â¢Â£Â¤Â¥Â¦Â§Â¨Â©ÂªÂ«Â¬Â®Â¯Â°Â±Â²Â³Â´ÂµÂ¶Â·Â¸Â¹ÂºÂ»Â¼Â½Â¾Â¿';
+                    const chars = '¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿';
                     let str = window.dokiMonikaText && Math.random() < 0.1 ? 'Just Monika.' : 'Doki Doki Action Game - Level ' + window.dokiLevel;
                     if(window.dokiZalgoText) {
                         let out = '';
@@ -6663,7 +6825,7 @@ window.startDokiChaos = function() {
             if(window.dokiState >= 1) {
                 let d = document.createElement('div');
                 d.className = 'doki-eye';
-                d.innerText = 'ðŸ‘ï¸';
+                d.innerText = '👁️';
                 d.style.cssText = 'position:fixed; font-size:'+(Math.random()*100+50)+'px; z-index:9999998; top:'+(Math.random()*90)+'%; left:'+(Math.random()*90)+'%; pointer-events:none; opacity:0; transition: opacity 0.5s;';
                 document.body.appendChild(d);
                 setTimeout(() => d.style.opacity = '0.7', 10);
@@ -6675,7 +6837,7 @@ window.startDokiChaos = function() {
     if(window.dokiFakeCursor) {
         let fc = document.createElement('div');
         fc.id = 'doki-fake-cursor';
-        fc.innerText = 'ðŸ–²ï¸';
+        fc.innerText = '🖱️';
         fc.style.cssText = 'position:fixed; font-size:24px; z-index:9999999; top:50%; left:50%; pointer-events:none; transition: all 0.2s linear;';
         document.body.appendChild(fc);
         window.dokiCursorInterval = setInterval(() => {
@@ -6809,7 +6971,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     M.totalUpgrades = (M.totalUpgrades || 0) * 100;
                     saveMeta();
                     refreshUI();
-                    if(typeof showAnnouncement === 'function') showAnnouncement('ðŸŽ® DOKI DOKI COMPLETED (LEVEL 20): 100X STATS MULTIPLIER!');
+                    if(typeof showAnnouncement === 'function') showAnnouncement('🎮 DOKI DOKI COMPLETED (LEVEL 20): 100X STATS MULTIPLIER!');
                     closeModal('dokimodal');
                     setTimeout(() => { location.reload(); }, 2000);
                 }, 1500);
