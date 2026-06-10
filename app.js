@@ -3136,23 +3136,6 @@ adminAnnounce=async function(){
 // ----- ELO sync to server after games -----
 const _origMaybeApplyElo=maybeApplyElo;
 maybeApplyElo=function(){
-  const before=M.elo;
-  _origMaybeApplyElo();
-  if(M.account&&M.elo!==before){API.elo(M.account.username,M.elo).catch(()=>{})}
-};
-
-// ----- Override openModal for server-backed views -----
-let _lbAutoTimer=null;
-const _origOpenModal3=openModal;
-openModal=function(id){
-  _origOpenModal3(id);
-  if(id==='lbmodal'){
-    syncServerLeaderboard();
-    // Auto-refresh the leaderboard live while it's open
-    if(_lbAutoTimer)clearInterval(_lbAutoTimer);
-    _lbAutoTimer=setInterval(()=>{
-      if(document.getElementById('lbmodal').classList.contains('hidden')){clearInterval(_lbAutoTimer);_lbAutoTimer=null;return}
-      syncServerLeaderboard();
     },5000);
   }
   if(id==='frmodal'){switchFrTab('list');renderFriendsFromServer()}
