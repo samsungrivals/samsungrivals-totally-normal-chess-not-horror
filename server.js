@@ -558,7 +558,8 @@ app.get('/api/stats', (req, res) => {
     online: Object.values(db.users).filter(u => !u.isAI && u.lastSeen && (now - u.lastSeen < 15000)).length,
     ai: Object.values(db.users).filter(u => u.isAI).length,
     queue: db.queue.length,
-    announcements: db.announce.length
+    announcements: db.announce.length,
+      owners: OWNER_NAMES
   });
 });
 
