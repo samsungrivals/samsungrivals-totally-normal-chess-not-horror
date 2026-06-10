@@ -1,4 +1,4 @@
-// Tiny multiplayer backend for the chess app.
+﻿// Tiny multiplayer backend for the chess app.
 // In-memory + JSON file. Endpoints power leaderboard, friends, announcements, matchmaking.
 
 const express = require('express');
@@ -801,3 +801,50 @@ server.listen(port, '0.0.0.0', () => {
 process.on('uncaughtException', (e) => console.error('[uncaught]', e));
 process.on('unhandledRejection', (e) => console.error('[unhandledRejection]', e));
 
+
+// --- Leaderboard Implementation ---
+let leaderboards = { money: [], elo: [] };
+try {
+    if(fs.existsSync('lb.json')) {
+        leaderboards = JSON.parse(fs.readFileSync('lb.json', 'utf8'));
+    }
+} catch(e) { console.error('lb load err', e); }
+
+app.get('/api/leaderboard', (req, res) => {
+    res.json(leaderboards);
+});
+
+app.post('/api/leaderboard', (req, res) => {
+    const { username, money, elo, moneyInfinities } = req.body;
+    if(!username) return res.json({ok:false});
+    
+    // Sort and keep top 50
+    let mEntry = leaderboards.money.find(x => x.username === username);
+    if(mEntry) {
+        if(moneyInfinities > mEntry.moneyInfinities || (moneyInfinities === mEntry.moneyInfinities && money > mEntry.money)) {
+            mEntry.money = money;
+            mEntry.moneyInfinities = moneyInfinities;
+        }
+    } else {
+        leaderboards.money.push({username, money, moneyInfinities});
+    }
+    
+    let eEntry = leaderboards.elo.find(x => x.username === username);
+    if(eEntry) {
+        if(elo > eEntry.elo) eEntry.elo = elo;
+    } else {
+        leaderboards.elo.push({username, elo});
+    }
+    
+    leaderboards.money.sort((a,b) => {
+        if((b.moneyInfinities||0) !== (a.moneyInfinities||0)) return (b.moneyInfinities||0) - (a.moneyInfinities||0);
+        return (b.money||0) - (a.money||0);
+    });
+    leaderboards.elo.sort((a,b) => (b.elo||0) - (a.elo||0));
+    
+    leaderboards.money = leaderboards.money.slice(0, 50);
+    leaderboards.elo = leaderboards.elo.slice(0, 50);
+    
+    fs.writeFileSync('lb.json', JSON.stringify(leaderboards));
+    res.json({ok:true});
+});

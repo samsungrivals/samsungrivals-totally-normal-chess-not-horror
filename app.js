@@ -1,4 +1,4 @@
-function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+﻿function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
 const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟','D':'🦆','M':'🫅'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
@@ -6821,3 +6821,329 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
+const originalSaveMeta = saveMeta;
+window.saveMeta = function() {
+    let toSave = Object.assign({}, M);
+    if(toSave.money === Infinity) toSave.money = "Infinity";
+    else if(typeof toSave.money === 'number' && isNaN(toSave.money)) toSave.money = 0;
+    
+    if(toSave.moneyInfinities) toSave.moneyInfinities = toSave.moneyInfinities;
+    
+    localStorage.setItem('chessRngMeta', JSON.stringify(toSave));
+};
+
+const originalLoadMeta = loadMeta;
+window.loadMeta = function() {
+    let meta = originalLoadMeta();
+    if(meta.money === "Infinity") meta.money = Infinity;
+    if(meta.money === "NaN") meta.money = 0;
+    
+    if(!meta.achievements) meta.achievements = {};
+    if(!meta.quizBeats) meta.quizBeats = 0;
+    if(!meta.rebirths) meta.rebirths = 0;
+    if(!meta.moneyInfinities) meta.moneyInfinities = 0;
+    
+    return meta;
+};
+
+// Override format money
+window.fmtMoney = function(p) {
+    if(!p) p = 0;
+    if(M.moneyInfinities > 0) {
+        let infTiers = ["Absolute Infinity", "Omega", "Omega+", "God", "True God", "Creator", "Beyond Math", "The End"];
+        let tier = M.moneyInfinities - 1;
+        if(tier >= infTiers.length) tier = infTiers.length - 1;
+        return "£" + infTiers[tier];
+    }
+    
+    if(p === Infinity || p === "Infinity") {
+        return "£Infinity";
+    }
+    
+    const n = (Number(p)||0)/100;
+    if(n < 1e6) return '£' + n.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+    
+    const suffixes = ["", "k", "m", "b", "t", "qd", "qt", "sx", "sp", "oc", "no", "dc", "ud", "dd", "td", "qad", "qid", "sxd", "spd", "ocd", "nod", "vg", "uvg"];
+    
+    let suffixNum = Math.floor(("" + Math.floor(n)).length / 3);
+    if(suffixNum >= suffixes.length) return "£Unvigintillion+";
+    
+    let shortValue = parseFloat((suffixNum != 0 ? (n / Math.pow(1000, suffixNum)) : n).toPrecision(3));
+    if (shortValue % 1 != 0) shortValue = shortValue.toFixed(1);
+    
+    return '£' + shortValue + suffixes[suffixNum];
+};
+
+// Global Multiplier calculation
+window.getGlobalMultiplier = function() {
+    let mult = 1;
+    // Normal Achievements
+    let normalCount = 0;
+    let secretCount = 0;
+    if(M.achievements) {
+        for(let k in M.achievements) {
+            if(k.startsWith("s_")) secretCount++;
+            else normalCount++;
+        }
+    }
+    mult *= Math.pow(1.5, normalCount);
+    mult *= Math.pow(5.0, secretCount);
+    
+    // Quiz Multiplier
+    if(M.quizBeats > 0) {
+        let qMult = 20;
+        for(let i=1; i<M.quizBeats; i++) {
+            qMult = qMult / 2;
+        }
+        mult *= qMult;
+    }
+    
+    return mult;
+};
+
+// Achievements System
+const NORMAL_ACHIEVEMENTS = [];
+for(let i=1; i<=200; i++) {
+    NORMAL_ACHIEVEMENTS.push({ id: 'n_'+i, name: 'Normal Achievement '+i, desc: 'Played '+i+' games or clicked '+(i*10)+' times.' });
+}
+
+const SECRET_ACHIEVEMENTS = [
+    { id: 's_1', name: "Wait, That's Illegal", desc: "Go mathematically Beyond Infinity." },
+    { id: 's_2', name: "Just Monika", desc: "Discover the secret Doki Doki Action Game." },
+    { id: 's_3', name: "Master of the Matrix", desc: "Beat Level 20 without the 2.5x super jump." },
+    { id: 's_4', name: "Absolute Degeneracy", desc: "Complete Impossible Quiz 5 times." },
+    { id: 's_5', name: "The One Percent", desc: "Roll a piece rarer than 1 in 1 Trillion." },
+    { id: 's_6', name: "Admin Abuser", desc: "Click the Admin Abuse button." },
+    { id: 's_7', name: "Is This A Chess Game?", desc: "Generate 500 custom puzzles." },
+    { id: 's_8', name: "Schrödinger's Pawn", desc: "Play Custom Variant with all rules." }
+];
+
+window.unlockAchievement = function(id) {
+    if(!M.achievements) M.achievements = {};
+    if(!M.achievements[id]) {
+        M.achievements[id] = true;
+        saveMeta();
+        let ach = NORMAL_ACHIEVEMENTS.find(a => a.id === id) || SECRET_ACHIEVEMENTS.find(a => a.id === id);
+        if(ach) {
+            showAnnouncement("🏆 Achievement Unlocked: " + ach.name);
+        }
+        refreshUI();
+    }
+};
+
+window.renderAchievements = function() {
+    let html = '';
+    
+    html += '<h4>Normal Achievements</h4>';
+    for(let a of NORMAL_ACHIEVEMENTS) {
+        let unlocked = M.achievements && M.achievements[a.id];
+        html += `<div style="background:#444;padding:10px;border-radius:5px;opacity:${unlocked?1:0.5};">`;
+        html += `<strong>${a.name}</strong> ${unlocked ? '✅' : '🔒'}<br/>`;
+        html += `<small>${a.desc}</small></div>`;
+    }
+    
+    html += '<h4 style="margin-top:20px;">Secret Achievements</h4>';
+    for(let a of SECRET_ACHIEVEMENTS) {
+        let unlocked = M.achievements && M.achievements[a.id];
+        html += `<div style="background:#522;padding:10px;border-radius:5px;opacity:${unlocked?1:0.5};">`;
+        if(unlocked) {
+            html += `<strong>${a.name}</strong> 🟢<br/><small>${a.desc}</small></div>`;
+        } else {
+            html += `<strong>???</strong> 🔒<br/><small>Secret Description</small></div>`;
+        }
+    }
+    
+    document.getElementById('achievements-list').innerHTML = html;
+};
+
+// The Impossible Quiz
+const quizQuestions = [
+    { q: "What is the capital of Chess?", opts: ["Checkmate", "London", "Bongcloud", "Wait, what?"], ans: 2 },
+    { q: "How many hours did the bug test take?", opts: ["14", "200", "0 (I skipped it)", "NaN"], ans: 0 },
+    { q: "What is 1 + 1?", opts: ["2", "Window", "11", "3"], ans: 1 },
+    { q: "Select the actual highest multiplier.", opts: ["1.5x", "5x", "20x", "50%"], ans: 2 },
+    { q: "Do you want free ELO?", opts: ["Yes", "No", "Maybe", "No, I want money"], ans: 3 }
+];
+let currentQuizQ = 0;
+
+window.renderQuiz = function() {
+    if(currentQuizQ >= quizQuestions.length) {
+        // Won quiz
+        if(!M.quizBeats) M.quizBeats = 0;
+        M.quizBeats++;
+        saveMeta();
+        closeModal('quizmodal');
+        showAnnouncement("🎉 Beat the Impossible Quiz! Multiplier increased!");
+        unlockAchievement('s_4'); // Check if 5 times
+        return;
+    }
+    
+    let q = quizQuestions[currentQuizQ];
+    document.getElementById('quiz-q').innerText = "Question " + (currentQuizQ+1) + ": " + q.q;
+    let optHtml = '';
+    for(let i=0; i<q.opts.length; i++) {
+        optHtml += `<button class="btn" style="background:#34495e;" onclick="quizAnswer(${i})">${q.opts[i]}</button>`;
+    }
+    document.getElementById('quiz-options').innerHTML = optHtml;
+};
+
+window.quizAnswer = function(idx) {
+    if(idx === quizQuestions[currentQuizQ].ans) {
+        currentQuizQ++;
+        renderQuiz();
+    } else {
+        closeModal('quizmodal');
+        showAnnouncement("❌ Wrong! The Impossible Quiz resets.");
+        currentQuizQ = 0;
+    }
+};
+
+// Hook quiz open
+const oldOpenModal = openModal;
+window.openModal = function(id) {
+    oldOpenModal(id);
+    if(id === 'quizmodal') {
+        currentQuizQ = 0;
+        renderQuiz();
+    }
+};
+
+// Admin Abuse Button
+setTimeout(() => {
+    let adminBox = document.querySelector('#adminmodal .mbox');
+    if(adminBox) {
+        let btn = document.createElement('button');
+        btn.className = 'tbbtn';
+        btn.innerText = "🛑 ADMIN ABUSE";
+        btn.style.background = 'red';
+        btn.onclick = function() {
+            M.adminAbuse = true;
+            M.inventory = { vip: 9999, nvp: 9999, nvp_plus: 9999, nvp_plus_plus: 9999, royal: 9999 };
+            for(const k of ['bronze','silver','gold','diamond','amethyst']) M.unlockedPieceSkins[k] = true;
+            saveMeta();
+            unlockAchievement('s_6');
+            showAnnouncement("🛑 ADMIN ABUSE ACTIVATED! All shop items -50%!");
+            closeModal('adminmodal');
+        };
+        adminBox.appendChild(btn);
+    }
+    
+    // Free Rebirth Button
+    let shopBox = document.querySelector('#shopmodal .mbox');
+    if(shopBox) {
+        let rbBtn = document.createElement('button');
+        rbBtn.className = 'tbbtn';
+        rbBtn.innerText = "🔄 FREE REBIRTH (£90.00)";
+        rbBtn.style.background = 'purple';
+        rbBtn.onclick = function() {
+            if(M.money >= 9000 || M.money === Infinity || M.moneyInfinities > 0) {
+                if(!M.rebirths) M.rebirths = 0;
+                M.rebirths++;
+                saveMeta();
+                showAnnouncement("🔄 REBIRTH +1! (No money deducted)");
+            } else {
+                showAnnouncement("❌ You need £90.00");
+            }
+        };
+        shopBox.appendChild(rbBtn);
+    }
+}, 1000);
+
+// Beyond Infinity Money Multiplier Hook
+const oldRefreshUI = refreshUI;
+window.refreshUI = function() {
+    oldRefreshUI();
+    if(M.money === Infinity) {
+        M.moneyInfinities = (M.moneyInfinities || 0) + 1;
+        M.money = 0; // Reset to 0 but bump infinity tier
+        unlockAchievement('s_1');
+        saveMeta();
+    }
+    
+    // Update shop prices if admin abuse
+    if(M.adminAbuse) {
+        document.querySelectorAll('.sbtn').forEach(b => {
+            if(!b.dataset.abused) {
+                let costMatch = b.innerText.match(/£([\d\.]+)/);
+                if(costMatch) {
+                    let cost = parseFloat(costMatch[1]);
+                    b.innerText = b.innerText.replace("£"+cost, "£"+(cost/2));
+                }
+                b.dataset.abused = "true";
+            }
+        });
+    }
+};
+
+// Doki Doki Show Answer Skip
+window.skipDokiLevel = function() {
+    if(typeof p !== 'undefined' && p) {
+        p.x = 6200;
+        p.y = -500;
+        showAnnouncement("Skipped to Goal!");
+    }
+};
+setInterval(() => {
+    let btn = document.getElementById('doki-show-answer');
+    if(btn && M.dokiCompleted && document.getElementById('doki-action-game').style.display !== 'none') {
+        btn.style.display = 'block';
+    } else if(btn) {
+        btn.style.display = 'none';
+    }
+}, 1000);
+
+// Variants Tabs
+window.setVariantsTab = function(tab) {
+    if(tab === 'popular') {
+        document.getElementById('var_tab_popular').style.opacity = '1';
+        document.getElementById('var_tab_unpopular').style.opacity = '0.5';
+    } else {
+        document.getElementById('var_tab_popular').style.opacity = '0.5';
+        document.getElementById('var_tab_unpopular').style.opacity = '1';
+    }
+};
+
+// Frontend Leaderboard logic
+window.submitToLeaderboard = function() {
+    if(!M.account) return;
+    fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            username: M.account.username,
+            money: M.money,
+            moneyInfinities: M.moneyInfinities || 0,
+            elo: M.elo
+        })
+    }).catch(e => console.error(e));
+};
+
+setInterval(() => {
+    if(M.account) window.submitToLeaderboard();
+}, 30000); // submit every 30s
+
+const origOpenModalLb = window.openModal;
+window.openModal = function(id) {
+    if(id === 'lbmodal') {
+        fetch('/api/leaderboard').then(r => r.json()).then(data => {
+            let html = '<h3>Richest Players</h3><ul style="text-align:left;">';
+            data.money.forEach(p => {
+                let m = p.moneyInfinities > 0 ? "Beyond Infinity (Tier "+p.moneyInfinities+")" : fmtMoney(p.money);
+                html += <li><b></b>: </li>;
+            });
+            html += '</ul><h3 style="margin-top:15px;">Highest ELO</h3><ul style="text-align:left;">';
+            data.elo.forEach(p => {
+                html += <li><b></b>: </li>;
+            });
+            html += '</ul>';
+            let lbContent = document.querySelector('#lbmodal .mbox');
+            if(lbContent) {
+                // Keep the title but replace content
+                let existingTitle = lbContent.querySelector('.mtitle').outerHTML;
+                lbContent.innerHTML = existingTitle + html;
+            }
+        });
+    }
+    origOpenModalLb(id);
+};

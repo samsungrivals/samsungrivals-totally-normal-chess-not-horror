@@ -1,4 +1,4 @@
-// Infinite Puzzle Generator
+﻿// Infinite Puzzle Generator
 
 function createEmptyBoard() {
     return [
@@ -161,3 +161,16 @@ if(typeof window !== 'undefined') {
     };
 }
 if(typeof module !== 'undefined') module.exports = ACTUAL_PUZZLES;
+
+// Track puzzles generated for secret achievement
+let _puzCount = 0;
+if(typeof window !== 'undefined') {
+    const origGet = window.getRandomPuzzle;
+    window.getRandomPuzzle = function() {
+        _puzCount++;
+        if(_puzCount >= 500 && window.unlockAchievement) {
+            window.unlockAchievement('s_7');
+        }
+        return origGet();
+    };
+}

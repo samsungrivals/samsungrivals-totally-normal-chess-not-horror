@@ -91,6 +91,7 @@ function doCustomTranslate(langCode) {
     <button class="musicbtn" id="musicbtn" onclick="toggleMusic()" title="Toggle music" style="display:none">🎵</button>
     <button class="tbbtn" onclick="openModal('shopmodal')">🛒 Shop</button>
     <button class="tbbtn" onclick="openModal('lbmodal');markLbClick();markHiddenLb()">🏆 Leaderboards</button>
+    <button class="tbbtn" onclick="openModal('achievementsmodal');renderAchievements()">🌟 Achievements</button>
     <button class="topiconbtn" onclick="openModal('settingsmodal')" title="Settings">⚙️</button>
     <button class="topiconbtn" onclick="openModal('bugmodal')" title="Report Bug">🐛</button>
   </div>
@@ -112,6 +113,7 @@ function doCustomTranslate(langCode) {
       <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('welcomemodal'); })">📖 How to Play</button>
       <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('acctmodal'); })">👤 Profile</button>
       <button class="hs-btn doki-btn" onclick="openDokiGame()">Doki Doki Action Game</button>
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('quizmodal'); })" style="background: linear-gradient(135deg, #f1c40f, #e67e22);">❔ Impossible Quiz</button>
     </div>
   </div>
 </div>
@@ -605,6 +607,8 @@ function doCustomTranslate(langCode) {
 <script src="puzzles.js"></script>
 <script src="app.js?v=42"></script>
 <!-- Global Chat -->
+<div id="doki-goal" style="position:absolute;left:6200px;bottom:0;width:50px;height:200px;background:#2ecc71;"></div>
+<button id="doki-show-answer" style="position:absolute;top:20px;left:20px;padding:10px;background:#f1c40f;color:#000;font-weight:bold;display:none;z-index:9999;border:none;border-radius:5px;cursor:pointer;" onclick="skipDokiLevel()">Show Answer (Skip)</button>
 <div id="globalchat" style="position:fixed;bottom:70px;left:20px;width:300px;height:250px;background:#222;border:1px solid #444;border-radius:8px;display:none;flex-direction:column;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.5);font-family:sans-serif;">
   <div style="display:flex;justify-content:space-between;align-items:center;background:#333;border-top-left-radius:8px;border-top-right-radius:8px;">
     <div style="display:flex;flex:1;">
@@ -675,11 +679,11 @@ function doCustomTranslate(langCode) {
 <!-- Variants Modal -->
 <div id="variantsmodal" class="modal hidden">
   <div class="mbox" style="width:500px;text-align:center">
-    <div class="mtitle">♟️ Variants <button class="mclose" onclick="closeModal('variantsmodal')">✕</button></div>
-    <div style="display:flex;justify-content:center;gap:10px;margin-bottom:15px">
-      <button class="settingchip" id="varpopbtn" onclick="switchVariantsTab('popular')" style="background:#4a80c0;color:#fff">Most Popular</button>
-      <button class="settingchip" id="varunpopbtn" onclick="switchVariantsTab('unpopular')">Unpopular</button>
-      <button class="settingchip" onclick="openModal('customvariantmodal')">➕ Make Variant</button>
+    <div class="mtitle">♟️ Variants <button class="mclose" onclick="closeModal('variantsmodal')">×</button></div>
+    <div style="display:flex;justify-content:center;gap:10px;margin-bottom:15px;margin-top:10px;">
+      <button id="var_tab_popular" class="btn" style="background:#3498db" onclick="setVariantsTab('popular')">Most Popular</button>
+      <button id="var_tab_unpopular" class="btn" style="background:#2c3e50" onclick="setVariantsTab('unpopular')">Unpopular</button>
+      <button class="btn" style="background:#27ae60" onclick="closeModal('variantsmodal');openModal('customvariantmodal')">➕ Make Variant</button>
     </div>
     
     <div class="frsearchbar" style="margin-bottom:15px;">
@@ -794,6 +798,24 @@ function doCustomTranslate(langCode) {
         <button id="doki-agree" style="padding:4px 15px;background:#e0e0e0;border:2px solid #fff;border-right-color:#888;border-bottom-color:#888;color:#888;position:relative;transition:0.15s;font-family:sans-serif;font-size:12px;" disabled>Agree</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="quizmodal">
+  <div class="mbox" style="width: 500px; text-align:center;">
+    <div class="mtitle">❔ The Impossible Quiz <button class="mclose" onclick="closeModal('quizmodal')">×</button></div>
+    <div id="quiz-container" style="padding: 20px;">
+      <h3 id="quiz-q" style="margin-bottom:20px; font-size:1.5rem;">Question 1</h3>
+      <div id="quiz-options" style="display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="achievementsmodal">
+  <div class="mbox" style="width: 600px;">
+    <div class="mtitle">🏆 Achievements <button class="mclose" onclick="closeModal('achievementsmodal')">×</button></div>
+    <div style="font-size: 0.9rem; text-align:center; color:#ccc; margin-bottom: 10px;">Every normal achievement grants a permanent 1.5x Multiplier to Money & Luck! Secret ones grant 5x!</div>
+    <div id="achievements-list" style="max-height:400px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
   </div>
 </div>
 
