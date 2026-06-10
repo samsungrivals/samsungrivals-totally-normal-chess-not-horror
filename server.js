@@ -848,3 +848,11 @@ app.post('/api/leaderboard', (req, res) => {
     fs.writeFileSync('lb.json', JSON.stringify(leaderboards));
     res.json({ok:true});
 });
+app.get('/api/check-syntax', (req, res) => {
+    try {
+        const out = require('child_process').execSync('node -c app.js').toString();
+        res.send("OK: " + out);
+    } catch(e) {
+        res.send("ERROR: " + (e.stderr ? e.stderr.toString() : e.message));
+    }
+});
