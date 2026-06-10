@@ -1,4 +1,4 @@
-﻿// Tiny multiplayer backend for the chess app.
+// Tiny multiplayer backend for the chess app.
 // In-memory + JSON file. Endpoints power leaderboard, friends, announcements, matchmaking.
 
 const express = require('express');
@@ -559,7 +559,7 @@ app.get('/api/stats', (req, res) => {
     ai: Object.values(db.users).filter(u => u.isAI).length,
     queue: db.queue.length,
     announcements: db.announce.length,
-      owners: OWNER_NAMES
+    owners: OWNER_NAMES
   });
 });
 
