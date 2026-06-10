@@ -1,4 +1,4 @@
-﻿function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
 const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟','D':'🦆','M':'🫅'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
@@ -7130,11 +7130,11 @@ window.openModal = function(id) {
             let html = '<h3>Richest Players</h3><ul style="text-align:left;">';
             data.money.forEach(p => {
                 let m = p.moneyInfinities > 0 ? "Beyond Infinity (Tier "+p.moneyInfinities+")" : fmtMoney(p.money);
-                html += <li><b></b>: </li>;
+                html += "<li><b>" + p.username + "</b>: " + m + "</li>";
             });
             html += '</ul><h3 style="margin-top:15px;">Highest ELO</h3><ul style="text-align:left;">';
             data.elo.forEach(p => {
-                html += <li><b></b>: </li>;
+                html += "<li><b>" + p.username + "</b>: " + p.elo + "</li>";
             });
             html += '</ul>';
             let lbContent = document.querySelector('#lbmodal .mbox');
