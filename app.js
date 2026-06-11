@@ -1,4 +1,4 @@
-﻿function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
 const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟','D':'🦆','M':'🫅'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
@@ -765,7 +765,7 @@ let M;
 
 function loadMeta(){
   let d;
-  try{d=JSON.parse(localStorage.getItem('chessmeta')||'null')}catch(e){d=null}
+  try{d=JSON.parse(localStorage.getItem('chessRngMeta')||localStorage.getItem('chessmeta')||'null')}catch(e){d=null}
   if(!d)d={money:0,rolls:0,inventory:{classic:1},upgrades:{},equipped:'classic',autoRollOwned:false,autoRollActive:false,totalMoves:0,newGameClicks:0,adminUnlocked:false,lbReadyAfterRoll:false,sawLbAfterRoll:false,currentUpgrade:null,elo:500,friends:[],pieceSkin:'random',eloRewardsClaimed:{},gamesPlayed:0,gamesWon:0,unlockedPieceSkins:{}};
   if(!d.inventory)d.inventory={classic:1};
   if(!d.upgrades)d.upgrades={};
@@ -786,7 +786,7 @@ function loadMeta(){
 // Debounced save: keep M live in memory, but write to localStorage at most ~once/sec.
 // JSON.stringify + localStorage write is synchronous and was firing on every roll (huge lag).
 let _saveTimer=null,_saveDirty=false;
-function _saveNow(){_saveDirty=false;try{localStorage.setItem('chessmeta',JSON.stringify(M))}catch(e){}if(M&&M.account&&typeof window.API!=='undefined'){window.API.money(M.account.username,M.money||0).catch(()=>{});window.API.rolls(M.account.username,M.rolls||0).catch(()=>{});}}
+function _saveNow(){_saveDirty=false;try{localStorage.setItem('chessRngMeta',JSON.stringify(M));localStorage.setItem('chessmeta',JSON.stringify(M))}catch(e){}if(M&&M.account&&typeof window.API!=='undefined'){window.API.money(M.account.username,M.money||0).catch(()=>{});window.API.rolls(M.account.username,M.rolls||0).catch(()=>{});}}
 function saveMeta(){
   _saveDirty=true;
   if(_saveTimer)return;
