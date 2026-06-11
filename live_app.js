@@ -6989,7 +6989,7 @@ window.renderQuiz = function() {
         optHtml += `<button class="btn" style="background:#34495e;" onclick="quizAnswer(${i})">${q.opts[i]}</button>`;
     }
     if (M.adminAbuse || M.adminUnlocked) {
-        optHtml += `<div style="margin-top:15px; text-align:center;"><button class="btn" style="background:linear-gradient(90deg, #ff00ff, #00ffff); color:#000; font-weight:bold; width:100%;" onclick="currentQuizQ = quizQuestions.length; renderQuiz();">⭐ ADMIN SKIP ⭐</button></div>`;
+        optHtml += `<div style="margin-top:15px; text-align:center;"><button class="btn" style="background:linear-gradient(90deg, #ff00ff, #00ffff); color:#000; font-weight:bold; width:100%;" onclick="quizAnswer(quizQuestions[currentQuizQ].ans)">⭐ ADMIN SKIP ⭐</button></div>`;
     }
     document.getElementById('quiz-options').innerHTML = optHtml;
 };
@@ -7551,3 +7551,83 @@ window.runStotBugDetector = function() {
     if (typeof refreshUI === 'function') refreshUI();
 };
 
+
+// --- ADMIN FREE REBIRTH ---
+setInterval(() => {
+    let shopBox = document.querySelector('#shopmodal .mbox');
+    if(shopBox && !document.getElementById('admin-free-rebirth-btn')) {
+        let rbBtn = document.createElement('button');
+        rbBtn.id = 'admin-free-rebirth-btn';
+        rbBtn.className = 'tbbtn';
+        rbBtn.innerText = 'â­ ADMIN ONLY FREE REBIRTH';
+        rbBtn.style.background = 'purple';
+        rbBtn.style.display = (M.adminAbuse || M.adminUnlocked) ? 'block' : 'none';
+        rbBtn.onclick = function() {
+            if(M.money === Infinity) {
+                M.money = 0;
+            }
+            if(!M.rebirths) M.rebirths = 0;
+            M.rebirths++;
+            saveMeta();
+            showAnnouncement('â­ ADMIN FREE REBIRTH SUCCESSFUL!');
+        };
+        shopBox.appendChild(rbBtn);
+    }
+}, 1000);
+// --- DOKI SHOW HOW TO DO ---
+setInterval(() => {
+    let dokiModal = document.getElementById('dokimodal');
+    if(dokiModal && !document.getElementById('doki-show-how-btn')) {
+        let btn = document.createElement('button');
+        btn.id = 'doki-show-how-btn';
+        btn.innerText = 'Show how to do (Auto-play)';
+        btn.style.cssText = 'position:absolute; left:10px; top:10px; background:#0f0; color:#000; font-weight:bold; border:2px solid #000; padding:5px 10px; cursor:pointer; z-index:99999999;';
+        btn.onclick = () => { window.dokiShowHowToDo = true; };
+        dokiModal.appendChild(btn);
+    }
+    
+    // Auto play logic
+    if(window.dokiShowHowToDo && dokiModal && !dokiModal.classList.contains('hidden')) {
+        let cbs = document.querySelectorAll('#doki-checkboxes input[type="checkbox"]:not(:checked)');
+        if(cbs.length > 0) { cbs[0].click(); }
+        else {
+            let goal = document.getElementById('doki-goal');
+            let inst = document.getElementById('doki-installer');
+            if(goal && inst) {
+                let iRect = inst.getBoundingClientRect();
+                goal.style.left = (iRect.left + 50) + 'px';
+                goal.style.top = (iRect.top + 50) + 'px';
+            }
+            let agreeBtn = document.getElementById('doki-agree');
+            if(agreeBtn && !agreeBtn.disabled) {
+                agreeBtn.click();
+                window.dokiShowHowToDo = false; // reset for next level
+            }
+        }
+    } else {
+        window.dokiShowHowToDo = false;
+    }
+}, 500);
+// --- 3D CHESS BOARD SKIN ---
+setInterval(() => {
+    let ctrls = document.querySelector('.controls');
+    if(ctrls && !document.getElementById('toggle-3d-btn')) {
+        let btn = document.createElement('button');
+        btn.id = 'toggle-3d-btn';
+        btn.innerText = 'Toggle 3D Board Skin';
+        btn.className = 'btn';
+        btn.style.background = '#e67e22';
+        btn.onclick = () => { 
+            let b = document.getElementById('board');
+            if(b.style.transform.includes('perspective')) {
+                b.style.transform = '';
+                b.style.boxShadow = '';
+            } else {
+                b.style.transform = 'perspective(800px) rotateX(45deg)';
+                b.style.boxShadow = '0 30px 0 #333, 0 40px 20px rgba(0,0,0,0.5)';
+                b.style.transformStyle = 'preserve-3d';
+            }
+        };
+        ctrls.appendChild(btn);
+    }
+}, 1000);
