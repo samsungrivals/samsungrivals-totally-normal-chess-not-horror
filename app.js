@@ -1,4 +1,4 @@
-function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+﻿function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
 const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟','D':'🦆','M':'🫅'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
@@ -780,6 +780,9 @@ function loadMeta(){
   if(d.lastYearlyFree===undefined)d.lastYearlyFree=0;
   if(d.nothingGamepass===undefined)d.nothingGamepass=0;
   if(d.godlyPacks===undefined)d.godlyPacks=0;
+  if(d.money==='Infinity')d.money=Infinity;
+  if(typeof d.money==='number'&&isNaN(d.money))d.money=0;
+  if(typeof d.money==='string'&&d.money.startsWith('Infinity')){d.money=Infinity;}
   if(d.moneyVersion===undefined){d.money=Math.round((Number(d.money)||0)*100);d.moneyVersion=2}
   return d;
 }
