@@ -1,4 +1,4 @@
-// Add 105 more questions to the impossible quiz!
+﻿// Add 105 more questions to the impossible quiz!
 const additionalQuizQuestions = [];
 for(let i=16; i<=110; i++) {
     let wrong1 = "Wrong Answer " + Math.floor(Math.random() * 100);
@@ -179,26 +179,7 @@ setTimeout(() => {
         cvs.addEventListener('mouseleave', () => { if(isDrawing) endDrawShape(); });
     }
     
-    let shopBox = document.querySelector('#shopmodal .mbox');
-    if(shopBox) {
-        let rbBtn = document.createElement('button');
-        rbBtn.className = 'tbbtn';
-        rbBtn.innerText = "♻️ FREE REBIRTH (Does not reset progress)";
-        rbBtn.style.background = 'purple';
-        rbBtn.onclick = function() {
-            let cost = M.rebirthCost || 1000000000000;
-            if(M.money >= cost || M.money === Infinity || M.moneyInfinities > 0) {
-                if(!M.rebirths) M.rebirths = 0;
-                M.rebirths++;
-                saveMeta();
-                checkSecretAchievement('s_6');
-                showAnnouncement("♻️ REBIRTH +1! (No money deducted)");
-            } else {
-                showAnnouncement("❌ You need " + window.fmtMoney(cost));
-            }
-        };
-        shopBox.appendChild(rbBtn);
-    }
+    
 }, 1000);
 
 const _oldPollStats = window.pollStats;

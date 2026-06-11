@@ -7029,25 +7029,7 @@ setTimeout(() => {
         adminBox.appendChild(btn);
     }
     
-    // Free Rebirth Button
-    let shopBox = document.querySelector('#shopmodal .mbox');
-    if(shopBox) {
-        let rbBtn = document.createElement('button');
-        rbBtn.className = 'tbbtn';
-        rbBtn.innerText = "🔄 FREE REBIRTH (£90.00)";
-        rbBtn.style.background = 'purple';
-        rbBtn.onclick = function() {
-            if(M.money >= 9000 || M.money === Infinity || M.moneyInfinities > 0) {
-                if(!M.rebirths) M.rebirths = 0;
-                M.rebirths++;
-                saveMeta();
-                showAnnouncement("🔄 REBIRTH +1! (No money deducted)");
-            } else {
-                showAnnouncement("❌ You need £90.00");
-            }
-        };
-        shopBox.appendChild(rbBtn);
-    }
+    
 }, 1000);
 
 // Beyond Infinity Money Multiplier Hook
@@ -7328,36 +7310,9 @@ setTimeout(() => {
         cvs.addEventListener('mouseleave', () => { if(isDrawing) endDrawShape(); });
     }
     
-    let shopBox = document.querySelector('#shopmodal .mbox');
-    if(shopBox) {
-        let rbBtn = document.createElement('button');
-        rbBtn.className = 'tbbtn';
-        rbBtn.innerText = "♻️ FREE REBIRTH (Does not reset progress)";
-        rbBtn.style.background = 'purple';
-        rbBtn.onclick = function() {
-            let cost = M.rebirthCost || 1000000000000;
-            if(M.money >= cost || M.money === Infinity || M.moneyInfinities > 0) {
-                if(!M.rebirths) M.rebirths = 0;
-                M.rebirths++;
-                saveMeta();
-                checkSecretAchievement('s_6');
-                showAnnouncement("♻️ REBIRTH +1! (No money deducted)");
-            } else {
-                showAnnouncement("❌ You need " + window.fmtMoney(cost));
-            }
-        };
-        shopBox.appendChild(rbBtn);
-    }
     
-    // Add Stot Bug Detector to HTML dynamically to avoid editing index.html directly
-    let adminBox = document.querySelector('#adminmodal .mbox');
-    if(adminBox) {
-        let bugBtn = document.createElement('div');
-        bugBtn.className = 'adminitem';
-        bugBtn.onclick = runStotBugDetector;
-        bugBtn.innerHTML = '<b>🛠️ Stot Bug Detector</b> — Scan the game for bugs and auto-fix';
-        adminBox.appendChild(bugBtn);
-    }
+    
+    
 }, 1000);
 
 window.runStotBugDetector = function() {
