@@ -1,4 +1,4 @@
-﻿function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
 const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟','D':'🦆','M':'🫅'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
@@ -6985,6 +6985,9 @@ window.renderQuiz = function() {
     for(let i=0; i<q.opts.length; i++) {
         optHtml += `<button class="btn" style="background:#34495e;" onclick="quizAnswer(${i})">${q.opts[i]}</button>`;
     }
+    if (M.adminAbuse || M.adminUnlocked) {
+        optHtml += `<div style="margin-top:15px; text-align:center;"><button class="btn" style="background:linear-gradient(90deg, #ff00ff, #00ffff); color:#000; font-weight:bold; width:100%;" onclick="currentQuizQ = quizQuestions.length; renderQuiz();">⭐ ADMIN SKIP ⭐</button></div>`;
+    }
     document.getElementById('quiz-options').innerHTML = optHtml;
 };
 
@@ -7515,3 +7518,33 @@ window.injectDrawMinigame = function() {
         }
     }
 };
+
+// --- STOT BUG DETECTOR ---
+setInterval(() => {
+    let adminBox = document.querySelector('#adminmodal .mbox');
+    if(adminBox && !document.getElementById('stot-bug-detector-btn')) {
+        let bugBtn = document.createElement('div');
+        bugBtn.id = 'stot-bug-detector-btn';
+        bugBtn.className = 'adminitem';
+        bugBtn.onclick = window.runStotBugDetector;
+        bugBtn.innerHTML = '<b>🛠️ Stot Bug Detector</b> — Scan the game for bugs and auto-fix';
+        adminBox.appendChild(bugBtn);
+    }
+}, 1000);
+
+window.runStotBugDetector = function() {
+    let bugs = 0;
+    if(typeof M.money !== 'number' || isNaN(M.money)) { M.money = 0; bugs++; showAnnouncement("Fixed corrupt Money"); }
+    if(typeof M.elo !== 'number' || isNaN(M.elo)) { M.elo = 500; bugs++; showAnnouncement("Fixed corrupt ELO"); }
+    if(M.money < 0 && M.money !== -Infinity) { M.money = 0; bugs++; showAnnouncement("Fixed negative money"); }
+    if(M.money === -Infinity) { M.money = Infinity; bugs++; showAnnouncement("Fixed corrupted limit!"); }
+    if(bugs === 0) {
+        showAnnouncement("🛠️ Stot Bug Detector found 0 bugs!");
+        if (typeof checkSecretAchievement === 'function') checkSecretAchievement('s_7');
+    } else {
+        showAnnouncement("🛠️ Stot Bug Detector repaired " + bugs + " issues!");
+    }
+    if (typeof saveMeta === 'function') saveMeta();
+    if (typeof refreshUI === 'function') refreshUI();
+};
+
