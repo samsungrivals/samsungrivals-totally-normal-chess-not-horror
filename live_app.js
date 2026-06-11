@@ -7823,3 +7823,41 @@ if(sessionStorage.getItem('testing_update')) {
         if(sm) sm.innerHTML = '<h2>Shop disabled in old versions!</h2>';
     }, 500);
 }
+// V4 CHAT GIFTING LOGIC
+const origSendChatInput = window.sendChatInput || function(){};
+window.sendChatInput = function() {
+    let inp = document.getElementById('globalchatinput');
+    if (!inp || !inp.value) return origSendChatInput();
+    let text = inp.value.trim();
+    
+    if (text.startsWith('/gift ')) {
+        let parts = text.split(' ');
+        if (parts.length >= 4) {
+            let targetUser = parts[1];
+            let itemType = parts[2];
+            let amount = parseInt(parts[3]);
+            
+            fetch('/api/gift', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    sender: (M.account && M.account.username) || 'Guest',
+                    targetUser: targetUser,
+                    itemType: itemType,
+                    amount: amount
+                })
+            }).then(r => r.json()).then(res => {
+                if(res.ok) {
+                    alert('Gift sent successfully!');
+                } else {
+                    alert('Failed to send gift. ' + (res.error || ''));
+                }
+            });
+            inp.value = '';
+            return;
+        }
+    }
+    
+    // Fallback to normal
+    origSendChatInput();
+};
