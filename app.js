@@ -7209,7 +7209,7 @@ window.fmtMoney = function(v) {
 };
 
 // Revamped Achievements
-const SECRET_ACHIEVEMENTS = [
+SECRET_ACHIEVEMENTS.splice(0, SECRET_ACHIEVEMENTS.length, ...[
     { id: 's_1', name: "???", secretName: "The Architect", desc: "Score exactly 98.3% on a Square in the drawing minigame." },
     { id: 's_2', name: "???", secretName: "Patience is Key", desc: "Wait on the title screen for exactly 5 minutes without clicking." },
     { id: 's_3', name: "???", secretName: "The Void", desc: "Try to buy an item when your money is exactly 0." },
@@ -7218,7 +7218,7 @@ const SECRET_ACHIEVEMENTS = [
     { id: 's_6', name: "???", secretName: "Rebirth Specialist", desc: "Perform 3 Free Rebirths in a single session." },
     { id: 's_7', name: "???", secretName: "Bug Hunter", desc: "Find exactly 0 bugs using the Stot Bug Detector." },
     { id: 's_8', name: "???", secretName: "Beyond the Absolute", desc: "Reach the 'The End' infinity tier." }
-];
+]);
 
 window.checkSecretAchievement = function(id) {
     if(!M.achievements) M.achievements = {};

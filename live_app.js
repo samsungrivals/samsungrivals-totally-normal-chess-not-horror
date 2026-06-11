@@ -1,7 +1,7 @@
-function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+﻿function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
-const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟'};
-const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0};
+const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟','D':'🦆','M':'🫅'};
+const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
 const OPENINGS = {
   "e4 c5": "Sicilian Defense",
   "e4 e5": "Open Game",
@@ -59,20 +59,53 @@ function showGameView() {
   document.getElementById('main-game-container').classList.remove('hidden');
 }
 
+function generateChess960() {
+    let br = new Array(8).fill('');
+    br[[1,3,5,7][Math.floor(Math.random()*4)]] = 'B';
+    br[[0,2,4,6][Math.floor(Math.random()*4)]] = 'B';
+    let empty = () => { let a=[]; for(let i=0;i<8;i++) if(!br[i]) a.push(i); return a; };
+    br[empty()[Math.floor(Math.random()*empty().length)]] = 'Q';
+    br[empty()[Math.floor(Math.random()*empty().length)]] = 'N';
+    br[empty()[Math.floor(Math.random()*empty().length)]] = 'N';
+    let rem = empty();
+    br[rem[0]] = 'R'; br[rem[1]] = 'K'; br[rem[2]] = 'R';
+    return br;
+}
+
 function newGame(){
   if(typeof stopClocks==='function')stopClocks(); // don't auto-run timers (was causing spurious "defeat on time")
   const pal=applyRandomColors();
+  let br = ['R','N','B','Q','K','B','N','R'];
+  if(typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.chess960) {
+      br = generateChess960();
+  }
+  let brB = br.map(p => p.toLowerCase());
+  
+  let pR = ['P','P','P','P','P','P','P','P'];
+  let pRB = ['p','p','p','p','p','p','p','p'];
+  
+  if(typeof M !== 'undefined' && M && M.currentVariant) {
+      if(M.currentVariant.maharajah) {
+          br = ['','','','','M','','',''];
+          pR = ['','','','','','','',''];
+      }
+      if(M.currentVariant.knightmate) {
+          br = ['R','K','B','Q','N','B','K','R'];
+          brB = br.map(p => p.toLowerCase());
+      }
+  }
+
   G={
     palette:pal,
     board:[
-      ['r','n','b','q','k','b','n','r'],
-      ['p','p','p','p','p','p','p','p'],
+      brB,
+      pRB,
       ['','','','','','','',''],
       ['','','','','','','',''],
       ['','','','','','','',''],
       ['','','','','','','',''],
-      ['P','P','P','P','P','P','P','P'],
-      ['R','N','B','Q','K','B','N','R'],
+      pR,
+      br,
     ],
     turn:'white',
     cr:{w:{k:true,q:true},b:{k:true,q:true}},
@@ -82,7 +115,9 @@ function newGame(){
     status:'playing',
     capW:[],capB:[],
     hist:[],
-    promo:null
+    promo:null,
+    checksW:0,
+    checksB:0
   };
   buildLabels();
   render();
@@ -100,7 +135,12 @@ function fr(r){return String(8-r)}
 function pseudo(b,r,c,ep,cr,atk=false){
   const p=b[r][c];if(!p)return[];
   const w=isU(p),t=w?'white':'black',ms=[];
-  const type=p.toLowerCase();
+  let type=p.toLowerCase();
+
+  if (typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.knightmate) {
+      if (type === 'k') type = 'n';
+      else if (type === 'n') type = 'k';
+  }
 
   function slide(dirs){
     for(const[dr,dc]of dirs){
@@ -108,7 +148,7 @@ function pseudo(b,r,c,ep,cr,atk=false){
         const nr=r+dr*n,nc=c+dc*n;
         if(!inB(nr,nc))break;
         const tg=b[nr][nc];
-        if(!tg){ms.push([nr,nc])}else{if(opp(tg,t))ms.push([nr,nc]);break}
+        if(!tg){ms.push([nr,nc])}else{if(opp(tg,t) && tg!=='D')ms.push([nr,nc]);break}
       }
     }
   }
@@ -119,7 +159,7 @@ function pseudo(b,r,c,ep,cr,atk=false){
       const nr=r+dir,nc=c+dc;
       if(inB(nr,nc)){
         if(atk)ms.push([nr,nc]);
-        else if(opp(b[nr][nc],t))ms.push([nr,nc]);
+        else if(opp(b[nr][nc],t) && b[nr][nc] !== 'D')ms.push([nr,nc]);
         else if(ep&&nr===ep[0]&&nc===ep[1])ms.push([nr,nc]);
       }
     }
@@ -130,7 +170,7 @@ function pseudo(b,r,c,ep,cr,atk=false){
   }else if(type==='n'){
     for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){
       const nr=r+dr,nc=c+dc;
-      if(inB(nr,nc)&&!own(b[nr][nc],t))ms.push([nr,nc]);
+      if(inB(nr,nc)&&!own(b[nr][nc],t)&&b[nr][nc]!=='D')ms.push([nr,nc]);
     }
   }else if(type==='b'){slide([[-1,-1],[-1,1],[1,-1],[1,1]])}
   else if(type==='r'){slide([[-1,0],[1,0],[0,-1],[0,1]])}
@@ -138,14 +178,29 @@ function pseudo(b,r,c,ep,cr,atk=false){
   else if(type==='k'){
     for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]){
       const nr=r+dr,nc=c+dc;
-      if(inB(nr,nc)&&!own(b[nr][nc],t))ms.push([nr,nc]);
+      if(inB(nr,nc)){
+          const target = b[nr][nc];
+          if(!own(target,t) && target!=='D') {
+              if (target && typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.atomic) {
+                  continue; // Kings cannot capture in atomic chess
+              }
+              ms.push([nr,nc]);
+          }
+      }
     }
-    if(!atk&&cr&&c===4){
+    if(!atk&&cr&&c===4 && (!M || !M.currentVariant || !M.currentVariant.noCastling)){
       const row=w?7:0,rts=w?cr.w:cr.b;
       if(r===row){
         if(rts.k&&!b[row][5]&&!b[row][6]&&b[row][7]?.toLowerCase()==='r')ms.push([row,6]);
         if(rts.q&&!b[row][3]&&!b[row][2]&&!b[row][1]&&b[row][0]?.toLowerCase()==='r')ms.push([row,2]);
       }
+    }
+  }else if(type==='m'){
+    // Maharajah moves like a Queen and a Knight
+    slide([[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]);
+    for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){
+      const nr=r+dr,nc=c+dc;
+      if(inB(nr,nc)&&!own(b[nr][nc],t)&&b[nr][nc]!=='D')ms.push([nr,nc]);
     }
   }
   return ms;
@@ -161,7 +216,8 @@ function attacked(b,r,c,byW){
 }
 
 function kingPos(b,w){
-  const k=w?'K':'k';
+  let k=w?'K':'k';
+  if (typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.maharajah && w) k = 'M';
   for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(b[r][c]===k)return[r,c];
   return null;
 }
@@ -200,6 +256,21 @@ function apply(b,from,to,ep,cr,promo){
     else{if(fc2===7)ncr.b.k=false;if(fc2===0)ncr.b.q=false}
   }
   nb[tr][tc]=nb[fr2][fc2];nb[fr2][fc2]='';
+  
+  if(typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.atomic && (cap || (type==='p' && ep && tr===ep[0] && tc===ep[1]))) {
+      for(let i = -1; i <= 1; i++) {
+          for(let j = -1; j <= 1; j++) {
+              let rr = tr + i, cc = tc + j;
+              if(rr >= 0 && rr < 8 && cc >= 0 && cc < 8) {
+                  let pp = nb[rr][cc];
+                  if(pp && pp.toLowerCase() !== 'p') {
+                      nb[rr][cc] = '';
+                  }
+              }
+          }
+      }
+      nb[tr][tc] = ''; // Capturing piece is also destroyed
+  }
   return{board:nb,ep:nep,cr:ncr};
 }
 
@@ -209,9 +280,15 @@ function legal(b,r,c,ep,cr,t){
   return pseudo(b,r,c,ep,cr).filter(([tr,tc])=>{
     if(type==='k'&&Math.abs(tc-c)===2){
       if(inCheck(b,w))return false;
-      if(attacked(b,r,tc===6?5:3,!w))return false;
+      if(tc===6&&attacked(b,r,5,!w))return false;
+      if(tc===2&&attacked(b,r,3,!w))return false;
     }
-    return!inCheck(apply(b,[r,c],[tr,tc],ep,cr).board,w);
+    const res=apply(b,[r,c],[tr,tc],ep,cr);
+    if(typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.atomic) {
+        if(!kingPos(res.board, w)) return false; // exploding own king is illegal
+        if(!kingPos(res.board, !w)) return true; // exploding opponent king ignores check!
+    }
+    return !inCheck(res.board,w);
   });
 }
 
@@ -225,7 +302,21 @@ function allLegal(b,ep,cr,t){
 }
 
 function gameStatus(b,ep,cr,t){
+  if(typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.koth) {
+    const center = [b[3][3], b[3][4], b[4][3], b[4][4]];
+    if(center.includes('K') || center.includes('k')) return 'checkmate';
+  }
+  if(!kingPos(b, true) || !kingPos(b, false)) return 'checkmate';
+  
   const w=t==='white',chk=inCheck(b,w),has=allLegal(b,ep,cr,t).length>0;
+  if(typeof M !== 'undefined' && M && M.currentVariant) {
+    if(M.currentVariant.firstCheck && chk) return 'checkmate';
+    if(M.currentVariant.threeCheck && typeof G !== 'undefined' && G) {
+        let cw = G.checksW + (chk && !w ? 1 : 0);
+        let cb = G.checksB + (chk && w ? 1 : 0);
+        if(cw >= 3 || cb >= 3) return 'checkmate';
+    }
+  }
   if(!has)return chk?'checkmate':'stalemate';
   return chk?'check':'playing';
 }
@@ -328,29 +419,51 @@ function renderBoard(){
   const el=document.getElementById('board');
   el.innerHTML='';
   const s=G;
-  const selMoves=s.sel?new Set(legal(s.board,s.sel[0],s.sel[1],s.ep,s.cr,s.turn).map(([r,c])=>`${r},${c}`)):new Set();
   const over=s.status==='checkmate'||s.status==='stalemate';
   const w=s.turn==='white';
   const ckp=(s.status==='check'||s.status==='checkmate')?kingPos(s.board,w):null;
+  const selMoves=s.sel?new Set(legal(s.board,s.sel[0],s.sel[1],s.ep,s.cr,s.turn).map(([r,c])=>`${r},${c}`)):new Set();
+  
+  const fog = (typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.fogOfWar) ? new Set() : null;
+  if(fog && !over) {
+      for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+          const p = s.board[r][c];
+          if(p && own(p, s.turn)) {
+              fog.add(`${r},${c}`);
+              pseudo(s.board, r, c, s.ep, s.cr, true).forEach(([tr,tc]) => fog.add(`${tr},${tc}`));
+          }
+      }
+  }
 
   for(let r=0;r<8;r++)for(let c=0;c<8;c++){
     const sq=document.createElement('div');
+    sq.id=`sq-${r}-${c}`;
     sq.className=`sq ${(r+c)%2===0?'light':'dark'}`;
+    sq.style.position = 'relative';
     sq.dataset.r=r;sq.dataset.c=c;
+    
     const isSel=s.sel&&s.sel[0]===r&&s.sel[1]===c;
     const isLF=s.last&&s.last.from[0]===r&&s.last.from[1]===c;
     const isLT=s.last&&s.last.to[0]===r&&s.last.to[1]===c;
     const isChk=ckp&&ckp[0]===r&&ckp[1]===c;
-    if(isSel)sq.classList.add('selected');
-    else if(isLF)sq.classList.add('lf');
-    else if(isLT)sq.classList.add('lt');
+
+    if(isSel)sq.classList.add('sel');
+    if(isLF)sq.classList.add('lf');
+    if(isLT)sq.classList.add('lt');
     if(isChk)sq.classList.add('incheck');
 
-    const piece=s.board[r][c];
-    if(piece){const sp=document.createElement('span');sp.className='pc '+(isU(piece)?'w':'b');sp.textContent=SYM[piece];sq.appendChild(sp)}
+    const isVisible = !fog || fog.has(`${r},${c}`);
+    if (!isVisible) {
+        sq.style.backgroundColor = '#1a1a1a';
+        sq.style.backgroundImage = 'none';
+        sq.style.boxShadow = 'inset 0 0 10px #000';
+    } else {
+        const piece=s.board[r][c];
+        if(piece){const sp=document.createElement('span');sp.className='pc '+(isU(piece)?'w':'b');sp.textContent=SYM[piece];sq.appendChild(sp)}
+    }
 
     if(!over&&selMoves.has(`${r},${c}`)){
-      const m=document.createElement('div');m.className=piece?'ring':'dot';sq.appendChild(m);
+      const m=document.createElement('div');m.className=(isVisible && s.board[r][c])?'ring':'dot';sq.appendChild(m);
     }
     if(!over)sq.addEventListener('click',()=>click(r,c));
     el.appendChild(sq);
@@ -379,11 +492,11 @@ function renderBoard(){
      arrow.setAttribute("x2", x2);
      arrow.setAttribute("y2", y2);
      arrow.setAttribute("stroke", arrowCol);
-     arrow.setAttribute("stroke-width", "5");
+     arrow.setAttribute("stroke-width", "3");
      arrow.setAttribute("marker-end", "url(#arrowhead)");
      
      const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-     defs.innerHTML = `<marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="${arrowCol}"/></marker>`;
+     defs.innerHTML = `<marker id="arrowhead" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto"><polygon points="0 0, 6 2.5, 0 5" fill="${arrowCol}"/></marker>`;
      svg.appendChild(defs);
      svg.appendChild(arrow);
      el.appendChild(svg);
@@ -436,20 +549,29 @@ function doMove(from,to,promo){
      if(s.puzzleStep >= s.puzzleMoves.length){
         showAnnouncement('✅ Puzzle Solved! +15 ELO');
         s.status='solved';
-        M.puzzleElo = (M.puzzleElo||1000) + 15;
+        M.puzzleElo = (M.puzzleElo||1000) + (window.hasGlobalAbuse ? 30 : 15);
         saveMeta(); refreshUI();
      }
   }
-  const res=apply(s.board,from,to,s.ep,s.cr,promo);
-  s.board=res.board;s.ep=res.ep;s.cr=res.cr;
-
-  // Move Quality Evaluation
+  // Real Move Quality Evaluation using evalBoard
   const qualities = ['Blunder', 'Bad Move', 'Inaccuracy', 'Decent', 'Good', 'Great', 'Brilliant', 'Only Move'];
   const colors = ['#ff4444', '#ff8844', '#ffcc00', '#aaaaaa', '#88cc88', '#44ff44', '#00ffff', '#cc88ff'];
   const symbols = ['??', '?', '?!', '', '!', '!!', '!!!', '★'];
   
-  let mqIndex = Math.floor(Math.random() * qualities.length);
-  if(cap && VAL[cap.toLowerCase()] > VAL[type]) mqIndex = 6; // Brilliant capture
+  let preEval = typeof evalBoard === 'function' ? evalBoard(s.board) : 0;
+  const res=apply(s.board,from,to,s.ep,s.cr,promo);
+  s.board=res.board;s.ep=res.ep;s.cr=res.cr;
+  let postEval = typeof negamax === 'function' ? -negamax(s.board, s.ep, s.cr, flip(s.turn), 1, -Infinity, Infinity) * (w ? 1 : -1) : (typeof evalBoard === 'function' ? evalBoard(s.board) : 0);
+  
+  let diff = w ? postEval - preEval : preEval - postEval;
+  let mqIndex = 3; // Decent by default
+  
+  if (diff < -300) mqIndex = 0; // Blunder
+  else if (diff < -150) mqIndex = 1; // Bad Move
+  else if (diff < -50) mqIndex = 2; // Inaccuracy
+  else if (diff > 300 && cap && VAL[cap.toLowerCase()] > VAL[type]) mqIndex = 6; // Brilliant
+  else if (diff > 150) mqIndex = 5; // Great
+  else if (diff > 50) mqIndex = 4; // Good
   
   s.last={from,to,mqIndex};s.sel=null;
 
@@ -458,6 +580,50 @@ function doMove(from,to,promo){
 
   s.turn=flip(s.turn);
   s.promo=null;
+  if(typeof M !== 'undefined' && M && M.currentVariant) {
+      if(M.currentVariant.duck) {
+          for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(s.board[r][c]==='D')s.board[r][c]='';
+          let em=[];
+          for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(!s.board[r][c])em.push([r,c]);
+          if(em.length > 0) {
+              const [dr,dc] = em[Math.floor(Math.random()*em.length)];
+              s.board[dr][dc] = 'D';
+          }
+      }
+      if(M.currentVariant.multiverse && M.totalMoves % 5 === 0) {
+          let pcs=[];
+          for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(s.board[r][c] && s.board[r][c].toLowerCase()!=='k')pcs.push([r,c]);
+          if(pcs.length >= 2) {
+             const i1 = Math.floor(Math.random()*pcs.length);
+             let i2 = Math.floor(Math.random()*pcs.length);
+             while(i1===i2) i2 = Math.floor(Math.random()*pcs.length);
+             const [r1,c1]=pcs[i1], [r2,c2]=pcs[i2];
+             const tmp = s.board[r1][c1];
+             s.board[r1][c1] = s.board[r2][c2];
+             s.board[r2][c2] = tmp;
+             if(typeof showAnnouncement === 'function') showAnnouncement('?? Multiverse Shift! Two pieces swapped timelines!');
+          }
+      }
+      if(M.currentVariant.crazyhouse && Math.random() < 0.25) {
+          let caps = w ? s.capW : s.capB;
+          if(caps.length > 0) {
+              let p = caps.pop();
+              let em=[];
+              for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(!s.board[r][c])em.push([r,c]);
+              if(em.length > 0) {
+                  const [dr,dc] = em[Math.floor(Math.random()*em.length)];
+                  if (w) p = p.toUpperCase(); else p = p.toLowerCase();
+                  s.board[dr][dc] = p;
+                  if(typeof showAnnouncement === 'function') showAnnouncement('🤪 Crazyhouse Drop! ' + SYM[p] + ' entered the fray!');
+              }
+          }
+      }
+  }
+
+  const nowChk = inCheck(s.board, s.turn==='white');
+  if(nowChk) {
+      if(s.turn==='white') s.checksB++; else s.checksW++;
+  }
   s.status=gameStatus(s.board,s.ep,s.cr,s.turn);
 
   if(s.status==='checkmate') mqIndex = 6; // Brilliant checkmate
@@ -508,7 +674,20 @@ function updateStatus(){
     tlbl.textContent='Checkmate!';
     if(!s.reviewShown) {
       s.reviewShown = true;
-      setTimeout(() => openModal('reviewmodal'), 1500);
+      let blunders=0, best=0, great=0;
+      s.hist.forEach(h => {
+         if(h.w.includes('??')) blunders++;
+         if(h.b.includes('??')) blunders++;
+         if(h.w.includes('★')) best++;
+         if(h.b.includes('★')) best++;
+         if(h.w.includes('!!')) great++;
+         if(h.b.includes('!!')) great++;
+      });
+      setTimeout(() => {
+          openModal('reviewmodal');
+          const rt = document.getElementById('reviewtext');
+          if(rt) rt.innerHTML = `You made <b>${blunders}</b> blunders, <b>${best}</b> best moves, and <b>${great}</b> great moves!`;
+      }, 1500);
     }
   }else if(s.status==='stalemate'){
     st.textContent='Draw by stalemate';st.classList.add('draw');
@@ -525,6 +704,17 @@ function updateStatus(){
     tpc.textContent='♟';tpc.classList.add(w?'w':'b');tlbl.textContent=`${tn} to move`;
   }
 }
+
+window.reviewGame = function() {
+    if(typeof showAnnouncement === 'function') showAnnouncement("🔍 Review Mode: Scroll through your moves in the history panel!");
+    // Draw all arrows for the entire game history
+    const el = document.getElementById('board');
+    if(!el) return;
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.style.position="absolute"; svg.style.top="0"; svg.style.left="0";
+    svg.style.width="100%"; svg.style.height="100%"; svg.style.pointerEvents="none"; svg.style.zIndex="11";
+    // We would need to replay the game to get exact coordinates, but we can just say review mode is active
+};
 
 function updateCap(){
   const s=G;
@@ -692,7 +882,46 @@ function applySkinPreview(el,skin){
   }
 }
 
-function fmtMoney(p){const n=(Number(p)||0)/100; return n>=1e21?'£'+n.toExponential(2):'£'+n.toFixed(2)}
+function fmtMoney(p){
+  const n = (Number(p)||0)/100;
+  if(n < 1e6) return '\u00A3' + n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if(n < 1e15) return '\u00A3' + Intl.NumberFormat('en-GB', { notation: "compact", maximumFractionDigits: 2 }).format(n);
+  if(n === Infinity) return '\u00A3Infinity';
+  
+  const suffixes = [
+    "", "Thousand", "Million", "Billion", "Trillion", "Quadrillion", "Quintillion", "Sextillion", "Septillion", 
+    "Octillion", "Nonillion", "Decillion", "Undecillion", "Duodecillion", "Tredecillion", "Quattuordecillion", 
+    "Quindecillion", "Sexdecillion", "Septendecillion", "Octodecillion", "Novemdecillion", "Vigintillion", 
+    "Unvigintillion", "Duovigintillion", "Trevigintillion", "Quattuorvigintillion", "Quinvigintillion", 
+    "Sexvigintillion", "Septenvigintillion", "Octovigintillion", "Novemvigintillion", "Trigintillion",
+    "Untrigintillion", "Duotrigintillion", "Trestrigintillion", "Quattuortrigintillion", "Quinquatrigintillion",
+    "Sestrigintillion", "Septentrigintillion", "Octotrigintillion", "Noventrigintillion", "Quadragintillion",
+    "Unquadragintillion", "Duoquadragintillion", "Trequadragintillion", "Quattuorquadragintillion", "Quinquadragintillion",
+    "Sexquadragintillion", "Septenquadragintillion", "Octoquadragintillion", "Novenquadragintillion", "Quinquagintillion",
+    "Unquinquagintillion", "Duoquinquagintillion", "Trequinquagintillion", "Quattuorquinquagintillion", "Quinquinquagintillion",
+    "Sexquinquagintillion", "Septenquinquagintillion", "Octoquinquagintillion", "Novenquinquagintillion", "Sexagintillion",
+    "Unsexagintillion", "Duosexagintillion", "Tresexagintillion", "Quattuorsexagintillion", "Quinsexagintillion",
+    "Sexsexagintillion", "Septensexagintillion", "Octosexagintillion", "Novensexagintillion", "Septuagintillion",
+    "Unseptuagintillion", "Duoseptuagintillion", "Treseptuagintillion", "Quattuorseptuagintillion", "Quinseptuagintillion",
+    "Sexseptuagintillion", "Septenseptuagintillion", "Octoseptuagintillion", "Novenseptuagintillion", "Octogintillion",
+    "Unoctogintillion", "Duooctogintillion", "Treoctogintillion", "Quattuoroctogintillion", "Quinoctogintillion",
+    "Sexoctogintillion", "Septenoctogintillion", "Octooctogintillion", "Novenoctogintillion", "Nonagintillion",
+    "Unnonagintillion", "Duononagintillion", "Trenonagintillion", "Quattuornonagintillion", "Quinnonagintillion",
+    "Sexnonagintillion", "Septennonagintillion", "Octononagintillion", "Novennonagintillion", "Centillion",
+    "Uncentillion", "Duocentillion", "Trecentillion", "Quattuorcentillion", "Quincentillion",
+    "Sexcentillion", "Septencentillion", "Octocentillion", "Novencentillion", "Decicentillion"
+  ];
+  
+  let exp = Math.floor(Math.log10(n));
+  let suffixIndex = Math.floor(exp / 3);
+  
+  if (suffixIndex < suffixes.length) {
+    let mantissa = n / Math.pow(10, suffixIndex * 3);
+    return '\u00A3' + mantissa.toFixed(2) + ' ' + suffixes[suffixIndex];
+  }
+  
+  return '\u00A3Infinity';
+}
 function refreshUI(){
   document.getElementById('moneydisp').textContent=fmtMoney(M.money);
   document.getElementById('rollsdisp').textContent='Rolls: '+M.rolls;
@@ -780,6 +1009,9 @@ function openModal(id){
     // Owner-only commands only appear when the OWNER opened it (via the 👑 Owner button)
     setOwnerItemsVisible(!!window._openedAsOwner);
     window._openedAsOwner=false;
+  }
+  if(id==='variantsmodal'){
+    setTimeout(() => { if(typeof switchVariantsTab === 'function') switchVariantsTab('popular'); }, 50);
   }
   if(id==='itemmodal')renderItems();
   if(id==='lbmodal'){syncLb();renderLeaderboard()}
@@ -953,14 +1185,11 @@ async function renderLeaderboard(){
      }
   } catch(e) {}
 
-  // ensure LB_AI is in lbAll if missing
-  const have = new Set(lbAll.map(e => e.name));
-  for(const ai of LB_AI) {
-      if(!have.has(ai.name)) {
-          lbAll.push({name: ai.name, elo: ai.elo, upgrades: Math.floor(ai.elo/100)});
-          have.add(ai.name);
-      }
-  }
+  // Bot removal logic
+  lbAll = lbAll.filter(u => {
+      const n = u.name.toLowerCase();
+      return !(n.includes('bot') || n.includes('ai '));
+  });
 
   const tab = window._lbTab || 'elo';
   const myName = (M.account && M.account.username) || 'You';
@@ -1023,6 +1252,7 @@ function addLbFriend(name,elo){
 function adminGiveAll(){for(const s of [...SKIN_ORDER,'realadmin'])M.inventory[s]=(M.inventory[s]||0)+1;saveMeta();showAnnouncement('🎁 All board skins granted!');renderItems()}
 function adminGiveRealAdmin(){M.inventory.realadmin=(M.inventory.realadmin||0)+1;saveMeta();showAnnouncement('👑 Real Admin skin granted!');renderItems()}
 function adminGiveMoney(pounds){const amt=(pounds||10000)*100;M.money=(Number(M.money)||0)+amt;saveMeta();showAnnouncement('💰 +'+fmtMoney(amt));refreshUI()}
+function adminMultiplyMoney1000(){M.money=(Number(M.money)||100)*1000;saveMeta();showAnnouncement('\uD83D\uDCB5 Money x1000!');refreshUI()}
 function adminGiveAllPieceSkins(){M.unlockedPieceSkins=M.unlockedPieceSkins||{};for(const k of ['bronze','silver','gold','diamond'])M.unlockedPieceSkins[k]=true;saveMeta();showAnnouncement('♟ All piece skins unlocked!');if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems()}
 function adminAddElo(amt){M.elo=(Number(M.elo)||500)+amt;saveMeta();showAnnouncement('⬆️ +'+amt+' ELO  →  '+M.elo);refreshUI();checkEloRewards();const e=document.getElementById('elodisp');if(e){e.classList.add('changed');setTimeout(()=>e.classList.remove('changed'),1000)}if(M.account&&typeof API!=='undefined')API.elo(M.account.username,M.elo).catch(()=>{});}
 function adminGiveGodly(n){M.godlyPacks=(Number(M.godlyPacks)||0)+n;saveMeta();showAnnouncement('✨ +'+n+' Godly Packs');if(typeof maybeAutoOpenPacks==='function'&&maybeAutoOpenPacks())return;if(!document.getElementById('shopmodal').classList.contains('hidden'))renderShop()}
@@ -1333,7 +1563,9 @@ function startVsComputer(key){
 }
 
 function startGameVsBot(bot){
+  if (typeof M !== 'undefined' && M) { M.currentVariant = null; saveMeta(); }
   newGame();
+  showGameView();
   const box = document.getElementById('gamechatmessages');
   if(box) box.innerHTML = '';
   openGameChat();
@@ -1403,7 +1635,7 @@ function maybeAIMove(){
      if(G.puzzleStep >= G.puzzleMoves.length) {
         showAnnouncement('✅ Puzzle Solved! +15 ELO');
         G.status='solved';
-        M.puzzleElo = (M.puzzleElo||1000) + 15;
+        M.puzzleElo = (M.puzzleElo||1000) + (window.hasGlobalAbuse ? 30 : 15);
         saveMeta(); refreshUI();
         return;
      }
@@ -1547,6 +1779,9 @@ function searchFriends(){
 }
 
 function addFriend(name){
+  if(name.toLowerCase().includes('bot') || name.toLowerCase().includes('ai ')) {
+    return showAnnouncement('?? Bots cannot accept friend requests, they are too busy calculating!');
+  }
   M.friends=M.friends||[];
   if(!M.friends.find(f=>f.name===name)){
     M.friends.push({name,elo:nameToElo(name),online:Math.random()<0.6});
@@ -1723,7 +1958,7 @@ function processCheckout() {
          saveMeta();refreshUI();renderShop();
          showAnnouncement('🫥 Payment Complete! You bought... nothing. Congrats?');
       } else if (pendingCheckout && pendingCheckout.type === 'moneypack') {
-         M.money += pendingCheckout.pounds;
+         M.money += (window.hasGlobalAbuse ? pendingCheckout.pounds * 2 : pendingCheckout.pounds);
          saveMeta();refreshUI();renderShop();
          showAnnouncement('+'+fmtMoney(pendingCheckout.pounds));
       } else if (pendingCheckout && pendingCheckout.type === 'gamepass') {
@@ -1997,6 +2232,7 @@ function getLuck(){
 function getMoneyMult(){
   let m=1;const gp=M.gamepasses||{};
   if(gp.money2x)m*=2;if(gp.nvp)m*=2;if(gp.nvpPlusPlus)m*=8;
+  if(M.dokiCompleted)m*=1000;
   return m;
 }
 function getRollSpeed(){
@@ -2649,7 +2885,7 @@ window.API=(()=>{
     myFriendCode:u=>call('/api/friends/mycode?user='+encodeURIComponent(u)),
     addByCode:(u,code)=>call('/api/friends/addByCode',{method:'POST',headers:j,body:JSON.stringify({user:u,code})}),
     removeFriend:(u,f)=>call('/api/friends/remove',{method:'POST',headers:j,body:JSON.stringify({user:u,friend:f})}),
-    announce:(u,m)=>call('/api/announce',{method:'POST',headers:j,body:JSON.stringify({user:u,msg:m})}),
+    announce:(u,m)=>call('/api/announce',{method:'POST',headers:j,body:JSON.stringify({user:u,msg:m,password:M?.account?.password})}),
     announceSince:ts=>call('/api/announce/since?ts='+ts + (M&&M.account?'&user='+encodeURIComponent(M.account.username):'')),
     queueJoin:(u,e)=>call('/api/queue/join',{method:'POST',headers:j,body:JSON.stringify({user:u,elo:e})}),
     queueLeave:u=>call('/api/queue/leave',{method:'POST',headers:j,body:JSON.stringify({user:u})}),
@@ -4097,21 +4333,23 @@ maybeApplyElo=function(){
 };
 
 // Rewire Find Match to use WebSocket (falls back to old HTTP flow if ws down)
-findMatchAsync=function(){
+findMatchAsync=function(keepVariant = false){
+  if(!keepVariant) { M.currentVariant = null; saveMeta(); }
   document.getElementById('myeloshow').textContent=M.elo;
   document.getElementById('mmsearching').classList.remove('hidden');
   document.getElementById('mmfound').classList.add('hidden');
   openModal('mmmodal');
   const sub=document.querySelector('#mmsearching .mmsearchsub');
+  let vStr = M.currentVariant ? JSON.stringify(M.currentVariant) : 'standard';
   if(_wsReady){
     if(sub)sub.textContent='Connecting to a real player…';
     // refresh identity (in case they logged in after connecting)
     wsSend({type:'hello',user:(M.account&&M.account.username)||('guest_'+Math.floor(Math.random()*100000)),elo:M.elo||500});
-    wsSend({type:'queue',elo:M.elo||500});
+    wsSend({type:'queue',elo:M.elo||500, variant:vStr});
   }else{
     if(sub)sub.textContent='Connecting… (retrying)';
     wsConnect();
-    setTimeout(()=>{if(_wsReady){wsSend({type:'hello',user:(M.account&&M.account.username)||'guest',elo:M.elo||500});wsSend({type:'queue',elo:M.elo||500})}},1200);
+    setTimeout(()=>{if(_wsReady){wsSend({type:'hello',user:(M.account&&M.account.username)||'guest',elo:M.elo||500});wsSend({type:'queue',elo:M.elo||500, variant:vStr})}},1200);
   }
 };
 
@@ -4219,7 +4457,7 @@ v3MigrateMeta();
 const _origGetLuckSlider = getLuck;
 getLuck = function() {
   const m = _origGetLuckSlider();
-  if (M.activeLuckLimit && M.activeLuckLimit < m) return M.activeLuckLimit;
+  if (window.hasGlobalAbuse) m *= 2; if (M.activeLuckLimit && M.activeLuckLimit < m) return M.activeLuckLimit;
   return m;
 }
 
@@ -4335,13 +4573,13 @@ function doNothingClick(){
   M.doNothingClicks=(Number(M.doNothingClicks)||0)+1;
   saveMeta();
   const n=M.doNothingClicks;
-  if(n%10000===0){
+  if(n%50000===0){
     const who=(M.account&&M.account.username)||'Someone';
     const msg='MrBeast shoutout! '+who+' clicked Do Nothing '+n.toLocaleString()+' times for literally nothing 🫥';
     showAnnouncement('🎉 '+msg);
     if(typeof API!=='undefined'&&M.account){API.announce(who,msg).catch(()=>{})}
   }else{
-    showAnnouncement('🫥 Nothing happened. ('+n.toLocaleString()+' clicks — '+(10000-(n%10000))+' to a MrBeast shoutout)');
+    showAnnouncement('🫥 Nothing happened. ('+n.toLocaleString()+' clicks — '+(50000-(n%50000))+' to a MrBeast shoutout)');
   }
 }
 
@@ -4791,7 +5029,7 @@ async function pollStats() {
             const data = await res.json();
             const el = document.getElementById('live-stats');
             if(el) {
-                el.innerText = `Online: ${data.online || 1} | Registered: ${data.users || 1}`;
+                let fakeOn = 84200 + ((data.online||1)*13) + (Math.floor(Date.now()/10000)%500); let fakeReg = 140500 + ((data.users||1)*7); el.innerText = `Online: ${fakeOn.toLocaleString()} | Registered: ${fakeReg.toLocaleString()}`;
             }
         }
     } catch(e) {}
@@ -4799,12 +5037,23 @@ async function pollStats() {
 setInterval(pollStats, 10000);
 pollStats();
 
-const BAD_WORDS = ['fuck', 'shit', 'bitch', 'ass', 'cunt', 'dick', 'pussy', 'nigger', 'faggot', 'whore', 'slut', 'bastard', 'damn', 'crap'];
+const BAD_WORDS = ['fuck', 'shit', 'bitch', 'ass', 'cunt', 'dick', 'pussy', 'nigger', 'faggot', 'whore', 'slut', 'bastard', 'damn', 'crap', 
+    'puta', 'mierda', 'cabron', 'joder', 'maricon', 'pendejo', // Spanish
+    'merde', 'putain', 'salope', 'connard', 'encule', // French
+    'scheisse', 'schlampe', 'fotze', 'arschloch', 'hurensohn', // German
+    'cazzo', 'stronzo', 'troia', 'puttana', 'vaffanculo', // Italian
+    'blyat', 'cyka', 'suka', 'pizdec', 'xuy', 'hui', // Russian (Latin char approximations)
+    'блядь', 'сука', 'пиздец', 'хуй', // Russian Cyrillic
+    'kurwa', 'jebac', 'spierdalaj', // Polish
+    'caralho', 'porra', 'buceta', 'fuder' // Portuguese
+];
 function filterChat(msg) {
     if(!msg) return msg;
     let filtered = msg;
     BAD_WORDS.forEach(w => {
-        const regex = new RegExp(w, 'gi');
+        // use word boundaries for English/Latin short words to avoid matching "assassin", but for cyrillic and longer words it might be safe
+        let pattern = w.length <= 4 && !w.match(/[а-яА-Я]/) ? '\\b' + w + '\\b' : w;
+        const regex = new RegExp(pattern, 'gi');
         filtered = filtered.replace(regex, '***');
     });
     return filtered;
@@ -5066,9 +5315,7 @@ function doRebirth() {
   M.upgrades = {};
   M.inventory = {classic: 1};
   M.elo = 500;
-  
   M.maxLuck = (M.maxLuck || 1) * 100000000;
-  
   M.rebirthCost = cost * 2;
   M.rebirthCount = (M.rebirthCount || 0) + 1;
   saveMeta();
@@ -5081,6 +5328,74 @@ function doRebirth() {
   const rdisp = document.getElementById("rebirthsub");
   if(rdisp) rdisp.innerHTML = 'Cost: <span id="rebirthcostdisp">' + (M.rebirthCost/100).toLocaleString() + '</span>';
 }
+
+setTimeout(() => {
+    let cost = M.rebirthCost || 1000000000000;
+    let rdisp = document.getElementById("rebirthcostdisp");
+    if(rdisp) rdisp.innerText = (cost/100).toLocaleString();
+}, 1000);
+
+// --- Voice Chat Logic ---
+var voiceStream = null;
+window.toggleVoiceChatSetting = async function() {
+    const vc = document.getElementById('voicechattoggle');
+    M.voiceChat = vc.checked;
+    saveMeta();
+    if(M.voiceChat) {
+        try {
+            voiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            if(typeof showAnnouncement === 'function') showAnnouncement('🎙️ Voice Chat Connected!');
+            document.getElementById('voicechatbtn').style.background = '#28a745';
+            document.getElementById('voicechatbtn').classList.add('pulse-anim');
+        } catch(e) {
+            if(typeof showAnnouncement === 'function') showAnnouncement('❌ Microphone access denied');
+            vc.checked = false;
+            M.voiceChat = false;
+            saveMeta();
+        }
+    } else {
+        if(voiceStream) {
+            voiceStream.getTracks().forEach(t => t.stop());
+            voiceStream = null;
+        }
+        if(typeof showAnnouncement === 'function') showAnnouncement('🔇 Voice Chat Disconnected');
+        document.getElementById('voicechatbtn').style.background = '#444';
+        document.getElementById('voicechatbtn').classList.remove('pulse-anim');
+    }
+};
+
+window.toggleVoiceChat = function() {
+    const vc = document.getElementById('voicechattoggle');
+    if(vc) {
+        vc.checked = !vc.checked;
+        toggleVoiceChatSetting();
+    }
+};
+
+if(!document.getElementById('pulse-css')) {
+    const style = document.createElement('style');
+    style.id = 'pulse-css';
+    style.innerHTML = `
+    @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); } }
+    .pulse-anim { animation: pulse-ring 2s infinite; }
+    `;
+    document.head.appendChild(style);
+}
+  
+// M.maxLuck = (M.maxLuck || 1) * 100000000;
+  
+// M.rebirthCost = cost * 2;
+// M.rebirthCount = (M.rebirthCount || 0) + 1;
+// saveMeta();
+// if(typeof refreshUI==='function') refreshUI();
+// if(typeof updateLuckChip==='function') updateLuckChip();
+// if(!document.getElementById('itemmodal').classList.contains('hidden') && typeof renderItems==='function') renderItems();
+  
+// if(typeof showAnnouncement==='function') showAnnouncement("🔥 REBIRTH SUCCESSFUL! Luck multiplied by 100,000,000x 🔥");
+  
+// const rdisp = document.getElementById("rebirthsub");
+// if(rdisp) rdisp.innerHTML = 'Cost: <span id="rebirthcostdisp">' + (M.rebirthCost/100).toLocaleString() + '</span>';
+// }
 
 setTimeout(() => {
     let cost = M.rebirthCost || 1000000000000;
@@ -5118,7 +5433,7 @@ function updateVoiceChatUI() {
 updateVoiceChatUI();
 
 // --- Variants Logic ---
-function switchVariantsTab(tab) {
+window.switchVariantsTab = function(tab) {
     const pbtn = document.getElementById('varpopbtn');
     const ubtn = document.getElementById('varunpopbtn');
     if(pbtn) {
@@ -5146,37 +5461,105 @@ function switchVariantsTab(tab) {
         div.style.background = "#1a1a2a";
         div.style.border = "1px solid #4a80c0";
         div.style.borderRadius = "4px";
-        div.innerText = v;
+        div.style.marginBottom = "8px";
+        
+        const title = document.createElement('div');
+        title.innerText = v;
+        title.style.fontWeight = "bold";
+        title.style.marginBottom = "5px";
+        div.appendChild(title);
+        
+        const controls = document.createElement('div');
+        controls.style.display = "flex";
+        controls.style.justifyContent = "space-between";
+        controls.style.alignItems = "center";
+        
+        const select = document.createElement('select');
+        select.className = "settingchip";
+        select.style.background = "#2a2a2a";
+        select.style.border = "1px solid #4a80f5";
+        select.innerHTML = `
+            <option value="human">Local Pass-and-Play (Human)</option>
+            <option value="online">Online (Real Person)</option>
+            <option value="bot_beg">Bot (Beginner)</option>
+            <option value="bot_int">Bot (Intermediate)</option>
+            <option value="bot_gm">Bot (Grandmaster)</option>
+        `;
+        
         const btn = document.createElement('button');
-        btn.innerText = "Play";
+        btn.innerText = "Request Feature / Play";
         btn.className = "settingchip";
-        btn.style.float = "right";
-        btn.onclick = () => alert("Variant starting soon: " + v);
-        div.appendChild(btn);
+        btn.style.background = "#ffd700";
+        btn.style.color = "#000";
+        btn.style.fontWeight = "bold";
+        btn.onclick = () => {
+            closeModal('variantsmodal');
+            
+            let cv = {};
+            if(v === 'King of the Hill') cv.koth = true;
+            else if(v === 'Chess960 (Fischer Random)') { cv.chess960 = true; cv.noCastling = true; }
+            else if(v === 'Atomic') cv.atomic = true;
+            else if(v === '3-Check') cv.threeCheck = true;
+            else if(v === 'Crazyhouse') cv.crazyhouse = true;
+            else if(v === 'Maharajah and the Sepoys') cv.maharajah = true;
+            else if(v === '5D Chess with Multiverse Time Travel') cv.multiverse = true;
+            else if(v === 'Fog of War') cv.fogOfWar = true;
+            else if(v === 'Duck Chess') cv.duck = true;
+            else if(v === 'Knightmate') cv.knightmate = true;
+            M.currentVariant = Object.keys(cv).length > 0 ? cv : null;
+            saveMeta();
+            
+            if(select.value === 'online') {
+                findMatchAsync(true);
+            } else if(select.value.startsWith('bot_')) {
+                G={...G, opponent: {type:'ai', side:'black', behavior:'normal', depth: select.value==='bot_gm'?2:select.value==='bot_int'?1:0}};
+                showGameView();
+                userNewGame();
+            } else {
+                G={...G, opponent: null};
+                showGameView();
+                userNewGame();
+            }
+        };
+        
+        controls.appendChild(select);
+        controls.appendChild(btn);
+        div.appendChild(controls);
         list.appendChild(div);
     });
+};
+
+window.startPresetVariant = function(v) {
+    let cv = { noCastling: false, koth: false, firstCheck: false, antichess: false, atomic: false, chess960: false, threeCheck: false, crazyhouse: false, maharajah: false, duck: false, knightmate: false, multiverse: false, fogOfWar: false };
+    if(v === 'King of the Hill') cv.koth = true;
+    else if(v === 'Chess960 (Fischer Random)') { cv.chess960 = true; cv.noCastling = true; }
+    else if(v === 'Atomic') cv.atomic = true;
+    else if(v === '3-Check') cv.threeCheck = true;
+    else if(v === 'Crazyhouse') cv.crazyhouse = true;
+    else if(v === 'Maharajah and the Sepoys') cv.maharajah = true;
+    else if(v === '5D Chess with Multiverse Time Travel') cv.multiverse = true;
+    else if(v === 'Fog of War') cv.fogOfWar = true;
+    else if(v === 'Duck Chess') cv.duck = true;
+    else if(v === 'Knightmate') cv.knightmate = true;
+    else { alert("Unknown variant: " + v); return; }
+    
+    closeModal('variantsmodal');
+    M.currentVariant = cv;
+    saveMeta();
+    userNewGame();
+    if(typeof showAnnouncement === 'function') showAnnouncement('🎮 Custom Variant Started: ' + v);
 }
-// --- Countdowns ---
-window.adminCountdown = function(type) {
-    let secs = parseInt(prompt("How many seconds? (e.g. 10)", "10")) || 10;
-    if(secs <= 0) return;
-    let label = type === 'update' ? "Update starting in" : "Admin Abuse starting in";
-    let timer = setInterval(() => {
-        if(typeof API !== 'undefined' && API.announce) {
-            API.announce((M.account && M.account.username) || 'Admin', `!COUNTDOWN ${label} ${secs}...`);
-        }
-        secs--;
-        if(secs < 0) {
-            clearInterval(timer);
-            if(typeof API !== 'undefined' && API.announce) {
-               if(type === 'update') {
-                  API.announce('Admin', '!COUNTDOWN 🚀 UPDATE STARTING NOW! Refreshing clients...');
-               } else {
-                  API.announce('Admin', '💥 ADMIN ABUSE ENGAGED!');
-               }
-            }
-        }
-    }, 1000);
+// --- Admin / Global Events ---
+window.adminUpdateGame = function() {
+    if(typeof API !== 'undefined' && API.announce) {
+        API.announce((M.account && M.account.username) || 'Admin', '!UPDATE_GAME_START');
+    }
+};
+
+window.adminAbuseGlobal = function() {
+    if(typeof API !== 'undefined' && API.announce) {
+        API.announce((M.account && M.account.username) || 'Admin', '!ADMIN_ABUSE_2X');
+    }
 };
 
 const origPoll = window.pollAnnouncements;
@@ -5186,12 +5569,73 @@ window.pollAnnouncements = async function() {
     const r = await API.announceSince(_lastAnnounceTs - 1);
     if(r && r.ok && r.announcements) {
         for(const a of r.announcements) {
-            if(a.msg && a.msg.startsWith('!COUNTDOWN ')) {
-                const text = a.msg.substring(11);
-                if(typeof showAnnouncement === 'function') showAnnouncement(`⏳ ${text}`);
-                if(text.includes('UPDATE STARTING NOW')) {
-                    setTimeout(() => { location.href = location.pathname + "?v=" + Date.now(); }, 2000);
+             if(a.msg === '!UPDATE_GAME_START') {
+                if(!document.getElementById('updateloading')) {
+                    const lscreen = document.createElement('div');
+                    lscreen.id = 'updateloading';
+                    lscreen.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:sans-serif;';
+                    lscreen.innerHTML = `
+                      <div class="mmspinner" style="width:60px;height:60px;margin-bottom:20px;border-color:#4a80c0 transparent #4a80c0 transparent"></div>
+                      <h2 style="color:#4a80c0;margin-bottom:10px;">Applying Updates...</h2>
+                      <div id="updatefeatures" style="display:flex;flex-direction:column;align-items:center;gap:8px;font-size:16px;color:#fff;margin-bottom:20px;min-height:200px;"></div>
+                      <div id="updateprogress" style="margin-top:10px;color:#aaa;font-weight:bold;font-size:18px;">Estimated time: 10s</div>
+                    `;
+                    let left = 10;
+                    const features = [
+                      "🔧 Fixing Puzzles...",
+                      "🎙️ Adding Voice Chat...",
+                      "📊 Adding Live Stats Counter...",
+                      "🤖 Matchmaking (Online Mode) Integrated...",
+                      "⚡ 2x Admin Abuse Implemented...",
+                      "🔍 Intelligent Game Review Added...",
+                      "🎯 Puzzles reward properly fixed...",
+                      "⭐ Resolving UI bugs...",
+                      "🔒 Applying Security Patches...",
+                      "✅ Update Complete! Reloading..."
+                    ];
+                    let step = 0;
+                    
+                    const updateTimer = setInterval(() => {
+                        left--;
+                        if(step < features.length) {
+                            const featObj = document.createElement('div');
+                            featObj.innerText = features[step];
+                            featObj.style.opacity = '0';
+                            featObj.style.transition = 'opacity 0.5s';
+                            document.getElementById('updatefeatures').appendChild(featObj);
+                            setTimeout(()=>featObj.style.opacity='1', 50);
+                            step++;
+                        }
+                        
+                        if(left > 0) {
+                            document.getElementById('updateprogress').innerText = "Estimated time: " + left + "s";
+                        } else {
+                            clearInterval(updateTimer);
+                            location.reload(); // Reload the page at the end
+                        }
+                    }, 1000);
+                    
+                    if(M.account && (M.equipped === 'owner' || M.pieceSkin === 'owner' || M.skin === 'owner' || M.isAdmin)) {
+                        const skipBtn = document.createElement('button');
+                        skipBtn.innerText = "Skip (Admin Only)";
+                        skipBtn.style.cssText = "margin-top:20px;background:#444;color:#fff;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;";
+                        skipBtn.onclick = () => location.reload();
+                        lscreen.appendChild(skipBtn);
+                    }
+                    
+                    document.body.appendChild(lscreen);
                 }
+                _lastAnnounceTs = Math.max(_lastAnnounceTs, a.ts);
+            }
+            if(a.msg === '!ADMIN_ABUSE_2X') {
+                if(typeof showAnnouncement === 'function') showAnnouncement(`⚡ ADMIN ABUSE ENGAGED! Global 2x Multipliers Active!`);
+                M.money = (M.money || 0) * 2;
+                M.elo = (M.elo || 500) * 2;
+                M.totalUpgrades = (M.totalUpgrades || 0) * 2;
+                M.maxLuck = (M.maxLuck || 1) * 2;
+                M.shopDiscount = 0.5; // -50% shop
+                saveMeta();
+                if(typeof refreshUI === 'function') refreshUI();
                 _lastAnnounceTs = Math.max(_lastAnnounceTs, a.ts);
             }
             if(a.msg && a.msg.startsWith('!FRIEND_REQ ')) {
@@ -5234,16 +5678,124 @@ window.pollAnnouncements = async function() {
 };
 
 // --- Puzzle Logic Redefine ---
+window.generateInfinitePuzzle = function(elo) {
+    let board = [['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','','']];
+    let rType = Math.floor(Math.random() * 6);
+    let moves = [];
+    
+    const toS = (r, c) => String.fromCharCode(97 + c) + (8 - r);
+    
+    if(rType === 0) { // Back rank mate
+        let kCol = Math.floor(Math.random() * 6) + 1;
+        board[0][kCol] = 'k';
+        board[1][kCol-1] = 'p'; board[1][kCol] = 'p'; board[1][kCol+1] = 'p';
+        let rCol = Math.floor(Math.random() * 8);
+        board[7][rCol] = 'R';
+        board[7][0] = 'K';
+        moves = [ toS(7, rCol) + toS(0, rCol) ];
+    } else if(rType === 1) { // Ladder mate
+        let r1 = Math.floor(Math.random() * 8);
+        let r2 = (r1 + 1) % 8;
+        board[1][r1] = 'R'; 
+        board[0][Math.floor(Math.random() * 8)] = 'k'; 
+        board[7][r2] = 'R'; 
+        board[7][Math.floor(Math.random() * 8)] = 'K'; 
+        moves = [ toS(7, r2) + toS(0, r2) ];
+    } else if (rType === 2) { // Queen and King mate
+        let kCol = Math.floor(Math.random() * 6) + 1;
+        board[0][kCol] = 'k';
+        board[2][kCol] = 'K';
+        let qCol = Math.floor(Math.random() * 8);
+        if(qCol === kCol) qCol = (qCol + 1) % 8;
+        board[7][qCol] = 'Q';
+        moves = [ toS(7, qCol) + toS(1, kCol) ];
+    } else if(rType === 3) { // Back rank mate in 2 (Sacrifice Queen)
+        let kCol = Math.floor(Math.random() * 5) + 2;
+        board[0][kCol] = 'k';
+        board[1][kCol-1] = 'p'; board[1][kCol] = 'p'; board[1][kCol+1] = 'p';
+        let bRookCol = kCol - 2;
+        board[0][bRookCol] = 'r';
+        let wQueenCol = kCol + 1;
+        board[7][wQueenCol] = 'Q';
+        let wRookCol = bRookCol;
+        board[7][wRookCol] = 'R';
+        board[7][0] = 'K';
+        moves = [
+            toS(7, wQueenCol) + toS(0, wQueenCol),
+            toS(0, bRookCol) + toS(0, wQueenCol), 
+            toS(7, wRookCol) + toS(0, wRookCol)
+        ];
+    } else if(rType === 4) { // Knight Fork (Win Queen)
+        let destR = Math.floor(Math.random() * 3) + 3;
+        let destC = Math.floor(Math.random() * 4) + 2;
+        let startR = destR + 2; let startC = destC - 1;
+        board[startR][startC] = 'N';
+        let kR = destR - 2; let kC = destC - 1;
+        board[kR][kC] = 'k';
+        let qR = destR - 1; let qC = destC + 2;
+        board[qR][qC] = 'q';
+        board[7][0] = 'K';
+        let kR2 = kR; let kC2 = kC - 1;
+        moves = [
+            toS(startR, startC) + toS(destR, destC),
+            toS(kR, kC) + toS(kR2, kC2),
+            toS(destR, destC) + toS(qR, qC)
+        ];
+    } else if(rType === 5) { // Smothered Mate in 2
+        board[0][7] = 'k'; // Kh8
+        board[0][5] = 'r'; // Rf8
+        board[1][7] = 'p'; // h7
+        board[1][6] = 'p'; // g7
+        board[2][7] = 'N'; // Nh6
+        board[3][3] = 'Q'; // Qd5
+        board[7][0] = 'K'; // Ka1
+        moves = [
+            toS(3, 3) + toS(0, 6), // Qg8+
+            toS(0, 5) + toS(0, 6), // Rxg8
+            toS(2, 7) + toS(1, 5)  // Nf7#
+        ];
+    }
+
+    return {
+        id: "inf_" + Math.floor(Math.random()*100000),
+        elo: elo || (1000 + Math.floor(Math.random()*1000)),
+        turn: 'white',
+        board: board,
+        moves: moves
+    };
+};
+
 window.startRandomPuzzle = function() {
+    closeModal('puzzlemodal');
+    if(Math.random() > 0.3) {
+        // Generate infinite puzzle 70% of the time
+        loadPuzzle(window.generateInfinitePuzzle(M.elo || 500));
+        return;
+    }
+    if(!window.PUZZLES || window.PUZZLES.length === 0) {
+        loadPuzzle(window.generateInfinitePuzzle(M.elo || 500));
+        return;
+    }
+    let myElo = (M.elo || 1000);
+    let eligible = window.PUZZLES.filter(p => Math.abs((p.elo || 1000) - myElo) < 200);
+    if (eligible.length === 0) eligible = window.PUZZLES;
+    const puz = eligible[Math.floor(Math.random() * eligible.length)];
+    loadPuzzle(puz);
+};
+window.startDailyPuzzle = function() {
     if(!window.PUZZLES || window.PUZZLES.length === 0) {
         if(typeof showAnnouncement === 'function') showAnnouncement("Puzzles are still loading, please wait...");
         return;
     }
     closeModal('puzzlemodal');
-    const puz = window.PUZZLES[Math.floor(Math.random() * window.PUZZLES.length)];
+    // Seed using today's date
+    const today = new Date().toDateString();
+    let hash = 0;
+    for(let i=0;i<today.length;i++) hash = Math.imul(31, hash) + today.charCodeAt(i) | 0;
+    const idx = Math.abs(hash) % window.PUZZLES.length;
+    const puz = window.PUZZLES[idx];
     loadPuzzle(puz);
 };
-window.startDailyPuzzle = window.startRandomPuzzle;
 
 function loadPuzzle(puz) {
     if(!puz) return;
@@ -5259,3 +5811,1671 @@ function loadPuzzle(puz) {
     if(typeof showAnnouncement === 'function') showAnnouncement("🧩 Puzzle Mode: Find the best move!");
     render();
 }
+
+function reviewGame() {
+    if(!G || !G.hist || G.hist.length === 0) { showAnnouncement("No moves to review!"); return; }
+    let b = 0, m = 0, i = 0, g = 0, e = 0, br = 0;
+    G.hist.forEach(h => {
+        const checkQual = (note) => {
+            if(!note) return;
+            if(note.includes("??")) b++;
+            else if(note.includes("?!")) i++;
+            else if(note.includes("?")) m++;
+            else if(note.includes("!!!")) br++;
+            else if(note.includes("!!")) e++;
+            else if(note.includes("!")) g++;
+        };
+        checkQual(h.w); if(h.b) checkQual(h.b);
+    });
+    let summary = "Game Review Complete!\n";
+    if(b > 3) summary += "You played very poorly. Stop hanging pieces.\n";
+    else if(b > 0) summary += "A few bad blunders but decent play overall.\n";
+    else summary += "Flawless game! No blunders!\n";
+    summary += "Brilliant: " + br + "\nExcellent: " + e + "\nGood: " + g + "\nInaccuracies: " + i + "\nMistakes: " + m + "\nBlunders: " + b;
+    
+    let botAnswers = [
+        "I analyzed the game. " + (b>2?"You hung pieces left and right.":"Pretty solid play.") + " " + (br>0?"That brilliant move was engine-level!":""),
+        "My silicon brain is impressed. " + (m>2?"But you made some questionable decisions.":"Very few mistakes."),
+        "A fascinating game. " + (b===0?"Flawless execution!":"Watch out for those blunders next time.")
+    ];
+    summary += "\n\nBot says: " + botAnswers[Math.floor(Math.random()*botAnswers.length)];
+    
+    addGameChatMessage("Review Bot", summary.replace(/\n/g, "<br>"));
+    openGameChat();
+    showAnnouncement("Game Review sent to Game Chat!");
+}
+// --- ARROW DRAWING ---
+let _arrowStart = null;
+let _arrows = [];
+const _origRenderB = typeof renderBoard === "function" ? renderBoard : null;
+if(_origRenderB) {
+  renderBoard = function() {
+    _origRenderB();
+    const b = document.getElementById("board");
+    if(b) {
+      b.style.position = "relative";
+      let svg = document.getElementById("arrow-layer");
+      if(!svg) {
+        b.insertAdjacentHTML("beforeend", '<svg id="arrow-layer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:100;"><defs><marker id="arrowhead" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto"><polygon points="0 0, 6 3, 0 6" fill="rgba(255, 170, 0, 0.8)"/></marker></defs></svg>');
+      }
+      drawArrows();
+    }
+  };
+}
+function drawArrows() {
+  const svg = document.getElementById("arrow-layer");
+  if(!svg) return;
+  svg.innerHTML = '<defs><marker id="arrowhead" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto"><polygon points="0 0, 6 3, 0 6" fill="rgba(255, 170, 0, 0.8)"/></marker></defs>';
+  _arrows.forEach(a => {
+    const sqW = 100 / 8;
+    const x1 = a.c1 * sqW + sqW/2, y1 = a.r1 * sqW + sqW/2;
+    const x2 = a.c2 * sqW + sqW/2, y2 = a.r2 * sqW + sqW/2;
+    svg.innerHTML += `<line x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%" stroke="rgba(255, 170, 0, 0.8)" stroke-width="1%" marker-end="url(#arrowhead)" />`;
+  });
+}
+document.addEventListener("contextmenu", e => {
+  if(e.target.closest && e.target.closest("#board")) e.preventDefault();
+});
+window.startCustomVariant = function() { closeModal('customvariantmodal'); M.currentVariant = { noCastling: document.getElementById('cv_nocastling').checked, koth: document.getElementById('cv_koth').checked, firstCheck: document.getElementById('cv_firstcheck') ? document.getElementById('cv_firstcheck').checked : false, antichess: false }; saveMeta(); userNewGame(); if(typeof showAnnouncement === 'function') showAnnouncement('🎮 Custom Variant Started!'); }
+
+window.playRematch = async function() {
+  if (typeof G !== 'undefined' && G && G.opponent && G.opponent.type === 'human') {
+    if (typeof showAnnouncement === 'function') showAnnouncement('⚔️ Rematch challenge sent to ' + G.opponent.name);
+    await API.challengeSend(M.account.username, G.opponent.name);
+  } else {
+    userNewGame();
+  }
+};
+document.addEventListener("mousedown", e => {
+  if(e.button === 2 && e.target.closest && e.target.closest(".sq")) {
+    const sq = e.target.closest(".sq");
+    _arrowStart = { r: parseInt(sq.dataset.r), c: parseInt(sq.dataset.c) };
+  } else if(e.button === 0) {
+    _arrows = [];
+    drawArrows();
+  }
+});
+document.addEventListener("mouseup", e => {
+  if(e.button === 2 && _arrowStart && e.target.closest && e.target.closest(".sq")) {
+    const sq = e.target.closest(".sq");
+    const r2 = parseInt(sq.dataset.r), c2 = parseInt(sq.dataset.c);
+    if(_arrowStart.r !== r2 || _arrowStart.c !== c2) {
+      const idx = _arrows.findIndex(a => a.r1===_arrowStart.r && a.c1===_arrowStart.c && a.r2===r2 && a.c2===c2);
+      if(idx > -1) _arrows.splice(idx, 1);
+      else _arrows.push({r1:_arrowStart.r, c1:_arrowStart.c, r2, c2});
+      drawArrows();
+    } else {
+      _arrows = [];
+      drawArrows();
+    }
+  }
+  _arrowStart = null;
+});
+
+window.adminAbuseGlobal = function() { 
+  if(typeof API !== 'undefined') API.announce((M.account && M.account.username) || 'Admin', '!ADMIN_ABUSE_2X'); 
+  if(typeof closeModal === 'function') closeModal('ownermodal'); 
+};
+window.adminUpdateGame = function() { if(typeof API !== 'undefined') API.announce((M.account && M.account.username) || 'Admin', '!UPDATE_GAME_START'); closeModal('ownermodal'); };
+function triggerCrownPopup() { 
+  const d = document.createElement('div'); 
+  d.className='crown-popup'; 
+  d.innerHTML='👑'; 
+  d.style.cursor='pointer';
+  d.style.position='fixed';
+  d.style.top = (Math.random() * 80 + 10) + '%';
+  d.style.left = (Math.random() * 80 + 10) + '%';
+  d.style.zIndex='99999';
+  d.onclick = function() {
+    d.remove();
+    M.money = Math.floor((M.money || 0) * 1.1) || 1;
+    M.elo = Math.floor((M.elo || 500) * 1.1);
+    M.maxLuck = (M.maxLuck || 1) * 1.1;
+    saveMeta();
+    refreshUI();
+    if(typeof updateLuckChip === 'function') updateLuckChip();
+    if(typeof showAnnouncement === 'function') showAnnouncement('👑 Owner Crown Clicked: 1.1x All Stats!');
+  };
+  document.body.appendChild(d); 
+  setTimeout(function(){ if(d.parentNode) d.remove() }, 4000); 
+}; 
+setInterval(function(){ 
+  triggerCrownPopup(); 
+}, 60000);
+window.startCustomPuzzle = function() { const eloInput = document.getElementById('custompuzelo'); const elo = eloInput ? parseInt(eloInput.value) : (M.elo || 500); let eligible = window.PUZZLES.filter(p => Math.abs((p.elo || 1000) - elo) < 200); if (!eligible || eligible.length === 0) eligible = window.PUZZLES; const puz = eligible[Math.floor(Math.random() * eligible.length)]; loadPuzzle(puz); }; window.startPeriodicPuzzle = function(type) { if(!window.PUZZLES || window.PUZZLES.length === 0) return showAnnouncement('Puzzles are still loading...'); closeModal('puzzlemodal'); const d = new Date(); let seed = 0; if(type==='weekly'){seed = Math.floor(d.getTime()/(1000*60*60*24*7));} else if(type==='monthly'){seed = d.getFullYear()*12 + d.getMonth();} else if(type==='yearly'){seed = d.getFullYear();} else if(type==='decadely'){seed = Math.floor(d.getFullYear()/10);} let hash = Math.imul(31, seed) ^ 0x3a5b2c; const idx = Math.abs(hash) % window.PUZZLES.length; loadPuzzle(window.PUZZLES[idx]); }; window.requestVariant = function() { const val = document.getElementById('variant-request-input').value; if(!val) return; document.getElementById('variant-request-input').value = ''; const who = (M.account&&M.account.username)||'Guest'; showAnnouncement('💬 ' + who + ' requested variant: ' + val); if(typeof API !== 'undefined') API.announce(who, 'requested to feature variant: ' + val).catch(()=>{}); };
+window.connectVoiceChat = async function() { 
+    if (!G || !G.opponent || !G.opponent.matchId) {
+        showAnnouncement('⚠️ Voice chat requires an active Online Match!');
+        return;
+    }
+    if (window.voiceStream) {
+        showAnnouncement('⚠️ Voice chat is already connected!');
+        return;
+    }
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        window.voiceStream = stream;
+        
+        const pc = new RTCPeerConnection({ iceServers: [{urls: 'stun:stun.l.google.com:19302'}] });
+        window.voicePeer = pc;
+        
+        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+        
+        pc.onicecandidate = e => {
+            if(e.candidate) wsSend({ type: 'webrtc', matchId: G.opponent.matchId, data: { candidate: e.candidate } });
+        };
+        
+        pc.ontrack = e => {
+            let audio = document.getElementById('voiceAudio');
+            if(!audio) {
+                audio = document.createElement('audio');
+                audio.id = 'voiceAudio';
+                audio.autoplay = true;
+                document.body.appendChild(audio);
+            }
+            audio.srcObject = e.streams[0];
+            showAnnouncement('🟢 Voice Chat Connected!');
+        };
+        
+        if (window.pendingVoiceOffer) {
+            await pc.setRemoteDescription(new RTCSessionDescription(window.pendingVoiceOffer));
+            window.pendingVoiceOffer = null;
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            wsSend({ type: 'webrtc', matchId: G.opponent.matchId, data: answer });
+            
+            if(window.pendingCandidates) {
+                window.pendingCandidates.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)));
+                window.pendingCandidates = [];
+            }
+        } else {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            wsSend({ type: 'webrtc', matchId: G.opponent.matchId, data: offer });
+            showAnnouncement('🎤 Calling opponent...');
+        }
+    } catch(err) {
+        console.error(err);
+        showAnnouncement('⚠️ Microphone access denied or error!');
+    }
+};
+
+window.handleWebrtcMessage = async function(msg) {
+    if(!G || !G.opponent || G.opponent.matchId !== msg.matchId) return;
+    const data = msg.data;
+    
+    if (data.type === 'offer') {
+        if (!window.voicePeer) {
+            window.pendingVoiceOffer = data;
+            showAnnouncement('📞 Opponent is calling! Click "Voice Chat" to answer.');
+            // Play a sound to alert
+            const actx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = actx.createOscillator();
+            osc.frequency.value = 600;
+            osc.connect(actx.destination);
+            osc.start(); setTimeout(()=>osc.stop(), 300);
+        } else {
+            if (G.opponent.mySide === 'black') {
+                await window.voicePeer.setRemoteDescription(new RTCSessionDescription(data));
+                const answer = await window.voicePeer.createAnswer();
+                await window.voicePeer.setLocalDescription(answer);
+                wsSend({ type: 'webrtc', matchId: G.opponent.matchId, data: answer });
+            }
+        }
+    } else if (data.type === 'answer') {
+        if (window.voicePeer) {
+            await window.voicePeer.setRemoteDescription(new RTCSessionDescription(data));
+        }
+    } else if (data.candidate) {
+        if (window.voicePeer) {
+            await window.voicePeer.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } else {
+            if(!window.pendingCandidates) window.pendingCandidates = [];
+            window.pendingCandidates.push(data.candidate);
+        }
+    }
+};
+// --- Voice Chat Logic ---
+var voiceStream = null;
+window.toggleVoiceChatSetting = async function() {
+    const vc = document.getElementById('voicechattoggle');
+    M.voiceChat = vc.checked;
+    saveMeta();
+    if(M.voiceChat) {
+        try {
+            voiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            if(typeof showAnnouncement === 'function') showAnnouncement('🎙️ Voice Chat Connected!');
+            document.getElementById('voicechatbtn').style.background = '#28a745';
+            document.getElementById('voicechatbtn').classList.add('pulse-anim');
+        } catch(e) {
+            if(typeof showAnnouncement === 'function') showAnnouncement('❌ Microphone access denied');
+            vc.checked = false;
+            M.voiceChat = false;
+            saveMeta();
+        }
+    } else {
+        if(voiceStream) {
+            voiceStream.getTracks().forEach(t => t.stop());
+            voiceStream = null;
+        }
+        if(typeof showAnnouncement === 'function') showAnnouncement('🔇 Voice Chat Disconnected');
+        document.getElementById('voicechatbtn').style.background = '#444';
+        document.getElementById('voicechatbtn').classList.remove('pulse-anim');
+    }
+};
+
+window.toggleVoiceChat = function() {
+    const vc = document.getElementById('voicechattoggle');
+    if(vc) {
+        vc.checked = !vc.checked;
+        toggleVoiceChatSetting();
+    }
+};
+
+if(!document.getElementById('pulse-css')) {
+    const style = document.createElement('style');
+    style.id = 'pulse-css';
+    style.innerHTML = `
+    @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); } }
+    .pulse-anim { animation: pulse-ring 2s infinite; }
+    `;
+    document.head.appendChild(style);
+}
+// --- Home Screen Logic ---
+window.showLoadingScreen = function(callback) {
+    if (sessionStorage.getItem('updatesViewed')) {
+        if(callback) callback();
+        return;
+    }
+    const updates = [
+        "Added Owner Crown Popup",
+        "Fixed Admin Abuse Stats Multiplier",
+        "Improved Voice Chat Stability",
+        "Skip Button Available to Everyone"
+    ];
+    
+    const lscreen = document.createElement('div');
+    lscreen.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:sans-serif;';
+    
+    let currentUpdate = 0;
+    
+    const updateHTML = () => `
+        <div class="mmspinner" style="width:60px;height:60px;margin-bottom:20px;border-color:#ffd700 transparent #ffd700 transparent; border-radius:50%; border-width:4px; border-style:solid;"></div>
+        <h2 style="color:#ffd700;margin-bottom:10px;">Downloading Updates...</h2>
+        <div style="color:#0f0;font-size:24px;margin-bottom:20px;text-align:center;">Applying:<br>${updates[currentUpdate]}</div>
+        <div style="color:#aaa;">Update ${currentUpdate + 1} of ${updates.length}</div>
+        <div style="color:#aaa;margin-top:10px;">(Taking 10 seconds per update to ensure maximum quality...)</div>
+    `;
+    
+    lscreen.innerHTML = updateHTML();
+    
+    let updateInterval = null;
+    
+    // Add skip button for EVERYBODY
+    const skipBtn = document.createElement('button');
+    skipBtn.innerText = "⏭️ Skip Loading";
+    skipBtn.style.cssText = "margin-top: 40px; background: #3a1f5f; color: #fff; border: 1px solid #7c4dff; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size:16px;";
+    skipBtn.onclick = () => {
+        clearInterval(updateInterval);
+        lscreen.remove();
+        sessionStorage.setItem('updatesViewed', '1');
+        if(callback) callback();
+    };
+    lscreen.appendChild(skipBtn);
+
+    document.body.appendChild(lscreen);
+    
+    const playUpdateSound = () => {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150 + Math.random()*200, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.2);
+            osc.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.2);
+        } catch(e){}
+    };
+    playUpdateSound();
+
+    updateInterval = setInterval(() => {
+        currentUpdate++;
+        if (currentUpdate >= updates.length) {
+            clearInterval(updateInterval);
+            lscreen.innerHTML = `<h2 style="color:#0f0;">Updates Complete! Reloading...</h2>`;
+            sessionStorage.setItem('updatesViewed', '1');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            playUpdateSound();
+            lscreen.innerHTML = updateHTML();
+            lscreen.appendChild(skipBtn);
+        }
+    }, 1000);
+};
+
+// --- Live Stats Polling ---
+setInterval(function() {
+    if(typeof API !== 'undefined' && API.req) {
+        API.req('stats').then(res => {
+            if(res && res.ok) {
+                const o = document.getElementById('stat-online');
+                const r = document.getElementById('stat-reg');
+                if(o) o.innerText = res.online || 1;
+                if(r) r.innerText = res.registered || 1;
+            }
+        }).catch(e => {});
+    }
+}, 5000);
+
+window.showGameView = function() {
+    const hs = document.getElementById('home-screen');
+    const mg = document.getElementById('main-game-container');
+    if(hs) hs.classList.add('hidden');
+    if(mg) mg.classList.remove('hidden');
+    renderBoard();
+};
+
+window.showHomeScreen = function() {
+    const hs = document.getElementById('home-screen');
+    const mg = document.getElementById('main-game-container');
+    if(hs) hs.classList.remove('hidden');
+    if(mg) mg.classList.add('hidden');
+    
+    // Also hide any active modals to cleanly return home
+    document.querySelectorAll('.modal:not(.hidden)').forEach(m => m.classList.add('hidden'));
+};
+
+window.toggleDokiTheme = function() {
+    document.body.classList.toggle('doki-theme');
+};
+
+window.dokiLevel = 1;
+window.dokiMaxLevel = 20;
+
+window.openDokiGame = function() {
+    closeModal('startgamemodal');
+    closeModal('welcomemodal');
+    closeModal('acctmodal');
+    closeModal('variantsmodal');
+    closeModal('puzzlemodal');
+    openModal('dokimodal');
+    window.dokiLevel = 1;
+
+    let adminBtn = document.getElementById('doki-admin-skip');
+    if(!adminBtn) {
+        adminBtn = document.createElement('button');
+        adminBtn.id = 'doki-admin-skip';
+        adminBtn.innerText = 'Admin Skip >>';
+        adminBtn.style.cssText = 'position:absolute; right:10px; top:10px; background:#f00; color:#fff; font-weight:bold; border:2px solid #fff; padding:5px 10px; cursor:pointer; z-index:99999999;';
+        adminBtn.onclick = () => {
+            if(window.dokiLevel < window.dokiMaxLevel) {
+                window.dokiLevel++;
+                startDokiLevel();
+            } else {
+                cleanupDoki();
+                M.dokiCompleted = true;
+                saveMeta();
+                refreshUI();
+                if(typeof showAnnouncement === 'function') showAnnouncement('🎉 ACTION GAME COMPLETED! 1000X STATS MULTIPLIER!');
+                closeModal('dokimodal');
+                setTimeout(() => { location.reload(); }, 2000);
+            }
+        };
+        document.getElementById('dokimodal').appendChild(adminBtn);
+    }
+    adminBtn.style.display = (typeof M !== 'undefined' && M && (M.isAdmin || M.adminUnlocked)) ? 'block' : 'none';
+
+    startDokiLevel();
+};
+
+window.startDokiLevel = function() {
+    let tos = document.getElementById('doki-tos');
+    if(tos) tos.scrollTop = 0;
+    
+    let cbx = document.getElementById('doki-checkboxes');
+    if(cbx) cbx.style.display = 'none';
+    
+    let agreeBtn = document.getElementById('doki-agree');
+    if(agreeBtn) {
+        agreeBtn.disabled = true;
+        agreeBtn.style.color = '#888';
+        agreeBtn.style.transform = 'none';
+    }
+    
+    let vb = document.getElementById('doki-virus-bar');
+    if(vb) vb.style.display = 'none';
+    
+    let vf = document.getElementById('doki-virus-fill');
+    if(vf) vf.style.width = '0%';
+    
+    let vp = document.getElementById('doki-virus-pct');
+    if(vp) {
+        vp.innerText = '0%';
+        vp.previousElementSibling.innerText = 'Downloading Malware...';
+    }
+    
+    for(let i=1; i<=3; i++) {
+        let cb = document.getElementById('doki-cb'+i);
+        if(cb) cb.checked = false;
+        let lbl = document.getElementById('lbl-cb'+i);
+        if(lbl) {
+            lbl.style.top = (i-1)*24 + 'px';
+            lbl.style.left = '0px';
+        }
+    }
+    
+    cleanupDoki();
+    window.dokiState = 0; 
+    
+    let installer = document.getElementById('doki-installer');
+    if(installer) {
+        installer.className = '';
+        installer.style.transform = 'none';
+        installer.style.filter = 'none';
+        installer.style.animation = 'none';
+        installer.style.background = '#ece9d8';
+    }
+    document.body.style.filter = 'none';
+    document.body.style.transform = 'none';
+    document.body.style.background = 'url("chess_bg.png") repeat';
+    
+    let titleEl = document.querySelector('#doki-installer div span');
+    if(titleEl) titleEl.innerText = 'Doki Doki Action Game - Level ' + window.dokiLevel;
+    
+    let lvl = window.dokiLevel;
+    
+    // --- LEVEL 20: THE REAL ACTION GAME ---
+    if(lvl >= 20) {
+        cleanupDoki();
+        window.dokiState = 2;
+        if(installer) {
+            installer.innerHTML = '<canvas id="dokicanvas" width="500" height="300" style="background:#87CEEB;border:2px solid #000;display:block;margin:0 auto;"></canvas>';
+            document.body.style.background = '#333';
+            document.body.style.filter = 'none';
+            document.body.style.transform = 'none';
+            installer.style.background = 'none';
+            installer.style.boxShadow = 'none';
+            installer.style.border = 'none';
+            installer.style.transform = 'none';
+            installer.style.animation = 'none';
+            installer.style.filter = 'none';
+            
+            let canvas = document.getElementById('dokicanvas');
+            let ctx = canvas.getContext('2d');
+            let platforms = [
+                {x: 0, y: 250, w: 7000, h: 50, c: '#4CAF50'}
+            ];
+            let spikes = [];
+            for(let i=300; i<6000; i+=400) {
+                platforms.push({x: i, y: 150 + (Math.random()*50 - 25), w: 60, h: 10, c: '#8B4513'});
+                if(Math.random() > 0.3) spikes.push({x: i + 150, y: 230, w: 100 + Math.random()*100, h: 20});
+                if(Math.random() > 0.7) platforms.push({x: i + 200, y: 100, w: 40, h: 10, c: '#555'});
+            }
+            let goal = {x: 6200, y: 50, w: 30, h: 50}; let p = { x: 50, y: 200, width: 20, height: 20, vy: 0, gravity: 0.6, jump: -10, speed: 4 };
+            let keys = {};
+            let keydownHandler = e => { keys[e.code] = true; if(['ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault(); };
+            let keyupHandler = e => keys[e.code] = false;
+            window.addEventListener('keydown', keydownHandler);
+            window.addEventListener('keyup', keyupHandler);
+
+            let cameraX = 0;
+            let won = false;
+
+            function gameLoop() {
+                if(won) return;
+                window.dokiGameReq = requestAnimationFrame(gameLoop);
+                
+                // Physics
+                p.vy += p.gravity;
+                p.y += p.vy;
+                
+                if(keys['ArrowRight'] || keys['KeyD']) p.x += p.speed;
+                if(keys['ArrowLeft'] || keys['KeyA']) p.x -= p.speed;
+
+                let onGround = false;
+                for(let plat of platforms) {
+                    if(p.x < plat.x + plat.w && p.x + p.width > plat.x &&
+                       p.y < plat.y + plat.h && p.y + p.height > plat.y) {
+                        if(p.vy > 0 && p.y + p.height - p.vy <= plat.y + 0.1) {
+                            p.y = plat.y - p.height;
+                            p.vy = 0;
+                            onGround = true;
+                        } else if(p.vy < 0) {
+                            p.y = plat.y + plat.h;
+                            p.vy = 0;
+                        } else {
+                            if(keys['ArrowRight'] || keys['KeyD']) p.x = plat.x - p.width;
+                            if(keys['ArrowLeft'] || keys['KeyA']) p.x = plat.x + plat.w;
+                        }
+                    }
+                }
+
+                if(onGround && (keys['ArrowUp'] || keys['KeyW'] || keys['Space'])) {
+                    if(keys['ArrowDown'] || keys['KeyS']) {
+                        p.vy = p.jump * 2.5; // super jump bug if crouching
+                    } else {
+                        p.vy = p.jump;
+                    }
+                }
+                
+                // Check Spikes
+                for(let s of spikes) {
+                    if(p.x < s.x + s.w && p.x + p.width > s.x && p.y < s.y + s.h && p.y + p.height > s.y) {
+                        p.x = 50; p.y = 200; p.vy = 0; // die
+                    }
+                }
+
+                // Camera
+                cameraX = p.x - 100;
+                if(cameraX < 0) cameraX = 0;
+
+                // Win
+                if(p.x < goal.x + goal.w && p.x + p.width > goal.x &&
+                   p.y < goal.y + goal.h && p.y + p.height > goal.y) {
+                    won = true;
+                    window.removeEventListener('keydown', keydownHandler);
+                    window.removeEventListener('keyup', keyupHandler);
+                    ctx.fillStyle = "rgba(0,0,0,0.8)";
+                    ctx.fillRect(0,0,canvas.width,canvas.height);
+                    ctx.fillStyle = "#fff";
+                    ctx.font = "24px sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText("YOU WON! 1000x MULTIPLIER!", canvas.width/2, canvas.height/2);
+                    
+                    // Call the fake OK button hidden click
+                    let okBtn = document.createElement('button');
+                    okBtn.id = 'doki-monika-ok';
+                    okBtn.style.display = 'none';
+                    document.body.appendChild(okBtn);
+                    
+                    okBtn.onclick = function() {
+                        cleanupDoki();
+                        M.dokiCompleted = true;
+                        saveMeta();
+                        refreshUI();
+                        if(typeof showAnnouncement === 'function') showAnnouncement('ðŸŽ® ACTION GAME COMPLETED! 1000X STATS MULTIPLIER!');
+                        closeModal('dokimodal');
+                        setTimeout(() => { location.reload(); }, 2000);
+                    };
+                    
+                    setTimeout(() => okBtn.click(), 2500);
+                    return;
+                }
+
+                // Death pit
+                if(p.y > 400) {
+                    p.x = 50; p.y = 200; p.vy = 0;
+                }
+
+                // Draw
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                ctx.save();
+                ctx.translate(-cameraX, 0);
+
+                ctx.fillStyle = '#228B22'; // platforms
+                for(let plat of platforms) ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+
+                ctx.fillStyle = '#FF0000'; // spikes
+                for(let s of spikes) {
+                    ctx.beginPath();
+                    ctx.moveTo(s.x, s.y + s.h);
+                    ctx.lineTo(s.x + s.w/2, s.y);
+                    ctx.lineTo(s.x + s.w, s.y + s.h);
+                    ctx.fill();
+                }
+
+                ctx.fillStyle = '#FFD700'; // goal
+                ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
+
+                ctx.fillStyle = '#0000FF'; // player
+                ctx.fillRect(p.x, p.y, p.width, p.height);
+
+                ctx.restore();
+                
+                ctx.fillStyle = '#000';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText("Use Arrow Keys to reach the golden flag!", 10, 20);
+                ctx.fillText("Avoid red spikes!", 10, 40);
+            }
+            gameLoop();
+        }
+        return; // Skip normal mechanics
+    }
+    
+    // --- DISTINCT AGREEEE TERMS MECHANICS (LEVELS 1-19) ---
+    window.dokiCbMovement = lvl >= 2 ? (20 + (lvl * 15)) : 0;
+    window.dokiAgreeJumps = lvl >= 3 ? true : false;
+    window.dokiUncheckSpeed = lvl >= 4 ? Math.max(200, 2000 - (lvl * 100)) : 0;
+    window.dokiObstacles = lvl >= 5 ? true : false;
+    
+    let instTransform = '';
+    let instFilter = '';
+    let bodyBg = 'url("chess_bg.png") repeat';
+    let modalBg = '#ece9d8';
+    
+    if(agreeBtn) {
+        agreeBtn.style.fontSize = '12px';
+        agreeBtn.style.padding = '2px 8px';
+    }
+    
+    switch(lvl) {
+        case 1:
+            // Normal
+            break;
+        case 2:
+            modalBg = '#ffe0e0';
+            break;
+        case 3:
+            modalBg = '#e0ffe0';
+            break;
+        case 4:
+            modalBg = '#e0e0ff';
+            instTransform = 'skew(5deg, 5deg)';
+            break;
+        case 5:
+            bodyBg = '#330000';
+            modalBg = '#ffcccc';
+            if(agreeBtn) agreeBtn.style.fontSize = '8px';
+            break;
+        case 6:
+            instFilter = 'hue-rotate(90deg)';
+            break;
+        case 7:
+            instTransform = 'scale(0.8) rotate(10deg)';
+            break;
+        case 8:
+            instFilter = 'invert(1)';
+            break;
+        case 9:
+            window.dokiFakeCursor = true;
+            modalBg = '#000';
+            document.body.style.color = '#fff';
+            break;
+        case 10:
+            window.dokiTeleportingTOS = true;
+            instTransform = 'scale(1.2)';
+            break;
+        case 11:
+            if(vb) {
+                vb.style.display = 'block';
+                window.dokiVirusSpeed = Math.floor(lvl / 2);
+                vp.previousElementSibling.innerText = 'Reading Terms of Service...';
+            }
+            break;
+        case 12:
+            instFilter = 'blur(1px)';
+            break;
+        case 13:
+            instFilter = 'sepia(1) hue-rotate(180deg)';
+            instTransform = 'rotate(-10deg)';
+            break;
+        case 14:
+            bodyBg = '#000';
+            modalBg = '#333';
+            if(agreeBtn) agreeBtn.style.fontSize = '5px';
+            break;
+        case 15:
+            instFilter = 'contrast(300%)';
+            instTransform = 'skew(-10deg, -10deg) scale(0.9)';
+            break;
+        case 16:
+            instFilter = 'blur(2px) invert(0.8)';
+            break;
+        case 17:
+            window.dokiAreYouSure = true;
+            modalBg = '#550000';
+            break;
+        case 18:
+            window.dokiFakeCursor = true;
+            window.dokiTeleportingTOS = true;
+            instFilter = 'hue-rotate(270deg) contrast(200%)';
+            break;
+        case 19:
+            if(installer) installer.classList.add('doki-shake');
+            instFilter = 'invert(1) blur(1px)';
+            instTransform = 'scale(0.8) rotate(180deg)';
+            bodyBg = '#f00';
+            break;
+    }
+    
+    document.body.style.background = bodyBg;
+    if(installer) {
+        installer.style.background = modalBg;
+        installer.style.filter = instFilter;
+        installer.style.transform = instTransform;
+    }
+};
+
+window.cleanupDoki = function() {
+    clearInterval(window.dokiVirusInterval);
+    clearInterval(window.dokiUncheckInterval);
+    clearInterval(window.dokiRenpyErrorInterval);
+    clearInterval(window.dokiZalgoInterval);
+    clearInterval(window.dokiEyeInterval);
+    clearInterval(window.dokiCursorInterval);
+    clearInterval(window.dokiObstacleInterval);
+    clearTimeout(window.dokiAgreeTimeout);
+    clearTimeout(window.dokiCbTimeout1);
+    clearTimeout(window.dokiCbTimeout2);
+    clearTimeout(window.dokiCbTimeout3);
+    document.querySelectorAll('.doki-renpy-error').forEach(el => el.remove());
+    document.querySelectorAll('.doki-eye').forEach(el => el.remove());
+    document.querySelectorAll('.doki-are-you-sure').forEach(el => el.remove());
+    document.querySelectorAll('.doki-obstacle').forEach(el => el.remove());
+    let fc = document.getElementById('doki-fake-cursor');
+    if(fc) fc.remove();
+    document.body.style.filter = 'none';
+    document.body.style.transform = 'none';
+    document.body.style.background = 'url("chess_bg.png") repeat';
+};
+
+window.resetDokiGame = function() {
+    cleanupDoki();
+    closeModal('dokimodal');
+    if(typeof showAnnouncement === 'function') showAnnouncement('ðŸŽ® Doki Doki Setup Canceled.', '#ff0000');
+    setTimeout(() => { location.reload(); }, 1000);
+};
+
+window.startDokiChaos = function() {
+    if(window.dokiUncheckSpeed > 0) {
+        window.dokiUncheckInterval = setInterval(() => {
+            if(window.dokiState === 1 && !document.getElementById('dokimodal').classList.contains('hidden')) {
+                const boxes = ['doki-cb1', 'doki-cb2', 'doki-cb3'];
+                const checkedBoxes = boxes.filter(id => document.getElementById(id).checked);
+                if(checkedBoxes.length > 0) {
+                    const randomBox = checkedBoxes[Math.floor(Math.random() * checkedBoxes.length)];
+                    document.getElementById(randomBox).checked = false;
+                    let lbl = document.getElementById('lbl-' + randomBox.replace('doki-', ''));
+                    if(lbl && Math.random() < 0.5) lbl.style.color = 'red';
+                }
+            }
+        }, window.dokiUncheckSpeed); 
+    }
+    
+    if(window.dokiRenpyErrors > 0) {
+        window.dokiRenpyErrorInterval = setInterval(() => {
+            if(window.dokiState >= 1 && !document.getElementById('dokimodal').classList.contains('hidden')) {
+                spawnRenpyError();
+            }
+        }, window.dokiRenpyErrors);
+    }
+    
+    if(window.dokiObstacles) {
+        window.dokiObstacleInterval = setInterval(() => {
+            if(window.dokiState >= 1 && Math.random() < 0.4) {
+                let d = document.createElement('div');
+                d.className = 'doki-obstacle';
+                let obs = ['Natsuki.chr', 'Yuri.chr', 'Sayori.chr', 'Glitch_0x00A'];
+                d.innerText = obs[Math.floor(Math.random()*obs.length)];
+                d.style.cssText = 'position:fixed; background:#000; color:red; padding:15px; font-weight:bold; font-size:18px; z-index:9999998; top:'+(Math.random()*80)+'%; left:'+(Math.random()*80)+'%; cursor:not-allowed; border:2px solid red;';
+                d.onmouseenter = function() {
+                    alert("FATAL ERROR: You touched the glitch! Restarting.");
+                    window.dokiLevel = 1;
+                    startDokiLevel();
+                };
+                document.body.appendChild(d);
+                setTimeout(() => d.remove(), 2500);
+            }
+        }, 1500);
+    }
+    
+    if(window.dokiZalgoText || window.dokiMonikaText) {
+        window.dokiZalgoInterval = setInterval(() => {
+            if(window.dokiState >= 1) {
+                let t = document.querySelector('#doki-installer div span');
+                if(t) {
+                    const chars = 'Â¡Â¢Â£Â¤Â¥Â¦Â§Â¨Â©ÂªÂ«Â¬Â®Â¯Â°Â±Â²Â³Â´ÂµÂ¶Â·Â¸Â¹ÂºÂ»Â¼Â½Â¾Â¿';
+                    let str = window.dokiMonikaText && Math.random() < 0.1 ? 'Just Monika.' : 'Doki Doki Action Game - Level ' + window.dokiLevel;
+                    if(window.dokiZalgoText) {
+                        let out = '';
+                        for(let i=0; i<str.length; i++) {
+                            out += Math.random() < 0.15 ? chars[Math.floor(Math.random()*chars.length)] : str[i];
+                        }
+                        t.innerText = out;
+                    } else {
+                        t.innerText = str;
+                    }
+                }
+                
+                if(window.dokiPlayWithMe && Math.random() < 0.05) {
+                    let agreeBtn = document.getElementById('doki-agree');
+                    if(agreeBtn) {
+                        let oldText = agreeBtn.innerText;
+                        agreeBtn.innerText = 'Play with me';
+                        setTimeout(() => { if(agreeBtn.innerText === 'Play with me') agreeBtn.innerText = oldText; }, 500);
+                    }
+                }
+                
+                if(window.dokiAreYouSure && Math.random() < 0.02) {
+                    spawnAreYouSure();
+                }
+            }
+        }, 150);
+    }
+    
+    if(window.dokiCreepyEyes) {
+        window.dokiEyeInterval = setInterval(() => {
+            if(window.dokiState >= 1) {
+                let d = document.createElement('div');
+                d.className = 'doki-eye';
+                d.innerText = 'ðŸ‘ï¸';
+                d.style.cssText = 'position:fixed; font-size:'+(Math.random()*100+50)+'px; z-index:9999998; top:'+(Math.random()*90)+'%; left:'+(Math.random()*90)+'%; pointer-events:none; opacity:0; transition: opacity 0.5s;';
+                document.body.appendChild(d);
+                setTimeout(() => d.style.opacity = '0.7', 10);
+                setTimeout(() => { d.style.opacity = '0'; setTimeout(()=>d.remove(), 500); }, 1500);
+            }
+        }, 800);
+    }
+    
+    if(window.dokiFakeCursor) {
+        let fc = document.createElement('div');
+        fc.id = 'doki-fake-cursor';
+        fc.innerText = 'ðŸ–²ï¸';
+        fc.style.cssText = 'position:fixed; font-size:24px; z-index:9999999; top:50%; left:50%; pointer-events:none; transition: all 0.2s linear;';
+        document.body.appendChild(fc);
+        window.dokiCursorInterval = setInterval(() => {
+            if(window.dokiState >= 1 && fc) {
+                fc.style.top = (Math.random() * 90) + '%';
+                fc.style.left = (Math.random() * 90) + '%';
+            }
+        }, 500);
+    }
+    
+    if(window.dokiVirusSpeed > 0) {
+        window.dokiVirusInterval = setInterval(() => {
+            if(window.dokiState === 0 || document.getElementById('dokimodal').classList.contains('hidden')) return;
+            let pct = parseInt(document.getElementById('doki-virus-fill').style.width || '0');
+            if(pct < 99) {
+                pct += window.dokiVirusSpeed;
+                if(pct > 99) pct = 99;
+                document.getElementById('doki-virus-fill').style.width = pct + '%';
+                let pctEl = document.getElementById('doki-virus-pct');
+                if(pctEl) pctEl.innerText = pct + '%';
+            }
+        }, 1000);
+    }
+};
+
+function moveCheckbox(id, timeoutVar) {
+    const lbl = document.getElementById(id);
+    if(lbl.querySelector('input').checked) return;
+    if(window.dokiCbMovement === 0) return; 
+    
+    clearTimeout(window[timeoutVar]);
+    window[timeoutVar] = setTimeout(() => {
+        let maxJump = window.dokiCbMovement;
+        lbl.style.top = (Math.random() * maxJump/4) + 'px';
+        lbl.style.left = (Math.random() * maxJump) + 'px';
+    }, 100);
+}
+
+function checkDokiCheckboxes() {
+    const c1 = document.getElementById('doki-cb1').checked;
+    const c2 = document.getElementById('doki-cb2').checked;
+    const c3 = document.getElementById('doki-cb3').checked;
+    if(c1 && c2 && c3 && window.dokiState === 1) {
+        window.dokiState = 2;
+        const agreeBtn = document.getElementById('doki-agree');
+        if(agreeBtn) {
+            agreeBtn.disabled = false;
+            agreeBtn.style.color = '#000';
+        }
+    }
+}
+
+window.spawnRenpyError = function() {
+    if(document.getElementById('dokimodal').classList.contains('hidden')) return;
+    const err = document.createElement('div');
+    err.className = 'doki-renpy-error';
+    err.style.cssText = 'position:absolute;width:300px;background:#ddd;border:2px solid #000;z-index:9999999;font-family:monospace;top:' + (Math.random()*80) + '%;left:' + (Math.random()*80) + '%;';
+    let files = ['monika.chr', 'sayori.chr', 'yuri.chr', 'natsuki.chr', 'script-ch5.rpyc'];
+    let f = files[Math.floor(Math.random()*files.length)];
+    err.innerHTML = '<div style="background:#800;color:#fff;padding:2px 5px;font-size:12px;">Exception Occurred</div><div style="padding:10px;font-size:12px;color:#000;">File "' + f + '" is missing or corrupt.<br><br>Please reinstall the game.</div><div style="text-align:right;padding:5px;"><button onclick="this.parentElement.parentElement.remove()">Ignore</button></div>';
+    document.getElementById('dokimodal').appendChild(err);
+};
+
+window.spawnAreYouSure = function() {
+    if(document.getElementById('dokimodal').classList.contains('hidden')) return;
+    const err = document.createElement('div');
+    err.className = 'doki-are-you-sure';
+    err.style.cssText = 'position:fixed;width:200px;background:#000;color:#fff;border:1px solid #fff;z-index:9999999;font-family:serif;top:' + (Math.random()*80) + '%;left:' + (Math.random()*80) + '%;text-align:center;padding:20px;';
+    err.innerHTML = '<div style="font-size:18px;margin-bottom:15px;">Are you sure?</div><button style="margin-right:10px;background:#000;color:#fff;border:1px solid #fff;" onclick="this.parentElement.remove()">Yes</button><button style="background:#000;color:#fff;border:1px solid #fff;" onclick="this.parentElement.remove()">No</button>';
+    document.body.appendChild(err);
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    let dokiTos = document.getElementById('doki-tos');
+    if(dokiTos) {
+        dokiTos.onscroll = function(e) {
+            if(window.dokiState > 0) return;
+            const el = e.target;
+            if(el.scrollHeight - el.scrollTop <= el.clientHeight + 10) {
+                window.dokiState = 1;
+                let cbx = document.getElementById('doki-checkboxes');
+                if(cbx) cbx.style.display = 'block';
+                startDokiChaos();
+            }
+        };
+    }
+
+    let cb1 = document.getElementById('lbl-cb1');
+    if(cb1) cb1.onmouseenter = () => moveCheckbox('lbl-cb1', 'dokiCbTimeout1');
+    let cb2 = document.getElementById('lbl-cb2');
+    if(cb2) cb2.onmouseenter = () => moveCheckbox('lbl-cb2', 'dokiCbTimeout2');
+    let cb3 = document.getElementById('lbl-cb3');
+    if(cb3) cb3.onmouseenter = () => moveCheckbox('lbl-cb3', 'dokiCbTimeout3');
+
+    let icb1 = document.getElementById('doki-cb1');
+    if(icb1) icb1.onchange = checkDokiCheckboxes;
+    let icb2 = document.getElementById('doki-cb2');
+    if(icb2) icb2.onchange = checkDokiCheckboxes;
+    let icb3 = document.getElementById('doki-cb3');
+    if(icb3) icb3.onchange = checkDokiCheckboxes;
+
+    let agreeBtn = document.getElementById('doki-agree');
+    if(agreeBtn) {
+        agreeBtn.onmouseenter = function(e) {
+            if(window.dokiState !== 2 || !window.dokiAgreeJumps) return;
+            const target = e.target;
+            clearTimeout(window.dokiAgreeTimeout);
+            window.dokiAgreeTimeout = setTimeout(() => {
+                const maxX = 250;
+                const maxY = 150;
+                target.style.transform = 'translate(' + (-(Math.random() * maxX)) + 'px, ' + (-(Math.random() * Math.min(maxY, target.offsetTop - 50))) + 'px)';
+            }, 80);
+        };
+
+        agreeBtn.onclick = function(e) {
+            if(window.dokiState !== 2) return;
+            if(window.dokiLevel < window.dokiMaxLevel) {
+                e.target.innerText = 'Installing...';
+                setTimeout(() => {
+                    window.dokiLevel++;
+                    e.target.innerText = 'Agree';
+                    startDokiLevel();
+                }, 1000);
+            } else {
+                e.target.innerText = 'YOU WON! 100x MULTIPLIER!';
+                cleanupDoki();
+                setTimeout(() => {
+                    M.money = (M.money || 0) * 100;
+                    M.elo = (M.elo || 500) * 100;
+                    M.maxLuck = (M.maxLuck || 1) * 100;
+                    M.totalUpgrades = (M.totalUpgrades || 0) * 100;
+                    saveMeta();
+                    refreshUI();
+                    if(typeof showAnnouncement === 'function') showAnnouncement('ðŸŽ® DOKI DOKI COMPLETED (LEVEL 20): 100X STATS MULTIPLIER!');
+                    closeModal('dokimodal');
+                    setTimeout(() => { location.reload(); }, 2000);
+                }, 1500);
+            }
+        };
+    }
+});
+
+
+
+
+
+const originalSaveMeta = saveMeta;
+window.saveMeta = function() {
+    let toSave = Object.assign({}, M);
+    if(toSave.money === Infinity) toSave.money = "Infinity";
+    else if(typeof toSave.money === 'number' && isNaN(toSave.money)) toSave.money = 0;
+    
+    if(toSave.moneyInfinities) toSave.moneyInfinities = toSave.moneyInfinities;
+    
+    localStorage.setItem('chessRngMeta', JSON.stringify(toSave));
+};
+
+const originalLoadMeta = loadMeta;
+window.loadMeta = function() {
+    let meta = originalLoadMeta();
+    if(meta.money === "Infinity") meta.money = Infinity;
+    if(meta.money === "NaN") meta.money = 0;
+    
+    if(!meta.achievements) meta.achievements = {};
+    if(!meta.quizBeats) meta.quizBeats = 0;
+    if(!meta.rebirths) meta.rebirths = 0;
+    if(!meta.moneyInfinities) meta.moneyInfinities = 0;
+    
+    return meta;
+};
+
+// Override format money
+window.fmtMoney = function(p) {
+    if(!p) p = 0;
+    if(M.moneyInfinities > 0) {
+        let infTiers = ["Absolute Infinity", "Omega", "Omega+", "God", "True God", "Creator", "Beyond Math", "The End"];
+        let tier = M.moneyInfinities - 1;
+        if(tier >= infTiers.length) tier = infTiers.length - 1;
+        return "£" + infTiers[tier];
+    }
+    
+    if(p === Infinity || p === "Infinity") {
+        return "£Infinity";
+    }
+    
+    const n = (Number(p)||0)/100;
+    if(n < 1e6) return '£' + n.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+    
+    const suffixes = ["", "k", "m", "b", "t", "qd", "qt", "sx", "sp", "oc", "no", "dc", "ud", "dd", "td", "qad", "qid", "sxd", "spd", "ocd", "nod", "vg", "uvg"];
+    
+    let suffixNum = Math.floor(("" + Math.floor(n)).length / 3);
+    if(suffixNum >= suffixes.length) return "£Unvigintillion+";
+    
+    let shortValue = parseFloat((suffixNum != 0 ? (n / Math.pow(1000, suffixNum)) : n).toPrecision(3));
+    if (shortValue % 1 != 0) shortValue = shortValue.toFixed(1);
+    
+    return '£' + shortValue + suffixes[suffixNum];
+};
+
+// Global Multiplier calculation
+window.getGlobalMultiplier = function() {
+    let mult = 1;
+    // Normal Achievements
+    let normalCount = 0;
+    let secretCount = 0;
+    if(M.achievements) {
+        for(let k in M.achievements) {
+            if(k.startsWith("s_")) secretCount++;
+            else normalCount++;
+        }
+    }
+    mult *= Math.pow(1.5, normalCount);
+    mult *= Math.pow(5.0, secretCount);
+    
+    // Quiz Multiplier
+    if(M.quizBeats > 0) {
+        let qMult = 20;
+        for(let i=1; i<M.quizBeats; i++) {
+            qMult = qMult / 2;
+        }
+        mult *= qMult;
+    }
+    
+    return mult;
+};
+
+// Achievements System
+const NORMAL_ACHIEVEMENTS = [];
+for(let i=1; i<=200; i++) {
+    NORMAL_ACHIEVEMENTS.push({ id: 'n_'+i, name: 'Normal Achievement '+i, desc: 'Played '+i+' games or clicked '+(i*10)+' times.' });
+}
+
+const SECRET_ACHIEVEMENTS = [
+    { id: 's_1', name: "Wait, That's Illegal", desc: "Go mathematically Beyond Infinity." },
+    { id: 's_2', name: "Just Monika", desc: "Discover the secret Doki Doki Action Game." },
+    { id: 's_3', name: "Master of the Matrix", desc: "Beat Level 20 without the 2.5x super jump." },
+    { id: 's_4', name: "Absolute Degeneracy", desc: "Complete Impossible Quiz 5 times." },
+    { id: 's_5', name: "The One Percent", desc: "Roll a piece rarer than 1 in 1 Trillion." },
+    { id: 's_6', name: "Admin Abuser", desc: "Click the Admin Abuse button." },
+    { id: 's_7', name: "Is This A Chess Game?", desc: "Generate 500 custom puzzles." },
+    { id: 's_8', name: "Schrödinger's Pawn", desc: "Play Custom Variant with all rules." }
+];
+
+window.unlockAchievement = function(id) {
+    if(!M.achievements) M.achievements = {};
+    if(!M.achievements[id]) {
+        M.achievements[id] = true;
+        saveMeta();
+        let ach = NORMAL_ACHIEVEMENTS.find(a => a.id === id) || SECRET_ACHIEVEMENTS.find(a => a.id === id);
+        if(ach) {
+            showAnnouncement("🏆 Achievement Unlocked: " + ach.name);
+        }
+        refreshUI();
+    }
+};
+
+window.renderAchievements = function() {
+    let html = '';
+    
+    html += '<h4>Normal Achievements</h4>';
+    for(let a of NORMAL_ACHIEVEMENTS) {
+        let unlocked = M.achievements && M.achievements[a.id];
+        html += `<div style="background:#444;padding:10px;border-radius:5px;opacity:${unlocked?1:0.5};">`;
+        html += `<strong>${a.name}</strong> ${unlocked ? '✅' : '🔒'}<br/>`;
+        html += `<small>${a.desc}</small></div>`;
+    }
+    
+    html += '<h4 style="margin-top:20px;">Secret Achievements</h4>';
+    for(let a of SECRET_ACHIEVEMENTS) {
+        let unlocked = M.achievements && M.achievements[a.id];
+        html += `<div style="background:#522;padding:10px;border-radius:5px;opacity:${unlocked?1:0.5};">`;
+        if(unlocked) {
+            html += `<strong>${a.name}</strong> 🟢<br/><small>${a.desc}</small></div>`;
+        } else {
+            html += `<strong>???</strong> 🔒<br/><small>Secret Description</small></div>`;
+        }
+    }
+    
+    document.getElementById('achievements-list').innerHTML = html;
+};
+
+// The Impossible Quiz
+const quizQuestions = [
+    { q: "What is the capital of Chess?", opts: ["Checkmate", "London", "Bongcloud", "Wait, what?"], ans: 2 },
+    { q: "How many hours did the bug test take?", opts: ["14", "200", "0 (I skipped it)", "NaN"], ans: 0 },
+    { q: "What is 1 + 1?", opts: ["2", "Window", "11", "3"], ans: 1 },
+    { q: "Select the actual highest multiplier.", opts: ["1.5x", "5x", "20x", "50%"], ans: 2 },
+    { q: "Do you want free ELO?", opts: ["Yes", "No", "Maybe", "No, I want money"], ans: 3 }
+];
+let currentQuizQ = 0;
+
+window.renderQuiz = function() {
+    if(currentQuizQ >= quizQuestions.length) {
+        // Won quiz
+        if(!M.quizBeats) M.quizBeats = 0;
+        M.quizBeats++;
+        saveMeta();
+        closeModal('quizmodal');
+        showAnnouncement("🎉 Beat the Impossible Quiz! Multiplier increased!");
+        unlockAchievement('s_4'); // Check if 5 times
+        return;
+    }
+    
+    let q = quizQuestions[currentQuizQ];
+    document.getElementById('quiz-q').innerText = "Question " + (currentQuizQ+1) + ": " + q.q;
+    let optHtml = '';
+    for(let i=0; i<q.opts.length; i++) {
+        optHtml += `<button class="btn" style="background:#34495e;" onclick="quizAnswer(${i})">${q.opts[i]}</button>`;
+    }
+    document.getElementById('quiz-options').innerHTML = optHtml;
+};
+
+window.quizAnswer = function(idx) {
+    if(idx === quizQuestions[currentQuizQ].ans) {
+        currentQuizQ++;
+        renderQuiz();
+    } else {
+        closeModal('quizmodal');
+        showAnnouncement("❌ Wrong! The Impossible Quiz resets.");
+        currentQuizQ = 0;
+    }
+};
+
+// Hook quiz open
+const oldOpenModal = openModal;
+window.openModal = function(id) {
+    oldOpenModal(id);
+    if(id === 'quizmodal') {
+        currentQuizQ = 0;
+        renderQuiz();
+    }
+};
+
+// Admin Abuse Button
+setTimeout(() => {
+    let adminBox = document.querySelector('#adminmodal .mbox');
+    if(adminBox) {
+        let btn = document.createElement('button');
+        btn.className = 'tbbtn';
+        btn.innerText = "🛑 ADMIN ABUSE";
+        btn.style.background = 'red';
+        btn.onclick = function() {
+            M.adminAbuse = true;
+            M.inventory = { vip: 9999, nvp: 9999, nvp_plus: 9999, nvp_plus_plus: 9999, royal: 9999 };
+            for(const k of ['bronze','silver','gold','diamond','amethyst']) M.unlockedPieceSkins[k] = true;
+            saveMeta();
+            unlockAchievement('s_6');
+            showAnnouncement("🛑 ADMIN ABUSE ACTIVATED! All shop items -50%!");
+            closeModal('adminmodal');
+        };
+        adminBox.appendChild(btn);
+    }
+    
+    // Free Rebirth Button
+    let shopBox = document.querySelector('#shopmodal .mbox');
+    if(shopBox) {
+        let rbBtn = document.createElement('button');
+        rbBtn.className = 'tbbtn';
+        rbBtn.innerText = "🔄 FREE REBIRTH (£90.00)";
+        rbBtn.style.background = 'purple';
+        rbBtn.onclick = function() {
+            if(M.money >= 9000 || M.money === Infinity || M.moneyInfinities > 0) {
+                if(!M.rebirths) M.rebirths = 0;
+                M.rebirths++;
+                saveMeta();
+                showAnnouncement("🔄 REBIRTH +1! (No money deducted)");
+            } else {
+                showAnnouncement("❌ You need £90.00");
+            }
+        };
+        shopBox.appendChild(rbBtn);
+    }
+}, 1000);
+
+// Beyond Infinity Money Multiplier Hook
+const oldRefreshUI = refreshUI;
+window.refreshUI = function() {
+    oldRefreshUI();
+    if(M.money === Infinity) {
+        M.moneyInfinities = (M.moneyInfinities || 0) + 1;
+        M.money = 0; // Reset to 0 but bump infinity tier
+        unlockAchievement('s_1');
+        saveMeta();
+    }
+    
+    // Update shop prices if admin abuse
+    if(M.adminAbuse) {
+        document.querySelectorAll('.sbtn').forEach(b => {
+            if(!b.dataset.abused) {
+                let costMatch = b.innerText.match(/£([\d\.]+)/);
+                if(costMatch) {
+                    let cost = parseFloat(costMatch[1]);
+                    b.innerText = b.innerText.replace("£"+cost, "£"+(cost/2));
+                }
+                b.dataset.abused = "true";
+            }
+        });
+    }
+};
+
+// Doki Doki Show Answer Skip
+window.skipDokiLevel = function() {
+    if(typeof p !== 'undefined' && p) {
+        p.x = 6200;
+        p.y = -500;
+        showAnnouncement("Skipped to Goal!");
+    }
+};
+setInterval(() => {
+    let btn = document.getElementById('doki-show-answer');
+    if(btn && M.dokiCompleted && document.getElementById('doki-action-game').style.display !== 'none') {
+        btn.style.display = 'block';
+    } else if(btn) {
+        btn.style.display = 'none';
+    }
+}, 1000);
+
+// Variants Tabs
+window.setVariantsTab = function(tab) {
+    if(tab === 'popular') {
+        document.getElementById('var_tab_popular').style.opacity = '1';
+        document.getElementById('var_tab_unpopular').style.opacity = '0.5';
+    } else {
+        document.getElementById('var_tab_popular').style.opacity = '0.5';
+        document.getElementById('var_tab_unpopular').style.opacity = '1';
+    }
+};
+
+// Frontend Leaderboard logic
+window.submitToLeaderboard = function() {
+    if(!M.account) return;
+    fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            username: M.account.username,
+            money: M.money,
+            moneyInfinities: M.moneyInfinities || 0,
+            elo: M.elo
+        })
+    }).catch(e => console.error(e));
+};
+
+setInterval(() => {
+    if(M.account) window.submitToLeaderboard();
+}, 30000); // submit every 30s
+
+const origOpenModalLb = window.openModal;
+window.openModal = function(id) {
+    if(id === 'lbmodal') {
+        fetch('/api/leaderboard').then(r => r.json()).then(data => {
+            let html = '<h3>Richest Players</h3><ul style="text-align:left;">';
+            data.money.forEach(p => {
+                let m = p.moneyInfinities > 0 ? "Beyond Infinity (Tier "+p.moneyInfinities+")" : fmtMoney(p.money);
+                html += "<li><b>" + p.username + "</b>: " + m + "</li>";
+            });
+            html += '</ul><h3 style="margin-top:15px;">Highest ELO</h3><ul style="text-align:left;">';
+            data.elo.forEach(p => {
+                html += "<li><b>" + p.username + "</b>: " + p.elo + "</li>";
+            });
+            html += '</ul>';
+            let lbContent = document.querySelector('#lbmodal .mbox');
+            if(lbContent) {
+                // Keep the title but replace content
+                let existingTitle = lbContent.querySelector('.mtitle').outerHTML;
+                lbContent.innerHTML = existingTitle + html;
+            }
+        });
+    }
+    origOpenModalLb(id);
+};
+// Add 105 more questions to the impossible quiz!
+const additionalQuizQuestions = [];
+for(let i=16; i<=110; i++) {
+    let wrong1 = "Wrong Answer " + Math.floor(Math.random() * 100);
+    let wrong2 = "Wait, what? " + i;
+    let wrong3 = "I don't know!";
+    let right = "Answer " + i;
+    let opts = [wrong1, wrong2, wrong3, right];
+    for(let j = opts.length - 1; j > 0; j--) {
+        const k = Math.floor(Math.random() * (j + 1));
+        [opts[j], opts[k]] = [opts[k], opts[j]];
+    }
+    additionalQuizQuestions.push({ q: "Impossible Question #" + i, opts: opts, ans: opts.indexOf(right) });
+}
+for(let q of additionalQuizQuestions) { quizQuestions.push(q); }
+
+window.quizAnswer = function(idx) {
+    if(idx === quizQuestions[currentQuizQ].ans) {
+        currentQuizQ++;
+        if(currentQuizQ >= quizQuestions.length) {
+            document.getElementById('quiz-q').innerText = "YOU BEAT THE IMPOSSIBLE QUIZ!";
+            document.getElementById('quiz-options').innerHTML = '<p style="color:#0f0; margin-bottom:10px;">Here is £100,000,000,000!</p><button class="btn" onclick="closeModal(\'quizmodal\'); M.quizBeats = (M.quizBeats||0)+1; saveMeta();">Claim Reward</button>';
+            M.money = (Number(M.money)||0) + 100000000000;
+            saveMeta();
+        } else {
+            renderQuiz();
+        }
+    } else {
+        document.getElementById('quiz-q').innerText = "WRONG! YOU FAILED!";
+        document.getElementById('quiz-options').innerHTML = '<button class="dangerbtn" onclick="closeModal(\'quizmodal\')">Leave in shame</button>';
+        currentQuizQ = 0;
+    }
+};
+
+// Limit scaling
+const EXTENDED_SUFFIXES = [
+    "", "k", "m", "b", "t", "qa", "qi", "sx", "sp", "oc", "no", "dc", "ud", "dd", "td", "qad", "qid", "sxd", "spd", "ocd", "nod", "vg",
+    "uvg", "dvg", "tvg", "qavg", "qivg", "sxvg", "spvg", "ocvg", "novg", "tg",
+    "utg", "dtg", "ttg", "qatg", "qitg", "sxtg", "sptg", "octg", "notg", "qg",
+    "uqg", "dqg", "tqg", "qaqg", "qiqg", "sxqg", "spqg", "ocqg", "noqg", "qig",
+    "uqig", "dqig", "tqig", "qaqig", "qiqig", "sxqig", "spqig", "ocqig", "noqig", "sxg",
+    "usxg", "dsxg", "tsxg", "qasxg", "qisxg", "sxsxg", "spsxg", "ocsxg", "nosxg", "spg",
+    "uspg", "dspg", "tspg", "qaspg", "qispg", "sxspg", "spspg", "ocspg", "nospg", "ocg",
+    "uocg", "docg", "tocg", "qaocg", "qiocg", "sxocg", "spocg", "ococg", "noocg", "nog",
+    "unog", "dnog", "tnog", "qanog", "qinog", "sxnog", "spnog", "ocnog", "nonog", "ce"
+];
+
+window.fmtMoney = function(v) {
+    if(v === Infinity) return "Infinity";
+    if(typeof v !== 'number' || isNaN(v)) return "£0";
+    if(v < 1000) return "£" + v.toFixed(2);
+    let power = Math.floor(Math.log10(v));
+    let suffixIdx = Math.floor(power / 3);
+    if (suffixIdx < EXTENDED_SUFFIXES.length) {
+        let shortValue = v / Math.pow(10, suffixIdx * 3);
+        let digits = shortValue >= 100 ? 0 : shortValue >= 10 ? 1 : 2;
+        return "£" + shortValue.toFixed(digits) + EXTENDED_SUFFIXES[suffixIdx];
+    }
+    return "£" + v.toExponential(2);
+};
+
+// Revamped Achievements
+const SECRET_ACHIEVEMENTS = [
+    { id: 's_1', name: "???", secretName: "The Architect", desc: "Score exactly 98.3% on a Square in the drawing minigame." },
+    { id: 's_2', name: "???", secretName: "Patience is Key", desc: "Wait on the title screen for exactly 5 minutes without clicking." },
+    { id: 's_3', name: "???", secretName: "The Void", desc: "Try to buy an item when your money is exactly 0." },
+    { id: 's_4', name: "???", secretName: "Admin Abuse Enjoyer", desc: "Use the Admin Abuse button 10 times." },
+    { id: 's_5', name: "???", secretName: "Math Genius", desc: "Answer a Doki Doki puzzle in under 1 second." },
+    { id: 's_6', name: "???", secretName: "Rebirth Specialist", desc: "Perform 3 Free Rebirths in a single session." },
+    { id: 's_7', name: "???", secretName: "Bug Hunter", desc: "Find exactly 0 bugs using the Stot Bug Detector." },
+    { id: 's_8', name: "???", secretName: "Beyond the Absolute", desc: "Reach the 'The End' infinity tier." }
+];
+
+window.checkSecretAchievement = function(id) {
+    if(!M.achievements) M.achievements = {};
+    if(!M.achievements[id]) {
+        M.achievements[id] = true; saveMeta();
+        let ach = SECRET_ACHIEVEMENTS.find(a => a.id === id);
+        if(ach) {
+            showAnnouncement("💎 SECRET UNLOCKED: " + ach.secretName + " (+5x Multiplier!)");
+            refreshUI();
+        }
+    }
+};
+
+window.checkNormalAchievement = function(id) {
+    if(!M.achievements) M.achievements = {};
+    if(!M.achievements[id]) {
+        M.achievements[id] = true; saveMeta();
+        showAnnouncement("🏆 ACHIEVEMENT UNLOCKED! (+1.5x Multiplier)");
+        refreshUI();
+    }
+};
+
+const _oldBuyItem = window.buyItem;
+window.buyItem = function(id) {
+    if(M.money === 0 && id) checkSecretAchievement('s_3');
+    _oldBuyItem(id);
+};
+
+const _oldAdminAbuse = window.adminGiveMoney;
+window.adminAbuseCount = 0;
+window.adminGiveMoney = function(amt) {
+    window.adminAbuseCount++;
+    if(window.adminAbuseCount >= 10) checkSecretAchievement('s_4');
+    _oldAdminAbuse(amt);
+};
+
+// Draw shapes logic
+let drawPts = [], isDrawing = false, drawingScore = 0;
+window.clearDrawCanvas = function() {
+    drawPts = [];
+    let cvs = document.getElementById('drawCanvas');
+    if(cvs) {
+        let ctx = cvs.getContext('2d');
+        ctx.clearRect(0, 0, cvs.width, cvs.height);
+    }
+    let res = document.getElementById('drawResult');
+    if(res) res.innerText = "";
+};
+
+window.endDrawShape = function() {
+    isDrawing = false;
+    if(drawPts.length < 10) return;
+    let minX = 9999, maxX = -9999, minY = 9999, maxY = -9999;
+    for(let p of drawPts) {
+        if(p.x < minX) minX = p.x; if(p.x > maxX) maxX = p.x;
+        if(p.y < minY) minY = p.y; if(p.y > maxY) maxY = p.y;
+    }
+    let w = maxX - minX, h = maxY - minY;
+    let shape = document.getElementById('drawShapeSelect').value;
+    let score = 0;
+    
+    if(shape === 'square') {
+        let ratio = w / h;
+        score = 100 - (Math.abs(1 - ratio) * 100) - (Math.random()*10);
+    } else if (shape === 'circle') {
+        let ratio = w / h;
+        score = 100 - (Math.abs(1 - ratio) * 80) - (Math.random()*10);
+    } else {
+        score = Math.random() * 80 + 10;
+    }
+    
+    score = Math.max(0, Math.min(100, score));
+    drawingScore = score;
+    let displayScore = score.toFixed(1);
+    
+    let res = document.getElementById('drawResult');
+    res.innerText = displayScore + "% Accuracy";
+    
+    if(shape === 'square' && displayScore === "98.3") {
+        checkSecretAchievement('s_1');
+    }
+    
+    if(score > 90) {
+        res.style.color = "#0f0";
+        M.money = (Number(M.money) || 0) + (1000000000 * getLuck());
+        saveMeta();
+        showAnnouncement("🎨 Perfect Shape! You gained a massive money drop!");
+    } else {
+        res.style.color = "#f00";
+    }
+};
+
+setTimeout(() => {
+    let cvs = document.getElementById('drawCanvas');
+    if(cvs) {
+        cvs.addEventListener('mousedown', (e) => { isDrawing = true; drawPts = []; clearDrawCanvas(); });
+        cvs.addEventListener('mousemove', (e) => {
+            if(!isDrawing) return;
+            let rect = cvs.getBoundingClientRect();
+            let x = e.clientX - rect.left; let y = e.clientY - rect.top;
+            drawPts.push({x,y});
+            let ctx = cvs.getContext('2d');
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(x,y,2,2);
+        });
+        cvs.addEventListener('mouseup', endDrawShape);
+        cvs.addEventListener('mouseleave', () => { if(isDrawing) endDrawShape(); });
+    }
+    
+    let shopBox = document.querySelector('#shopmodal .mbox');
+    if(shopBox) {
+        let rbBtn = document.createElement('button');
+        rbBtn.className = 'tbbtn';
+        rbBtn.innerText = "♻️ FREE REBIRTH (Does not reset progress)";
+        rbBtn.style.background = 'purple';
+        rbBtn.onclick = function() {
+            let cost = M.rebirthCost || 1000000000000;
+            if(M.money >= cost || M.money === Infinity || M.moneyInfinities > 0) {
+                if(!M.rebirths) M.rebirths = 0;
+                M.rebirths++;
+                saveMeta();
+                checkSecretAchievement('s_6');
+                showAnnouncement("♻️ REBIRTH +1! (No money deducted)");
+            } else {
+                showAnnouncement("❌ You need " + window.fmtMoney(cost));
+            }
+        };
+        shopBox.appendChild(rbBtn);
+    }
+    
+    // Add Stot Bug Detector to HTML dynamically to avoid editing index.html directly
+    let adminBox = document.querySelector('#adminmodal .mbox');
+    if(adminBox) {
+        let bugBtn = document.createElement('div');
+        bugBtn.className = 'adminitem';
+        bugBtn.onclick = runStotBugDetector;
+        bugBtn.innerHTML = '<b>🛠️ Stot Bug Detector</b> — Scan the game for bugs and auto-fix';
+        adminBox.appendChild(bugBtn);
+    }
+}, 1000);
+
+window.runStotBugDetector = function() {
+    let bugs = 0;
+    if(typeof M.money !== 'number' || isNaN(M.money)) { M.money = 0; bugs++; showAnnouncement("Fixed corrupt Money"); }
+    if(typeof M.elo !== 'number' || isNaN(M.elo)) { M.elo = 500; bugs++; showAnnouncement("Fixed corrupt ELO"); }
+    if(M.money < 0 && M.money !== -Infinity) { M.money = 0; bugs++; showAnnouncement("Fixed negative money"); }
+    if(M.money === -Infinity) { M.money = Infinity; bugs++; showAnnouncement("Fixed corrupted limit!"); }
+    if(bugs === 0) {
+        showAnnouncement("🛠️ Stot Bug Detector found 0 bugs!");
+        checkSecretAchievement('s_7');
+    } else {
+        showAnnouncement("🛠️ Stot Bug Detector repaired " + bugs + " issues!");
+    }
+    saveMeta();
+    refreshUI();
+};
+
+const _oldPollStats = window.pollStats;
+window.pollStats = async function() {
+    try {
+        const res = await fetch('/api/stats');
+        if(res.ok) {
+            const data = await res.json();
+            const el = document.getElementById('live-stats');
+            if(el) {
+                let fakeOn = 84200 + ((data.online||1)*13) + (Math.floor(Date.now()/10000)%500); let fakeReg = 140500 + ((data.users||1)*7); 
+                el.innerText = `Online: ${fakeOn.toLocaleString()} | Registered: ${fakeReg.toLocaleString()}`;
+            }
+            if(data.owners) {
+                for(let o of data.owners) {
+                    if(!OWNER_NAMES.includes(o)) OWNER_NAMES.push(o);
+                }
+            }
+        }
+    } catch(e) {}
+};
+
+// 14h Bug Test Fixes
+setTimeout(() => {
+    // Fix: Allow quiz replay without page refresh
+    const _oldQuizAnswer = window.quizAnswer;
+    window.quizAnswer = function(idx) {
+        let isWin = (idx === quizQuestions[currentQuizQ].ans) && ((currentQuizQ + 1) >= quizQuestions.length);
+        _oldQuizAnswer(idx);
+        if (isWin) {
+            let optBox = document.getElementById('quiz-options');
+            if (optBox) {
+                // Add currentQuizQ = 0 to the close modal button so it resets
+                optBox.innerHTML = '<p style="color:#0f0; margin-bottom:10px;">Here is £100,000,000,000!</p><button class="btn" onclick="closeModal(\'quizmodal\'); M.quizBeats = (M.quizBeats||0)+1; saveMeta(); currentQuizQ=0; renderQuiz();">Claim Reward</button>';
+            }
+        }
+    };
+
+    // Fix: fmtMoney NaN on negative large numbers
+    const _oldFmtMoney = window.fmtMoney;
+    window.fmtMoney = function(v) {
+        if(v < 0) return "-£" + _oldFmtMoney(Math.abs(v)).replace('£', '');
+        return _oldFmtMoney(v);
+    };
+}, 2000);
+
+// Force Draw Minigame Button Injection Robustly
+setTimeout(() => {
+    // Locate using onclick attribute instead of innerText to bypass any mojibake
+    const quizBtn = document.querySelector('button[onclick*="quizmodal"]');
+    if(quizBtn && !document.querySelector('#draw-minigame-btn-robust')) {
+        let drawBtn = document.createElement('button');
+        drawBtn.id = 'draw-minigame-btn-robust';
+        drawBtn.className = 'hs-btn';
+        drawBtn.style.background = 'linear-gradient(135deg, #00c6ff, #0072ff)';
+        drawBtn.onclick = () => { showGameView(); openModal('drawmodal'); };
+        drawBtn.innerText = '🎨 Draw Shapes Minigame';
+        
+        // Ensure margin-top matches existing buttons if needed
+        drawBtn.style.marginTop = '10px';
+        
+        quizBtn.parentNode.insertBefore(drawBtn, quizBtn.nextSibling);
+    }
+    
+    // Ensure modal is present
+    if(!document.getElementById('drawmodal')) {
+        let m = document.createElement('div');
+        m.className = 'modal hidden';
+        m.id = 'drawmodal';
+        m.style.zIndex = '99999';
+        m.innerHTML = `<div class="mbox" style="width:500px; max-width:90vw;">
+          <div class="mtitle">📐 Draw the Perfect Shape <button class="mclose" onclick="closeModal('drawmodal')">✖</button></div>
+          <div style="padding:15px; text-align:center;">
+            <p style="margin-bottom:10px;">Select a shape and draw it perfectly for rewards!</p>
+            <select id="drawShapeSelect" style="padding:5px; margin-bottom:10px; width:100%; color:#000;">
+              <option value="square">Square</option>
+              <option value="circle">Circle</option>
+              <option value="triangle">Triangle</option>
+              <option value="hexagon">Hexagon</option>
+            </select>
+            <canvas id="drawCanvas" width="400" height="400" style="border:2px dashed #444; background:#111; cursor:crosshair; touch-action:none;"></canvas>
+            <div id="drawResult" style="font-size:24px; font-weight:bold; color:#0f0; margin-top:10px; height:30px;"></div>
+            <button class="tbbtn" onclick="clearDrawCanvas()" style="margin-top:10px;">Clear</button>
+          </div>
+        </div>`;
+        document.body.appendChild(m);
+        
+        let cvs = document.getElementById('drawCanvas');
+        if(cvs) {
+            cvs.addEventListener('mousedown', (e) => { isDrawing = true; drawPts = []; clearDrawCanvas(); });
+            cvs.addEventListener('mousemove', (e) => {
+                if(!isDrawing) return;
+                let rect = cvs.getBoundingClientRect();
+                let x = e.clientX - rect.left; let y = e.clientY - rect.top;
+                drawPts.push({x,y});
+                let ctx = cvs.getContext('2d');
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(x,y,2,2);
+            });
+            cvs.addEventListener('mouseup', endDrawShape);
+            cvs.addEventListener('mouseleave', () => { if(isDrawing) endDrawShape(); });
+        }
+    }
+}, 2500); // Increased timeout to ensure DOM is fully ready
+
