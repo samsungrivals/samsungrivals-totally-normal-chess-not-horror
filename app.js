@@ -7813,7 +7813,7 @@ if(sessionStorage.getItem('testing_update')) {
     setTimeout(() => {
         let banner = document.createElement('div');
         banner.style.cssText = 'position:fixed; top:0; left:0; width:100%; background:red; color:white; text-align:center; padding:10px; font-weight:bold; z-index:99999999; font-size:24px; cursor:pointer;';
-        banner.innerText = âš ï¸ PLAYING OLD VERSION () âš ï¸ Click here to return to normal!;
+        banner.innerText = "PLAYING OLD VERSION " + ver + " - Click here to return to normal!";
         banner.onclick = () => { sessionStorage.removeItem('testing_update'); location.reload(); };
         document.body.appendChild(banner);
         
@@ -7859,5 +7859,6 @@ window.sendChatInput = function() {
     // Fallback to normal
     origSendChatInput();
 };
+
 
 
