@@ -7861,3 +7861,4 @@ window.sendChatInput = function() {
     // Fallback to normal
     origSendChatInput();
 };
+
