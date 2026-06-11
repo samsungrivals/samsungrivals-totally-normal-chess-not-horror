@@ -7775,8 +7775,7 @@ setInterval(() => {
         btn.innerText = 'ðŸ“œ Update Log';
         btn.className = 'btn';
         btn.onclick = () => {
-            let logHtml = 
-                <div style="background:#222; padding:20px; color:#fff; max-width:500px; margin:0 auto; max-height:80vh; overflow-y:auto; border:2px solid #aaa; text-align:left;">
+            let logHtml = `<div style="background:#222; padding:20px; color:#fff; max-width:500px; margin:0 auto; max-height:80vh; overflow-y:auto; border:2px solid #aaa; text-align:left;">
                     <h2 style="text-align:center;">Update Log</h2>
                     <div style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">
                         <h3 style="color:#0ff;">v3.0 - The Massive Feature Drop</h3>
@@ -7799,8 +7798,7 @@ setInterval(() => {
                         <button class="btn" style="background:#ff0;color:#000;" onclick="sessionStorage.setItem('testing_update','v1.0'); location.reload();">Play v1.0</button>
                     </div>
                     <div style="text-align:center;"><button class="btn" onclick="this.parentElement.parentElement.remove()" style="background:red;">Close</button></div>
-                </div>
-            ;
+                </div>`;
             let div = document.createElement('div');
             div.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999999; background:rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center;';
             div.innerHTML = logHtml;
@@ -7861,4 +7859,5 @@ window.sendChatInput = function() {
     // Fallback to normal
     origSendChatInput();
 };
+
 
