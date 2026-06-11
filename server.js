@@ -1,4 +1,4 @@
-// Tiny multiplayer backend for the chess app.
+﻿// Tiny multiplayer backend for the chess app.
 // In-memory + JSON file. Endpoints power leaderboard, friends, announcements, matchmaking.
 
 const express = require('express');
@@ -247,6 +247,29 @@ app.post('/api/friends/remove', (req, res) => {
 });
 
 // --- Global announcements ---
+// --- GIFTING SYSTEM ---
+app.post('/api/gift', (req, res) => {
+    const { from, target, giftType, amount, password } = req.body;
+    const u = db.users[(from||'').toLowerCase()];
+    if (!u || u.password !== password) return res.json({ok: false, err: 'Unauthorized'});
+    const t = db.users[(target||'').toLowerCase()];
+    if (!t) return res.json({ok: false, err: 'User not found'});
+    
+    if (!t.pendingGifts) t.pendingGifts = [];
+    t.pendingGifts.push({ from, type: giftType, amount, ts: Date.now() });
+    saveSoon();
+    res.json({ok: true});
+});
+
+app.post('/api/gift/claim', (req, res) => {
+    const { user, password } = req.body;
+    const u = db.users[(user||'').toLowerCase()];
+    if (!u || u.password !== password) return res.json({ok: false, err: 'Unauthorized'});
+    const gifts = u.pendingGifts || [];
+    u.pendingGifts = [];
+    saveSoon();
+    res.json({ok: true, gifts});
+});
 app.post('/api/announce', (req, res) => {
   const { user, msg, password } = req.body || {};
   if (!user || !msg) return bad(res, 400, 'missing');

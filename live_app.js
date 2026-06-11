@@ -7631,3 +7631,195 @@ setInterval(() => {
         ctrls.appendChild(btn);
     }
 }, 1000);
+// ==========================================
+// V3 MASSIVE UPDATE LOGIC
+// ==========================================
+// Double messages fix (Deduplication)
+const origRenderAnnounce = window.renderAnnouncement || function(){};
+window.renderAnnouncement = function(a) {
+    let chat = document.getElementById('chat-messages');
+    if(chat) {
+        // Prevent duplicates
+        let existing = Array.from(chat.children).find(c => c.dataset.ts == a.ts && c.dataset.user == a.user);
+        if(existing) return;
+    }
+    // Call original logic or inject safely
+    if(typeof origRenderAnnounce === 'function') {
+        let args = arguments;
+        setTimeout(() => {
+            let lastChild = chat ? chat.lastElementChild : null;
+            if(lastChild) lastChild.dataset.ts = a.ts;
+            if(lastChild) lastChild.dataset.user = a.user;
+        }, 50);
+        return origRenderAnnounce.apply(this, args);
+    }
+};
+
+// Gifting Polling
+setInterval(() => {
+    if(M.account && M.account.username && M.account.password) {
+        fetch('/api/gift/claim', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({user: M.account.username, password: M.account.password})
+        }).then(r=>r.json()).then(d => {
+            if(d.ok && d.gifts && d.gifts.length > 0) {
+                for(let g of d.gifts) {
+                    showAnnouncement('ðŸŽ Received a gift from ' + g.from + '! ' + g.amount + 'x ' + g.type);
+                    if(g.type === 'money') M.money = (M.money||0) + Number(g.amount);
+                    if(g.type === 'rolls') M.rolls = (M.rolls||0) + Number(g.amount);
+                    if(g.type === 'elo') M.elo = (M.elo||500) + Number(g.amount);
+                    if(g.type === 'admin') M.adminUnlocked = true;
+                    if(g.type === 'owner') M.isAdmin = true;
+                    if(g.type === 'piece') { M.inventory[g.amount] = (M.inventory[g.amount]||0)+1; }
+                    if(g.type === 'board') { M.inventory[g.amount] = (M.inventory[g.amount]||0)+1; }
+                }
+                saveMeta(); refreshUI();
+            }
+        });
+    }
+}, 10000);
+
+window.sendGift = function(target, type, amount) {
+    if(!M.account) return alert('Must be logged in!');
+    fetch('/api/gift', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+            from: M.account.username, password: M.account.password,
+            target: target, giftType: type, amount: amount
+        })
+    }).then(r=>r.json()).then(d=>{
+        if(d.ok) alert('Gift sent successfully!');
+        else alert('Failed to send gift: ' + d.err);
+    });
+};
+
+// Gifting UI & Moving 3D Board
+setInterval(() => {
+    let pModal = document.getElementById('playermodal');
+    if(pModal && !pModal.classList.contains('hidden') && !document.getElementById('gift-btn')) {
+        let title = pModal.querySelector('h2');
+        if(title) {
+            let targetUser = title.innerText.replace('Profile: ', '').trim();
+            let btn = document.createElement('button');
+            btn.id = 'gift-btn';
+            btn.innerText = 'ðŸŽ Send Gift';
+            btn.className = 'btn';
+            btn.style.background = '#e74c3c';
+            btn.onclick = () => {
+                let type = prompt('What to gift? (money, rolls, elo, admin, owner, piece, board)');
+                if(!type) return;
+                let amt = prompt('Amount (or item name if piece/board):', '100');
+                if(!amt) return;
+                window.sendGift(targetUser, type, amt);
+            };
+            title.parentElement.insertBefore(btn, title.nextSibling);
+        }
+    }
+    
+    // Fix Doki Show How To Do
+    let dokiBtn = document.getElementById('doki-show-how-btn');
+    if(dokiBtn) {
+        if(M.dokiCompleted === true) {
+            dokiBtn.style.display = 'block';
+        } else {
+            dokiBtn.style.display = 'none';
+        }
+    }
+    
+    // Move 3D Board to Settings
+    let setModal = document.querySelector('#settingsmodal .mbox');
+    if(setModal && !document.getElementById('toggle-3d-btn-settings')) {
+        let btn = document.createElement('button');
+        btn.id = 'toggle-3d-btn-settings';
+        btn.innerText = 'Toggle 3D Board Skin';
+        btn.className = 'btn';
+        btn.style.background = '#e67e22';
+        btn.onclick = () => { 
+            let b = document.getElementById('board');
+            if(b.style.transform.includes('perspective')) {
+                b.style.transform = ''; b.style.boxShadow = '';
+            } else {
+                b.style.transform = 'perspective(800px) rotateX(45deg)';
+                b.style.boxShadow = '0 30px 0 #333, 0 40px 20px rgba(0,0,0,0.5)';
+                b.style.transformStyle = 'preserve-3d';
+            }
+        };
+        setModal.appendChild(btn);
+        
+        let oldBtn = document.getElementById('toggle-3d-btn');
+        if(oldBtn) oldBtn.remove();
+    }
+}, 1000);
+
+// Infinite Words
+window.fmtMoney = function(v) {
+    if(v === Infinity) return "Beyond Infinity";
+    if(typeof v !== 'number' || isNaN(v)) return '0';
+    if(v < 1e6) return Math.floor(v).toLocaleString();
+    const words = ["", "Million", "Billion", "Trillion", "Quadrillion", "Quintillion", "Sextillion", "Septillion", "Octillion", "Nonillion", "Decillion", "Undecillion", "Duodecillion", "Tredecillion", "Quattuordecillion", "Quindecillion", "Sexdecillion", "Septendecillion", "Octodecillion", "Novemdecillion", "Vigintillion", "Unvigintillion", "Duovigintillion", "Trevigintillion", "Quattuorvigintillion", "Quinvigintillion", "Sexvigintillion", "Septenvigintillion", "Octovigintillion", "Novemvigintillion", "Trigintillion", "Untrigintillion", "Duotrigintillion"];
+    let tier = Math.floor(Math.log10(v) / 3);
+    if(tier < 2) return Math.floor(v).toLocaleString();
+    tier -= 1;
+    let w = words[tier];
+    if(!w) w = "E" + (tier * 3 + 3);
+    let num = v / Math.pow(10, tier * 3 + 3);
+    return num.toFixed(2) + " " + w;
+};
+
+// Update Log Time Travel
+setInterval(() => {
+    let ctrls = document.querySelector('.controls');
+    if(ctrls && !document.getElementById('update-log-btn')) {
+        let btn = document.createElement('button');
+        btn.id = 'update-log-btn';
+        btn.innerText = 'ðŸ“œ Update Log';
+        btn.className = 'btn';
+        btn.onclick = () => {
+            let logHtml = 
+                <div style="background:#222; padding:20px; color:#fff; max-width:500px; margin:0 auto; max-height:80vh; overflow-y:auto; border:2px solid #aaa; text-align:left;">
+                    <h2 style="text-align:center;">Update Log</h2>
+                    <div style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">
+                        <h3 style="color:#0ff;">v3.0 - The Massive Feature Drop</h3>
+                        <ul style="list-style:circle; padding-left:20px;">
+                            <li>Gifting System (Pieces, Boards, Money, Admin)</li>
+                            <li>Update Log / Time Travel</li>
+                            <li>Infinite Number Words Expansion</li>
+                            <li>Doki Doki Auto-Play Fixes</li>
+                            <li>3D Board Toggle in Settings</li>
+                        </ul>
+                    </div>
+                    <div style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">
+                        <h3 style="color:#f0f;">v2.0 - Horror Update</h3>
+                        <ul style="list-style:circle; padding-left:20px;"><li>Doki Doki Action Game</li><li>Impossible Quiz Admin Skip</li></ul>
+                        <button class="btn" style="background:#f0f;color:#000;" onclick="sessionStorage.setItem('testing_update','v2.0'); location.reload();">Play v2.0</button>
+                    </div>
+                    <div style="margin-bottom:15px; padding-bottom:10px;">
+                        <h3 style="color:#ff0;">v1.0 - Classic RNG Chess</h3>
+                        <ul style="list-style:circle; padding-left:20px;"><li>Base Game</li><li>Rolls & Money</li></ul>
+                        <button class="btn" style="background:#ff0;color:#000;" onclick="sessionStorage.setItem('testing_update','v1.0'); location.reload();">Play v1.0</button>
+                    </div>
+                    <div style="text-align:center;"><button class="btn" onclick="this.parentElement.parentElement.remove()" style="background:red;">Close</button></div>
+                </div>
+            ;
+            let div = document.createElement('div');
+            div.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999999; background:rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center;';
+            div.innerHTML = logHtml;
+            document.body.appendChild(div);
+        };
+        ctrls.appendChild(btn);
+    }
+}, 1000);
+
+if(sessionStorage.getItem('testing_update')) {
+    let ver = sessionStorage.getItem('testing_update');
+    setTimeout(() => {
+        let banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed; top:0; left:0; width:100%; background:red; color:white; text-align:center; padding:10px; font-weight:bold; z-index:99999999; font-size:24px; cursor:pointer;';
+        banner.innerText = âš ï¸ PLAYING OLD VERSION () âš ï¸ Click here to return to normal!;
+        banner.onclick = () => { sessionStorage.removeItem('testing_update'); location.reload(); };
+        document.body.appendChild(banner);
+        
+        let sm = document.getElementById('shopmodal');
+        if(sm) sm.innerHTML = '<h2>Shop disabled in old versions!</h2>';
+    }, 500);
+}
