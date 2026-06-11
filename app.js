@@ -1,4 +1,4 @@
-function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+﻿function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
 const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟','D':'🦆','M':'🫅'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
@@ -7086,7 +7086,7 @@ window.skipDokiLevel = function() {
 };
 setInterval(() => {
     let btn = document.getElementById('doki-show-answer');
-    if(btn && M.dokiCompleted && document.getElementById('doki-action-game').style.display !== 'none') {
+    if(btn && M.dokiCompleted && document.getElementById('dokicanvas')) {
         btn.style.display = 'block';
     } else if(btn) {
         btn.style.display = 'none';

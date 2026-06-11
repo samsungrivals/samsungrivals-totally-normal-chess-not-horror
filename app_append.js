@@ -199,33 +199,7 @@ setTimeout(() => {
         };
         shopBox.appendChild(rbBtn);
     }
-    
-    // Add Stot Bug Detector to HTML dynamically to avoid editing index.html directly
-    let adminBox = document.querySelector('#adminmodal .mbox');
-    if(adminBox) {
-        let bugBtn = document.createElement('div');
-        bugBtn.className = 'adminitem';
-        bugBtn.onclick = runStotBugDetector;
-        bugBtn.innerHTML = '<b>🛠️ Stot Bug Detector</b> — Scan the game for bugs and auto-fix';
-        adminBox.appendChild(bugBtn);
-    }
 }, 1000);
-
-window.runStotBugDetector = function() {
-    let bugs = 0;
-    if(typeof M.money !== 'number' || isNaN(M.money)) { M.money = 0; bugs++; showAnnouncement("Fixed corrupt Money"); }
-    if(typeof M.elo !== 'number' || isNaN(M.elo)) { M.elo = 500; bugs++; showAnnouncement("Fixed corrupt ELO"); }
-    if(M.money < 0 && M.money !== -Infinity) { M.money = 0; bugs++; showAnnouncement("Fixed negative money"); }
-    if(M.money === -Infinity) { M.money = Infinity; bugs++; showAnnouncement("Fixed corrupted limit!"); }
-    if(bugs === 0) {
-        showAnnouncement("🛠️ Stot Bug Detector found 0 bugs!");
-        checkSecretAchievement('s_7');
-    } else {
-        showAnnouncement("🛠️ Stot Bug Detector repaired " + bugs + " issues!");
-    }
-    saveMeta();
-    refreshUI();
-};
 
 const _oldPollStats = window.pollStats;
 window.pollStats = async function() {

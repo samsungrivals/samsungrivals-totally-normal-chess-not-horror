@@ -765,7 +765,7 @@ let M;
 
 function loadMeta(){
   let d;
-  try{d=JSON.parse(localStorage.getItem('chessmeta')||'null')}catch(e){d=null}
+  try{d=JSON.parse(localStorage.getItem('chessRngMeta')||localStorage.getItem('chessmeta')||'null')}catch(e){d=null}
   if(!d)d={money:0,rolls:0,inventory:{classic:1},upgrades:{},equipped:'classic',autoRollOwned:false,autoRollActive:false,totalMoves:0,newGameClicks:0,adminUnlocked:false,lbReadyAfterRoll:false,sawLbAfterRoll:false,currentUpgrade:null,elo:500,friends:[],pieceSkin:'random',eloRewardsClaimed:{},gamesPlayed:0,gamesWon:0,unlockedPieceSkins:{}};
   if(!d.inventory)d.inventory={classic:1};
   if(!d.upgrades)d.upgrades={};
@@ -786,7 +786,7 @@ function loadMeta(){
 // Debounced save: keep M live in memory, but write to localStorage at most ~once/sec.
 // JSON.stringify + localStorage write is synchronous and was firing on every roll (huge lag).
 let _saveTimer=null,_saveDirty=false;
-function _saveNow(){_saveDirty=false;try{localStorage.setItem('chessmeta',JSON.stringify(M))}catch(e){}if(M&&M.account&&typeof window.API!=='undefined'){window.API.money(M.account.username,M.money||0).catch(()=>{});window.API.rolls(M.account.username,M.rolls||0).catch(()=>{});}}
+function _saveNow(){_saveDirty=false;try{localStorage.setItem('chessRngMeta',JSON.stringify(M));localStorage.setItem('chessmeta',JSON.stringify(M))}catch(e){}if(M&&M.account&&typeof window.API!=='undefined'){window.API.money(M.account.username,M.money||0).catch(()=>{});window.API.rolls(M.account.username,M.rolls||0).catch(()=>{});}}
 function saveMeta(){
   _saveDirty=true;
   if(_saveTimer)return;
@@ -7086,7 +7086,7 @@ window.skipDokiLevel = function() {
 };
 setInterval(() => {
     let btn = document.getElementById('doki-show-answer');
-    if(btn && M.dokiCompleted && document.getElementById('doki-action-game').style.display !== 'none') {
+    if(btn && M.dokiCompleted && document.getElementById('dokicanvas')) {
         btn.style.display = 'block';
     } else if(btn) {
         btn.style.display = 'none';
@@ -7209,7 +7209,7 @@ window.fmtMoney = function(v) {
 };
 
 // Revamped Achievements
-const SECRET_ACHIEVEMENTS = [
+SECRET_ACHIEVEMENTS.splice(0, SECRET_ACHIEVEMENTS.length, ...[
     { id: 's_1', name: "???", secretName: "The Architect", desc: "Score exactly 98.3% on a Square in the drawing minigame." },
     { id: 's_2', name: "???", secretName: "Patience is Key", desc: "Wait on the title screen for exactly 5 minutes without clicking." },
     { id: 's_3', name: "???", secretName: "The Void", desc: "Try to buy an item when your money is exactly 0." },
@@ -7218,7 +7218,7 @@ const SECRET_ACHIEVEMENTS = [
     { id: 's_6', name: "???", secretName: "Rebirth Specialist", desc: "Perform 3 Free Rebirths in a single session." },
     { id: 's_7', name: "???", secretName: "Bug Hunter", desc: "Find exactly 0 bugs using the Stot Bug Detector." },
     { id: 's_8', name: "???", secretName: "Beyond the Absolute", desc: "Reach the 'The End' infinity tier." }
-];
+]);
 
 window.checkSecretAchievement = function(id) {
     if(!M.achievements) M.achievements = {};
@@ -7479,3 +7479,84 @@ setTimeout(() => {
     }
 }, 2500); // Increased timeout to ensure DOM is fully ready
 
+// Update Loading Screen
+(function() {
+    let loader = document.createElement('div');
+    loader.id = 'update-loader';
+    loader.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:#111;z-index:9999999;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;font-family:sans-serif;transition:opacity 0.5s;';
+    loader.innerHTML = '<div style="font-size:32px;margin-bottom:20px;font-weight:bold;color:#00c6ff;">Checking for Updates...</div><div style="font-size:18px;color:#0f0;">Loading Game V47...</div><div style="margin-top:20px;width:200px;height:10px;background:#333;border-radius:5px;overflow:hidden;"><div style="width:0%;height:100%;background:#0f0;transition:width 2.5s ease-out;" id="loader-bar"></div></div>';
+    
+    if(document.body) document.body.appendChild(loader);
+    else document.addEventListener('DOMContentLoaded', () => document.body.appendChild(loader));
+    
+    setTimeout(() => {
+        let bar = document.getElementById('loader-bar');
+        if(bar) bar.style.width = '100%';
+    }, 100);
+    
+    setTimeout(() => {
+        if(loader) loader.style.opacity = '0';
+        setTimeout(() => { if(loader) loader.remove(); }, 500);
+    }, 2600);
+})();
+
+// Overwrite the draw minigame injection to fix mobile scrolling
+window.injectDrawMinigame = function() {
+    if(!document.getElementById('draw-minigame-container')) {
+        let m = document.createElement('div');
+        m.id = 'draw-minigame-container';
+        m.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.9);z-index:999999;display:flex;flex-direction:column;align-items:center;padding-top:20px;color:#fff;overflow-y:auto;';
+        m.innerHTML = `
+        <div class="mbox" style="max-width:500px; display:flex; flex-direction:column; align-items:center;">
+          <div class="mheader" style="width:100%; display:flex; justify-content:space-between;">
+            <div class="mtitle">🎨 Draw Shapes Minigame</div>
+            <button class="tbcross" onclick="document.getElementById('draw-minigame-container').remove()">×</button>
+          </div>
+          <div style="padding:20px; text-align:center; width:100%; display:flex; flex-direction:column; align-items:center;">
+            <p style="margin-bottom:10px;">Select a shape and draw it! 95%+ accuracy grants rewards.</p>
+            <div style="display:flex; gap:10px; margin-bottom:10px; align-items:center; flex-wrap:wrap; justify-content:center;">
+              <select id="drawShapeSelect" class="tbselect" style="padding:5px;">
+                <option value="square">Square</option>
+                <option value="circle">Circle</option>
+                <option value="triangle">Triangle</option>
+                <option value="hexagon">Hexagon</option>
+              </select>
+              <button class="tbbtn" onclick="clearDrawCanvas()">Clear Canvas</button>
+            </div>
+            <div id="drawResult" style="font-size:24px; font-weight:bold; color:#0f0; margin-bottom:10px; height:30px;"></div>
+            <canvas id="drawCanvas" width="400" height="400" style="border:2px dashed #444; background:#111; cursor:crosshair; touch-action:none; max-width:90vw; max-height:50vh;"></canvas>
+            <button class="tbbtn" onclick="document.getElementById('draw-minigame-container').remove()" style="margin-top:20px; background:#e74c3c;">Close Minigame</button>
+          </div>
+        </div>`;
+        document.body.appendChild(m);
+        
+        let cvs = document.getElementById('drawCanvas');
+        if(cvs) {
+            cvs.addEventListener('mousedown', (e) => { window.isDrawing = true; window.drawPts = []; clearDrawCanvas(); });
+            cvs.addEventListener('touchstart', (e) => { window.isDrawing = true; window.drawPts = []; clearDrawCanvas(); });
+            
+            let moveHandler = (e) => {
+                if(!window.isDrawing) return;
+                let rect = cvs.getBoundingClientRect();
+                let clientX = e.clientX;
+                let clientY = e.clientY;
+                if(e.touches && e.touches.length > 0) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                    e.preventDefault(); // Prevent scrolling while drawing on mobile
+                }
+                let x = clientX - rect.left; let y = clientY - rect.top;
+                window.drawPts.push({x,y});
+                let ctx = cvs.getContext('2d');
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(x,y,2,2);
+            };
+            cvs.addEventListener('mousemove', moveHandler);
+            cvs.addEventListener('touchmove', moveHandler, {passive: false});
+            
+            cvs.addEventListener('mouseup', window.endDrawShape);
+            cvs.addEventListener('touchend', window.endDrawShape);
+            cvs.addEventListener('mouseleave', () => { if(window.isDrawing) window.endDrawShape(); });
+        }
+    }
+};
