@@ -101,12 +101,6 @@ app.get('/api/check-syntax', (req, res) => {
     res.json({ ok: false, error: e.stack || e.message });
   }
 });
-app.get('/api/leaderboard', (req, res) => {
-  const list = Object.values(db.users)
-    .filter(u => !u.isAI && u.username && !u.isBot && !['GrandmasterX', 'PawnPusher', 'CastleMaster', 'KnightFork99', 'BishopPairBen', 'EndgameEric', 'TacticalTom', 'AverageAndy', 'BlitzKing', 'QueenBee', 'OpeningOscar', 'SlowAndSteady', 'PromotionPete', 'GambitGirl', 'PinPusher', 'ChessNoob42', 'BlunderBob', 'StalemateSteve', 'ZugzwangZoe', 'Bot1800', 'Bot1650', 'Bot1987', 'Bot2300'].includes(u.username))
-    .map(u => ({ name: u.username, elo: u.elo, upgrades: u.upgrades||0, money: u.money||0, rolls: u.rolls||0, isAI: false }))
-  ok(res, { lb: list, totalUsers: list.length });
-});
 
 // --- Stats ---
 app.get('/api/stats', (req, res) => {
