@@ -7631,7 +7631,7 @@ setInterval(() => {
 }, 500);
 // --- 3D CHESS BOARD SKIN ---
 setInterval(() => {
-    let ctrls = document.querySelector('.controls');
+    let ctrls = document.getElementById('settingsmodal').querySelector('.mbox');
     if(ctrls && !document.getElementById('toggle-3d-btn')) {
         let btn = document.createElement('button');
         btn.id = 'toggle-3d-btn';
@@ -7808,7 +7808,7 @@ window.fmtMoney = function(v) {
 
 // Update Log Time Travel
 setInterval(() => {
-    let ctrls = document.querySelector('.controls');
+    let ctrls = document.getElementById('settingsmodal').querySelector('.mbox');
     if(ctrls && !document.getElementById('update-log-btn')) {
         let btn = document.createElement('button');
         btn.id = 'update-log-btn';
@@ -7952,7 +7952,7 @@ setInterval(() => {
 
 // Show How To Do button (only works if you beat Doki Doki)
 setInterval(() => {
-    let ctrls = document.querySelector('.controls');
+    let ctrls = document.getElementById('settingsmodal').querySelector('.mbox');
     if(ctrls && !document.getElementById('show-how-to-do')) {
         let btn = document.createElement('button');
         btn.id = 'show-how-to-do';
@@ -8068,4 +8068,5 @@ setInterval(() => {
         }
     }
 }, 1000);
+
 
