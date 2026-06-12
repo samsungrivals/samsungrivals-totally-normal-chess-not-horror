@@ -7640,16 +7640,26 @@ setInterval(() => {
         btn.style.background = '#e67e22';
         btn.onclick = () => { 
             let b = document.getElementById('board');
-            if(b.style.transform.includes('perspective')) {
+            let style = document.getElementById('3d-style');
+            if(!style) {
+                style = document.createElement('style');
+                style.id = '3d-style';
+                document.head.appendChild(style);
+            }
+            if(b.classList.contains('is-3d')) {
+                b.classList.remove('is-3d');
                 b.style.transform = '';
                 b.style.boxShadow = '';
+                style.innerHTML = '';
             } else {
+                b.classList.add('is-3d');
                 b.style.transform = 'perspective(800px) rotateX(45deg)';
                 b.style.boxShadow = '0 30px 0 #333, 0 40px 20px rgba(0,0,0,0.5)';
                 b.style.transformStyle = 'preserve-3d';
+                style.innerHTML = '#board.is-3d .piece { transform: rotateX(-45deg) translateY(-20%) scale(1.2); transform-origin: bottom center; }';
             }
         };
-        ctrls.appendChild(btn);
+        document.getElementById('settingsmodal').querySelector('.mbox').appendChild(btn);
     }
 }, 1000);
 // ==========================================
@@ -8068,5 +8078,6 @@ setInterval(() => {
         }
     }
 }, 1000);
+
 
 
