@@ -8081,3 +8081,24 @@ setInterval(() => {
 
 
 
+
+// 14h Bug Test Deep Diagnostics Fixes
+setInterval(() => {
+    if(typeof M !== 'undefined' && M) {
+        if(!M.inventory) M.inventory = {};
+        if(!M.unlockedSkins) M.unlockedSkins = {};
+        if(!M.unlockedPieceSkins) M.unlockedPieceSkins = {};
+        if(!M.achievements) M.achievements = {};
+        if(typeof M.money !== 'number' || isNaN(M.money)) M.money = 0;
+        if(typeof M.elo !== 'number' || isNaN(M.elo)) M.elo = 500;
+        if(!M.account) M.account = { username: 'Anonymous' };
+    }
+}, 500);
+
+// Fix clicker game NaN bug if M.money is not numeric
+setInterval(() => {
+    let cv = document.getElementById('clickval');
+    if(cv && typeof M !== 'undefined' && M) {
+        cv.innerText = fmtMoney ? fmtMoney(M.money) : M.money;
+    }
+}, 1000);
