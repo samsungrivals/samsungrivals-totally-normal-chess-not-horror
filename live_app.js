@@ -7736,14 +7736,17 @@ setInterval(() => {
         btn.style.background = '#e67e22';
         btn.onclick = () => { 
             let b = document.getElementById('board');
-            if(b.style.transform.includes('perspective')) {
-                b.style.transform = ''; b.style.boxShadow = '';
-            } else {
-                b.style.transform = 'perspective(800px) rotateX(45deg)';
-                b.style.boxShadow = '0 30px 0 #333, 0 40px 20px rgba(0,0,0,0.5)';
-                b.style.transformStyle = 'preserve-3d';
-            }
+            if(!b) return;
+            b.classList.toggle('board-3d');
+            if (typeof M !== 'undefined') { M.is3d = b.classList.contains('board-3d'); saveMeta(); }
         };
+        // Restore state on init
+        setTimeout(() => {
+            if (typeof M !== 'undefined' && M.is3d) {
+                let b = document.getElementById('board');
+                if(b) b.classList.add('board-3d');
+            }
+        }, 1500);
         setModal.appendChild(btn);
         
         let oldBtn = document.getElementById('toggle-3d-btn');
@@ -7952,3 +7955,4 @@ setTimeout(() => {
         loading.innerText = 'Checking for Updates... v3.0 [Gifting & Infinite Money Update]';
     }
 }, 500);
+

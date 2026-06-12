@@ -628,3 +628,21 @@ body.doki-theme button { background: #fff !important; color: #f00 !important; bo
 .doki-spin {
   animation: dokispin 3s linear infinite !important;
 }
+/* 3D Board Styles */
+#board.board-3d {
+    transform: perspective(800px) rotateX(45deg) !important;
+    box-shadow: 0 30px 0 #333, 0 40px 20px rgba(0,0,0,0.5) !important;
+    transform-style: preserve-3d !important;
+    margin-top: 20px;
+    margin-bottom: 40px;
+    transition: transform 0.5s ease;
+}
+#board.board-3d .sq {
+    transform-style: preserve-3d;
+}
+#board.board-3d .pc {
+    display: inline-block;
+    transform: rotateX(-45deg) translateY(-15px) translateZ(10px);
+    text-shadow: 0 10px 10px rgba(0,0,0,0.5);
+    transition: transform 0.5s ease;
+}
