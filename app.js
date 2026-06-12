@@ -7751,19 +7751,35 @@ setInterval(() => {
     }
 }, 1000);
 
-// Infinite Words
+// Infinite Words Generator for Numbers
+const PREFIXES_U = ["", "Un", "Duo", "Tre", "Quattuor", "Quin", "Sex", "Septen", "Octo", "Novem"];
+const PREFIXES_T = ["", "Deci", "Viginti", "Triginta", "Quadraginta", "Quinquaginta", "Sexaginta", "Septuaginta", "Octoginta", "Nonaginta"];
+const PREFIXES_H = ["", "Centi", "Ducenti", "Trecenti", "Quadringenti", "Quingenti", "Sescenti", "Septingenti", "Octingenti", "Nongenti"];
+
+function getInfiniteWord(tier) {
+    if(tier < 2) return "";
+    const small = ["", "Thousand", "Million", "Billion", "Trillion", "Quadrillion", "Quintillion", "Sextillion", "Septillion", "Octillion", "Nonillion"];
+    if(tier < 11) return small[tier] || "";
+    
+    let t = tier - 1;
+    let h = Math.floor(t / 100) % 10;
+    let d = Math.floor(t / 10) % 10;
+    let u = t % 10;
+    
+    let res = PREFIXES_U[u] + PREFIXES_T[d] + PREFIXES_H[h];
+    res = res.replace(/a$|i$|o$/, "") + "llion";
+    return res;
+}
+
 window.fmtMoney = function(v) {
     if(v === Infinity) return "Beyond Infinity";
     if(typeof v !== 'number' || isNaN(v)) return '0';
     if(v < 1e6) return Math.floor(v).toLocaleString();
-    const words = ["", "Million", "Billion", "Trillion", "Quadrillion", "Quintillion", "Sextillion", "Septillion", "Octillion", "Nonillion", "Decillion", "Undecillion", "Duodecillion", "Tredecillion", "Quattuordecillion", "Quindecillion", "Sexdecillion", "Septendecillion", "Octodecillion", "Novemdecillion", "Vigintillion", "Unvigintillion", "Duovigintillion", "Trevigintillion", "Quattuorvigintillion", "Quinvigintillion", "Sexvigintillion", "Septenvigintillion", "Octovigintillion", "Novemvigintillion", "Trigintillion", "Untrigintillion", "Duotrigintillion"];
+    
     let tier = Math.floor(Math.log10(v) / 3);
     if(tier < 2) return Math.floor(v).toLocaleString();
-    tier -= 1;
-    let w = words[tier];
-    if(!w) w = "E" + (tier * 3 + 3);
-    let num = v / Math.pow(10, tier * 3 + 3);
-    return num.toFixed(2) + " " + w;
+    let num = v / Math.pow(10, tier * 3);
+    return num.toFixed(2) + " " + getInfiniteWord(tier);
 };
 
 // Update Log Time Travel
@@ -7862,3 +7878,77 @@ window.sendChatInput = function() {
 
 
 
+
+
+// Impossible Quiz Admin Skip
+setInterval(() => {
+    let quizDiv = document.getElementById('quiz-container');
+    if(quizDiv && M.isAdmin) {
+        if(!document.getElementById('admin-skip-question')) {
+            let btn = document.createElement('button');
+            btn.id = 'admin-skip-question';
+            btn.className = 'btn';
+            btn.innerText = 'Admin Skip 1 Question';
+            btn.style.background = '#f0f';
+            btn.onclick = () => {
+                if(typeof window.currentQuizQuestion !== 'undefined') {
+                    window.currentQuizQuestion++;
+                    if(typeof window.renderQuiz === 'function') window.renderQuiz();
+                }
+            };
+            quizDiv.appendChild(btn);
+        }
+    }
+}, 1000);
+
+// Admin Only Free Rebirth
+setInterval(() => {
+    let rbBtn = document.getElementById('rebirthbtn');
+    if(rbBtn && M.isAdmin) {
+        if(!document.getElementById('admin-free-rebirth')) {
+            let btn = document.createElement('button');
+            btn.id = 'admin-free-rebirth';
+            btn.className = 'btn';
+            btn.innerText = 'Admin Free Rebirth';
+            btn.style.background = '#f0f';
+            btn.style.marginLeft = '10px';
+            btn.onclick = () => {
+                M.money = 0;
+                M.elo = 500;
+                M.prestige = (M.prestige || 0) + 1;
+                M.maxLuck = (M.maxLuck || 1) * 2;
+                saveMeta();
+                alert('Admin Free Rebirth applied! Money reset, Prestige & Luck increased.');
+                refreshUI();
+            };
+            rbBtn.parentNode.insertBefore(btn, rbBtn.nextSibling);
+        }
+    }
+}, 1000);
+
+// Show How To Do button (only works if you beat Doki Doki)
+setInterval(() => {
+    let ctrls = document.querySelector('.controls');
+    if(ctrls && !document.getElementById('show-how-to-do')) {
+        let btn = document.createElement('button');
+        btn.id = 'show-how-to-do';
+        btn.className = 'btn';
+        btn.innerText = 'Show How To Do';
+        btn.onclick = () => {
+            if(M.dokiCompleted) {
+                alert('Tutorial: Click elements, win games, get money, rebirth for luck!');
+            } else {
+                alert('You must beat the Doki Doki Action Game first to unlock this tutorial!');
+            }
+        };
+        ctrls.appendChild(btn);
+    }
+}, 1000);
+
+// Custom Loading Text
+setTimeout(() => {
+    let loading = document.getElementById('loading');
+    if(loading && loading.innerText.includes('Checking for Updates')) {
+        loading.innerText = 'Checking for Updates... v3.0 [Gifting & Infinite Money Update]';
+    }
+}, 500);
