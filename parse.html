@@ -1,94 +1,848 @@
-<!DOCTYPE html>
-<html>
-<head><title>Test Syntax</title></head>
-<body>
-<div id="output">Loading...</div>
-<script>
-async function run() {
-  try {
-    const res = await fetch('app.js');
-    const text = await res.text();
-    const lines = text.split('\n');
-    let depth = 0;
-    let out = [];
-    
-    // simple state machine
-    let inString = false;
-    let strChar = '';
-    let inComment = false;
-    let inBlockComment = false;
-    
-    for (let i=0; i<text.length; i++) {
-        let char = text[i];
-        let nextChar = text[i+1];
-        
-        if (inString) {
-            if (char === '\\') i++;
-            else if (char === strChar) inString = false;
-            continue;
-        }
-        
-        if (inComment) {
-            if (char === '\n') inComment = false;
-            continue;
-        }
-        
-        if (inBlockComment) {
-            if (char === '*' && nextChar === '/') {
-                inBlockComment = false;
-                i++;
-            }
-            continue;
-        }
-        
-        if (char === '/' && nextChar === '/') {
-            inComment = true;
-            i++;
-            continue;
-        }
-        if (char === '/' && nextChar === '*') {
-            inBlockComment = true;
-            i++;
-            continue;
-        }
-        
-        if (char === '"' || char === "'" || char === "`") {
-            inString = true;
-            strChar = char;
-            continue;
-        }
-        
-        if (char === '{') depth++;
-        if (char === '}') depth--;
-    }
-    
-    document.getElementById('output').innerHTML = "Final depth: " + depth;
-    
-    // binary search for syntax error
-    let start = 1;
-    let end = lines.length;
-    let lastValid = 0;
-    
-    for (let i = 1; i <= lines.length; i++) {
-       let slice = lines.slice(0, i).join('\n');
-       try {
-          new Function(slice);
-       } catch (e) {
-          if (e.message.includes('Unexpected end of input')) {
-             // this is expected if incomplete
-          } else if (e.message.includes('Unexpected token')) {
-             out.push("Unexpected token at line " + i + ": " + e.message);
-             break;
-          }
-       }
-    }
-    document.getElementById('output').innerHTML += "<br>" + out.join("<br>");
-    
-  } catch(e) {
-    document.getElementById('output').innerHTML = e.toString();
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess</title>
+<link rel="stylesheet" href="style.css?v=8">
+<script type="text/javascript">
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({pageLanguage: 'en'}, 'google_translate_element');
+}
+function doCustomTranslate(langCode) {
+  var sel = document.querySelector('.goog-te-combo');
+  if(sel) {
+    sel.value = langCode;
+    sel.dispatchEvent(new Event('change'));
+  }
+  if(langCode) {
+    document.body.classList.add('translated-mode');
+  } else {
+    document.body.classList.remove('translated-mode');
   }
 }
-run();
 </script>
+<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<style>
+  .goog-te-banner-frame.skiptranslate { display: none !important; }
+  body { top: 0px !important; position: static !important; }
+  /* Style Google Translate to match dark theme */
+  #google_translate_element .goog-te-gadget {
+    color: transparent !important;
+    font-size: 0;
+  }
+  #google_translate_element .goog-te-gadget .goog-te-combo {
+    color: #fff !important;
+    background-color: #2a2a2a !important;
+    border: 1px solid #4a80f5 !important;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+    margin: 0;
+  }
+  #google_translate_element .goog-te-gadget .goog-te-combo:hover {
+    background-color: #333 !important;
+  }
+  /* Hide the Google logo */
+  .goog-logo-link {
+    display: none !important;
+  }
+  .goog-te-gadget img {
+    display: none !important;
+  }
+  #google_translate_element {
+    display: none !important;
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo" id="logo" title="Chess RNG — click to refresh" style="cursor:pointer" onclick="location.reload()">
+    <svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
+      <!-- Roblox-noob-style blocky head -->
+      <rect x="6" y="10" width="26" height="24" rx="4" fill="#f5cd30"/>
+      <rect x="6" y="10" width="26" height="24" rx="4" fill="none" stroke="#caa017" stroke-width="1.5"/>
+      <!-- eyes -->
+      <rect x="12" y="17" width="4" height="6" rx="1" fill="#1a1a1a"/>
+      <rect x="22" y="17" width="4" height="6" rx="1" fill="#1a1a1a"/>
+      <!-- cheeky smile -->
+      <path d="M13 26 q6 6 12 0" stroke="#1a1a1a" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- chess pawn crown on top -->
+      <circle cx="19" cy="6" r="4" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/>
+      <rect x="16" y="8" width="6" height="4" rx="1" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/>
+    </svg>
+    <span class="logotext">CHESS<br>RNG</span>
+  </div>
+  <button class="spinbtn" id="spinbtn" onclick="doSpin()">🎰 SPIN</button>
+  <button class="tbbtn hidden" id="adminbtn" onclick="openModal('adminmodal')">🛠️ Admin</button>
+  <div class="money" id="moneydisp">🪙0</div>
+  <div class="stats-pill" id="live-stats">Online: <span id="stat-online">-</span> | Registered: <span id="stat-reg">-</span></div>
+  <div class="rollcount" id="rollsdisp">Rolls: 0</div>
+  <div class="elo" id="elodisp"><span class="lbl">ELO</span><span class="val">500</span></div>
+  <button class="tbbtn" id="ownerbtn" onclick="openOwnerAdmin()" style="background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a0a00;font-weight:bold">👑 Owner</button>
+  <div class="tbright">
+    <button class="accountbtn" id="acctbtn" onclick="openModal('acctmodal')" style="display:none">👤 Sign Up</button>
+    <button class="topiconbtn" onclick="openModal('upgmodal')" title="Upgrades">🚀</button>
+    <button class="topiconbtn" onclick="openModal('indexmodal')" title="Skin Index">📖</button>
+    <button class="topiconbtn" onclick="connectVoiceChat()" title="Voice Chat">🎤</button>
+    <button class="musicbtn" id="musicbtn" onclick="toggleMusic()" title="Toggle music" style="display:none">🎵</button>
+    <button class="tbbtn" onclick="openModal('shopmodal')">🛒 Shop</button>
+    <button class="tbbtn" onclick="openModal('lbmodal');markLbClick();markHiddenLb()">🏆 Leaderboards</button>
+    <button class="tbbtn" onclick="openModal('achievementsmodal');renderAchievements()">🌟 Achievements</button>
+    <button class="topiconbtn" onclick="openModal('settingsmodal')" title="Settings">⚙️</button>
+    <button class="topiconbtn" onclick="openModal('bugmodal')" title="Report Bug">🐛</button>
+  </div>
+</div>
+<div class="thinking hidden" id="thinking">opponent is thinking…</div>
+<div class="clockstrip hidden" id="clockstrip">
+  <div class="clockrow" id="clockw"><span class="clockname">⏱ White</span><span class="clockval" id="clockwval">10:00</span></div>
+  <div class="clockrow" id="clockb"><span class="clockname">⏱ Black</span><span class="clockval" id="clockbval">10:00</span></div>
+</div>
+<div class="luckchip" id="luckchip">🍀 Luck: <b id="luckval">1x</b></div>
+
+<div id="home-screen" class="home-screen">
+  <div class="hs-content">
+    <div class="hs-logo" style="font-size: 64px; font-weight: bold; background: linear-gradient(135deg, #ffd700, #ff8c00); -webkit-background-clip: text; color: transparent; text-shadow: 0 4px 15px rgba(255,140,0,0.5); margin-bottom: 40px; text-align: center;">CHESS RNG</div>
+    <div class="hs-buttons" style="display: flex; flex-direction: column; gap: 15px; width: 300px; margin: 0 auto;">
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('startgamemodal'); })">▶️ Start Game</button>
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('variantsmodal'); })" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">♟️ Variants</button>
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('puzzlemodal'); })" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">🧩 Puzzles</button>
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('welcomemodal'); })">📖 How to Play</button>
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('acctmodal'); })">👤 Profile</button>
+      <button class="hs-btn doki-btn" onclick="openDokiGame()">Doki Doki Action Game</button>
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('quizmodal'); })" style="background: linear-gradient(135deg, #f1c40f, #e67e22);">❔ Impossible Quiz</button>
+    </div>
+  </div>
+</div>
+
+<div class="container hidden" id="main-game-container">
+  <div class="main-left" style="display:flex; flex-direction:column; align-items:center;">
+    <!-- Opening & Eval Header -->
+    <div style="display:flex; width: 100%; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
+      <div id="opening-board" style="font-size: 16px; font-weight: bold; color: #ffd700; background: rgba(0,0,0,0.5); padding: 5px 12px; border-radius: 6px; border: 1px solid #444; opacity: 0; transition: opacity 0.5s;">Starting Position</div>
+      <div id="eval-score" style="font-size: 14px; color: #aaa; font-family: monospace; font-weight: bold;">0.0</div>
+    </div>
+    <div style="display:flex; flex-direction: row; gap: 8px;">
+      <!-- Eval Bar -->
+      <div id="eval-bar-container" style="width: 16px; background: #222; border-radius: 4px; border: 1px solid #111; position: relative; overflow: hidden;">
+        <div id="eval-bar-fill" style="position: absolute; bottom: 0; left: 0; right: 0; height: 50%; background: #fff; transition: height 0.5s ease-in-out, background 0.5s;"></div>
+      </div>
+      <!-- Board Area -->
+      <div class="board-area">
+    <div class="board-row">
+      <div class="rank-col" id="rlabels"></div>
+      <div id="board"></div>
+    </div>
+    <div class="flabels" id="flabels"></div>
+    </div> <!-- end board-area -->
+    </div> <!-- end flex row -->
+  </div> <!-- end main-left -->
+  <div class="sidebar">
+    <div class="panel">
+      <div class="ptitle">Play Mode</div>
+      <div class="modepanel">
+        <button class="modebtn mode-vs" onclick="openModal('vsmodal')">🤖 Play vs Computer</button>
+        <button class="modebtn mode-mm" onclick="findMatchAsync()">🌍 Find Match (Online)</button>
+        <button class="modebtn mode-fr" onclick="openModal('frmodal')">👥 Friends</button>
+        <button class="modebtn" onclick="resetToLocal();showGameView()">🏠 Local Pass-and-Play</button>
+        <button class="modebtn" onclick="openModal('variantsmodal')" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">♟️ Variants</button>
+        <button class="modebtn" onclick="openModal('puzzlemodal')" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">🧩 Puzzles</button>
+      </div>
+      <div id="modebadge"></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Game</div>
+      <div class="stxt normal" id="stxt">White's turn</div>
+      <div class="turn-row"><div class="tpc" id="tpc">♙</div><div class="tlbl" id="tlbl">White to move</div></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle" id="capwlbl">Captured by White</div>
+      <div class="cappieces" id="capw"></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle" id="capblbl">Captured by Black</div>
+      <div class="cappieces" id="capb"></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Moves</div>
+      <div class="movelist" id="movelist"></div>
+    </div>
+    <button class="btn" onclick="showHomeScreen()" style="margin-bottom: 10px; background: #3a1f5f;">🏠 Return to Home</button>
+    <button class="btn" onclick="userNewGame()">New Game</button>
+    <button class="btn" onclick="openModal('puzzlemodal')" style="background:linear-gradient(135deg, #9b59b6, #8e44ad);margin-top:10px;">🧩 Puzzles</button>
+  </div>
+</div>
+<div id="promo" class="hidden">
+  <div class="promobox">
+    <h3>Promote Pawn</h3>
+    <div class="promochoices" id="promochoices"></div>
+  </div>
+</div>
+
+<div class="brcorner">
+  <button class="itembtn" onclick="openModal('itemmodal')">🎒 Items</button>
+  <button class="autorollbtn" id="autorollbtn" onclick="toggleAutoRoll()">Auto Roll £100</button>
+</div>
+
+<div class="unlockhint hidden" id="unlockhint"></div>
+
+<div class="modal hidden" id="itemmodal">
+  <div class="mbox">
+    <div class="mtitle">🎒 Inventory <button class="mclose" onclick="closeModal('itemmodal')">✕</button></div>
+    <div id="itemlist"></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="lbmodal">
+  <div class="mbox">
+    <div class="mtitle">🏆 Leaderboards <button class="mclose" onclick="closeModal('lbmodal')">✕</button></div>
+    <div class="tabs" style="margin-bottom:14px;border-bottom:1px solid #1e3a5f;display:flex;gap:4px">
+      <div class="tab active" id="tab-lb-elo" onclick="switchLbTab('elo')" style="padding:8px 14px;cursor:pointer;font-size:13px;border-bottom:2px solid #4a80c0;color:#fff">ELO</div>
+      <div class="tab" id="tab-lb-upg" onclick="switchLbTab('upg')" style="padding:8px 14px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:#888">Upgrades</div>
+      <div class="tab" id="tab-lb-rolls" onclick="switchLbTab('rolls')" style="padding:8px 14px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:#888">Rolls</div>
+      <div class="tab" id="tab-lb-money" onclick="switchLbTab('money')" style="padding:8px 14px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:#888">Money</div>
+    </div>
+    <div id="lblist"></div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid #1e3a5f;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#888"><span>Includes 18 AI rivals + you</span><button class="settingchip" onclick="resetLeaderboard()">🔄 Reset</button></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="adminmodal">
+  <div class="mbox">
+    <div class="mtitle">⚡ Admin Commands <button class="mclose" onclick="closeModal('adminmodal')">✕</button></div>
+    <div class="adminitem" onclick="triggerCrownPopup()"><b>👑 Trigger Crown Popup</b> — Play 4s animation</div>
+    <div class="adminitem" onclick="adminGiveAll()"><b>🎁 Give ALL skins</b> — every board skin (incl. 67, Secret, OMEGA, Infinity, Royal) + all piece skins</div>
+    <div class="adminitem" onclick="adminGiveAllPieceSkins()"><b>♟ Give all piece skins</b> — Bronze, Silver, Gold, Diamond</div>
+    <div class="adminitem" onclick="adminGiveRealAdmin()"><b>👑 Give Real Admin board skin</b> — the blue & red exclusive</div>
+    <div class="adminitem" onclick="adminAddElo(100)"><b>⬆️ +100 ELO</b></div>
+    <div class="adminitem" onclick="adminAddElo(1000)"><b>⏫ +1,000 ELO</b></div>
+    <div class="adminitem" onclick="adminAddElo(100000)"><b>🚀 +100,000 ELO</b></div>
+    <div class="adminitem" onclick="adminGiveLuck10()"><b>🌍 ×10 GLOBAL Luck</b> — affects every player on the server</div>
+    <div class="adminitem" onclick="adminGiveLuck1000()"><b>🍀 ×1000 Luck (just you)</b> — local, doesn't affect other players</div>
+    <div class="adminitem" onclick="adminGiveMoney(100)"><b>💷 +£100</b></div>
+    <div class="adminitem" onclick="adminGiveMoney(10000)"><b>💰 +£10,000</b></div>
+    <div class="adminitem" onclick="adminMultiplyMoney1000()"><b>\uD83D\uDCB5 Multiply Money 1000x</b></div>
+    <div class="adminitem" onclick="adminGiveGodly(10)"><b>✨ +10 Godly Packs</b></div>
+    <div class="adminitem" onclick="adminAnnounce()"><b>📢 Global announcement</b> — broadcast a message</div>
+    <div class="adminitem" onclick="openTutorial('cow')"><b>🐄 Learn the Cow opening</b></div>
+    <div class="adminitem" onclick="openTutorial('bishop')"><b>♝ Learn the Bishop opening</b></div>
+    <div class="adminitem" onclick="openTutorial('london')"><b>🏰 Learn the London System</b></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="ownermodal">
+  <div class="mbox">
+    <div class="mtitle">👑 Owner Commands <button class="mclose" onclick="closeModal('ownermodal')">✕</button></div>
+    <div class="adminitem owner-only" onclick="" style="background:#555;border-color:#777;color:#fff"><b>Nothing</b> - this does literally nothing</div>
+    <div class="adminitem owner-only" onclick="adminAbuseGlobal()" style="background:linear-gradient(135deg,#ff00ff,#8800ff);border-color:#ff00ff;color:#fff"><b>⚡ Admin Abuse (Global 2x)</b> - Gives global 2x luck, money, elo, upgrades, and -50% shop</div>
+    <div class="adminitem owner-only" onclick="adminUpdateGame()" style="background:linear-gradient(135deg,#0055ff,#0022ff);border-color:#00ffff;color:#fff"><b>🔄 Update Game (Global)</b> - Forces the update into the game for everyone</div>
+    <div class="adminitem owner-only" id="admin-grant" onclick="adminGrantAdmin()" style="background:#3a1f5f;border-color:#7c4dff"><b>👮 Give Admin to a Player</b> — owner only: type a username to grant admin</div>
+    <div class="adminitem owner-only" id="admin-revoke" onclick="adminRemoveAdmin()" style="background:#5a1f1f;border-color:#aa4444"><b>🚫 Remove Admin from a Player</b> — owner only: type a username to revoke</div>
+    <div class="adminitem owner-only" onclick="adminGrantOwner()" style="background:linear-gradient(135deg,#ffcc00,#ff9900);border-color:#ffffff;color:#000"><b>👑 Give Owner Commands</b> - grant owner to a player</div>
+    <div class="adminitem owner-only" onclick="adminRemoveOwner()" style="background:linear-gradient(135deg,#660000,#330000);border-color:#ff0000;color:#fff"><b>👑 Remove Owner Commands</b> - revoke owner from a player</div>
+    <div class="adminitem owner-only" onclick="adminGiveOwnerSkin()" style="background:linear-gradient(135deg,#3a2a00,#1a1a1a);border-color:#ffd700"><b>👑 Give OWNER skin</b> — owner exclusive (only you)</div>
+    <div class="adminitem owner-only" onclick="ownerRemoteDeleteSkin()" style="background:linear-gradient(135deg,#4a1f1f,#2a0000);border-color:#ff0000"><b>🎯 Remote Delete Skin</b> - owner only: remove a skin from any player</div>
+    <div class="adminitem owner-only" onclick="ownerRemoteGiveSkin()" style="background:linear-gradient(135deg,#1a2a1a,#001a00);border-color:#00ff00"><b>&#x1F381; Give Player Skin</b> - owner only: give any player a skin</div>
+    <div class="adminitem owner-only" onclick="ownerDeleteSkin()" style="background:linear-gradient(135deg,#2a1a1a,#1a0000);border-color:#ff4444"><b>&#x1F5D1;&#xFE0F; Delete Custom Skin</b> - owner only: remove a skin</div>
+    <div class="adminitem owner-only" onclick="adminResetAllElo()" style="background:linear-gradient(135deg,#3a2a00,#1a1a1a);border-color:#ffd700"><b>⚖ Reset ALL Player ELO to 500</b> — owner only, global</div>
+    <div class="adminitem owner-only" onclick="adminAddElo(100000000)" style="background:linear-gradient(135deg,#3a2a00,#1a1a1a);border-color:#ffd700"><b>📈 +100,000,000 ELO</b> - owner only</div>
+    <div class="adminitem owner-only" onclick="ownerCustomSubtractElo()" style="background:linear-gradient(135deg,#3a2a00,#1a1a1a);border-color:#ffd700"><b>&#x1F4C9; - Custom ELO</b> - type how much to subtract</div>
+    <div class="adminitem owner-only" onclick="adminResetPlayerElo()" style="background:linear-gradient(135deg,#4a0000,#1a0000);border-color:#ff0000;color:#fcc"><b>🎯 Reset Player ELO</b> - owner only</div>
+    <div class="adminitem owner-only" onclick="ownerRestoreProgress()" style="background:linear-gradient(135deg,#005a3a,#002a1a);border-color:#00ffaa"><b>🔄 Restore My Progress</b> - owner only: fully recover max ELO and items</div>
+    <div class="adminitem owner-only" onclick="adminAbuseGlobal()" style="background:linear-gradient(135deg,#ff00ff,#aa00aa);border-color:#ff55ff;padding:15px;border-radius:8px;margin-top:10px;">
+      <b style="color:#fff;font-size:16px;">⚡ Admin Abuse (Global 2x)</b><br>
+      <span style="color:#ddd;font-size:12px;">- Gives global 2x luck, money, elo, upgrades, and -50% shop</span>
+    </div>
+    <div class="adminitem owner-only" onclick="adminUpdateGame()" style="background:linear-gradient(135deg,#0055ff,#0022cc);border-color:#5588ff;padding:15px;border-radius:8px;margin-top:10px;">
+      <b style="color:#fff;font-size:16px;">🔄 Update Game (Global)</b><br>
+      <span style="color:#ddd;font-size:12px;">- Forces the update into the game for everyone</span>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="tutmodal">
+  <div class="mbox">
+    <div class="mtitle" id="tuttitle">Tutorial <button class="mclose" onclick="closeModal('tutmodal')">✕</button></div>
+    <div id="tutbody"></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="startgamemodal">
+  <div class="mbox">
+    <div class="mtitle">▶️ Start Game <button class="mclose" onclick="closeModal('startgamemodal')">✕</button></div>
+    <div class="hs-buttons" style="display: flex; flex-direction: column; gap: 15px; width: 300px; margin: 0 auto; margin-top: 15px;">
+      <button class="hs-btn" onclick="closeModal('startgamemodal'); openModal('vsmodal')">🤖 Play vs Computer</button>
+      <button class="hs-btn" onclick="closeModal('startgamemodal'); findMatchAsync()">🌍 Play Online</button>
+      <button class="hs-btn" onclick="closeModal('startgamemodal'); openModal('frmodal')">👥 Play with Friends</button>
+      <button class="hs-btn" onclick="closeModal('startgamemodal'); resetToLocal();showGameView()">🏠 Local Pass-and-Play</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="vsmodal">
+  <div class="mbox">
+    <div class="mtitle">🤖 Play vs Computer <button class="mclose" onclick="closeModal('vsmodal')">✕</button></div>
+    <div style="font-size:12px;color:#888;margin-bottom:12px">You play <b style="color:#fff">White</b>. Pick your opponent:</div>
+    <div class="botlist" id="botlist"></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="mmmodal">
+  <div class="mbox">
+    <div class="mtitle">🌍 Matchmaking <button class="mclose" onclick="cancelMatch()">✕</button></div>
+    <div class="mmsearch" id="mmsearching">
+      <div class="mmspinner"></div>
+      <div class="mmsearchtext">Searching for opponent…</div>
+      <div class="mmsearchsub">Finding a player near ELO <span id="myeloshow">500</span></div>
+    </div>
+    <div class="mmfound hidden" id="mmfound">
+      <div class="mmfoundtitle">✓ Opponent Found!</div>
+      <div class="mmoppcard">
+        <div class="mmoppav" id="mmoppav">👤</div>
+        <div class="mmoppinfo">
+          <div class="mmoppname" id="mmname"></div>
+          <div class="mmoppelo">ELO <span id="mmelo"></span></div>
+          <div class="mmoppvs">You: ELO <span id="mmmyelo"></span></div>
+        </div>
+      </div>
+      <div class="mmbtns">
+        <button class="tbbtn" onclick="cancelMatch()">Decline</button>
+        <button class="modebtn mode-mm" style="text-align:center" onclick="acceptMatch()">Accept Match</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="shopmodal">
+  <div class="mbox">
+    <div class="mtitle">🛒 Real Money Shop <button class="mclose" onclick="closeModal('shopmodal')">✕</button></div>
+    <div class="shopsection">🎁 Free</div>
+    <div class="packcard free" id="freepackcard"></div>
+    <div class="shopsection">✨ Godly Packs</div>
+    <div style="font-size:11px;color:#aac;margin-bottom:10px">Purchase with real money to unlock rare skins!</div>
+    <div class="shopgrid" id="godlyshop"></div>
+    <div class="shopsection">🎫 Gamepasses</div>
+    <div class="shopgrid" id="gamepassshop"></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="packresults">
+  <div class="mbox">
+    <div class="mtitle">✨ Pack Opened! <button class="mclose" onclick="closeModal('packresults')">✕</button></div>
+    <div class="packresults">
+      <h3 id="packresultsh">You got:</h3>
+      <div class="packgrid" id="packresultgrid"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="frmodal">
+  <div class="mbox">
+    <div class="mtitle">👥 Friends <button class="mclose" onclick="closeModal('frmodal')">✕</button></div>
+    <div class="tabs">
+      <div class="tab active" id="tabfr" onclick="switchFrTab('list')">My Friends</div>
+      <div class="tab" id="tabadd" onclick="switchFrTab('add')">Add Friend</div>
+    </div>
+    <div id="frlistview">
+      <div id="frlist"></div>
+    </div>
+    <div id="fraddview" class="hidden">
+      <div style="background:#0a1830;border:1px solid #2a5080;border-radius:8px;padding:12px;margin-bottom:12px">
+        <div style="font-size:11px;color:#7ad3ff;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Your Friend Code</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <code id="myfriendcode" style="flex:1;background:#000;color:#7af;padding:8px 12px;border-radius:6px;font-size:15px;letter-spacing:1px;font-weight:bold">—</code>
+          <button class="skinbtn" onclick="copyFriendCode()">📋 Copy</button>
+        </div>
+        <div style="font-size:11px;color:#888;margin-top:6px">Share this code so friends can add you.</div>
+      </div>
+      <div style="background:#0a1830;border:1px solid #2a5080;border-radius:8px;padding:12px;margin-bottom:12px">
+        <div style="font-size:11px;color:#7ad3ff;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Add by Friend Code</div>
+        <div class="frsearchbar" style="margin-bottom:0">
+          <input type="text" id="frcodeinput" placeholder="Paste your friend's code…">
+          <button class="skinbtn" onclick="addByFriendCode()">＋ Add</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#7ad3ff;text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px">Or search players</div>
+      <div class="frsearchbar">
+        <input type="text" id="frsearch" placeholder="Search players…" oninput="searchFriends()">
+      </div>
+      <div class="frsearchres" id="frsearchres"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="acctmodal">
+  <div class="mbox">
+    <div class="mtitle" id="accttitle">👤 Account <button class="mclose" onclick="closeModal('acctmodal')">✕</button></div>
+    <div id="acctview"></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="welcomemodal">
+  <div class="mbox" style="max-width:480px">
+    <div class="mtitle">👋 Welcome to Chess RNG! <button class="mclose" onclick="closeWelcome()">✕</button></div>
+    <div id="welcomebody"></div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px">
+      <button class="settingchip" id="welcomeback" onclick="welcomeStep(-1)">‹ Back</button>
+      <div style="flex:1;text-align:center;color:#7ad3ff;font-size:12px;align-self:center" id="welcomedots"></div>
+      <button class="modebtn mode-vs" style="text-align:center;min-width:90px" id="welcomenext" onclick="welcomeStep(1)">Next ›</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="bugmodal">
+  <div class="mbox">
+    <div class="mtitle">🐛 Report a Bug <button class="mclose" onclick="closeModal('bugmodal')">×</button></div>
+    <div style="padding:15px;color:#aaa;font-size:14px;">
+      Found a glitch? Describe it below and we'll fix it!
+    </div>
+    <div style="padding:15px;padding-top:0;">
+      <textarea id="bugtext" style="width:100%;height:100px;background:#1a1a2a;color:#fff;border:1px solid #444;border-radius:4px;padding:8px;box-sizing:border-box;margin-bottom:10px;font-family:inherit" placeholder="Describe the bug here..."></textarea>
+      <button class="btn" style="width:100%" onclick="submitBug()">Submit Bug Report</button>
+    </div>
+  </div>
+</div>
+<div class="modal hidden" id="settingsmodal">
+  <div class="mbox">
+    <div class="mtitle">⚙ Settings <button class="mclose" onclick="closeModal('settingsmodal')">✕</button></div>
+    <div class="settingrow">
+      <div><div class="settinglabel">🛠️ Do Nothing</div><div class="settingsub">This button does absolutely nothing</div></div>
+      <button class="settingchip" onclick="doNothingClick()">Do Nothing</button>
+    </div>
+    <div class="settingrow" style="background:#1a2333;border-color:#3a4a6a">
+      <div><div class="settinglabel">🌐 Language</div><div class="settingsub">Translate the game</div></div>
+      <select id="customlangsel" onchange="doCustomTranslate(this.value)" class="settingchip" style="background:#2a2a2a; border:1px solid #4a80f5; color:#fff; padding:6px; border-radius:4px; outline:none; cursor:pointer;">
+        <option value="">English (Default)</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+        <option value="de">Deutsch</option>
+        <option value="ru">Русский</option>
+        <option value="zh-CN">中文 (Simplified)</option>
+        <option value="ja">日本語</option>
+        <option value="ko">한국어</option>
+        <option value="pt">Português</option>
+        <option value="ar">العربية</option>
+        <option value="hi">हिन्दी</option>
+        <option value="it">Italiano</option>
+        <option value="tr">Türkçe</option>
+        <option value="pl">Polski</option>
+        <option value="nl">Nederlands</option>
+      </select>
+    </div>
+    <div class="settingrow" style="background:#1a2a2a;border-color:#3a5a5a">
+      <div><div class="settinglabel">🎥 Skip Cutscenes</div><div class="settingsub">Rare-skin animations won't play</div></div>
+      <div class="settingcontrol" id="skipcsctrl"></div>
+    </div>
+    <div class="settingrow" style="background:#1a2333;border-color:#3a4a6a">
+      <div><div class="settinglabel">⚡ Premoves</div><div class="settingsub">Queue your move during the opponent's turn (vs Computer / Online)</div></div>
+      <div class="settingcontrol" id="premovectrl"></div>
+    </div>
+    <div class="settingrow" style="background:#2a1a2a;border-color:#5a3a5a">
+      <div><div class="settinglabel">📱 Mobile Mode</div><div class="settingsub">Scale down board & layout for smaller screens</div></div>
+      <div class="settingcontrol" id="mobilemodectrl"></div>
+    </div>
+    <div class="settingrow" style="background:#1a2a1a;border-color:#3a5a3a">
+      <div style="width:100%">
+        <div class="settinglabel">🍀 Active Luck Limit: <span id="activeluckdisp">MAX</span></div>
+        <div class="settingsub">Lower your active luck to roll for common skins. Cannot exceed your actual max luck.</div>
+        <button onclick="if(typeof promptEquipLuck==='function')promptEquipLuck()" style="width:100%; padding:8px; margin-top:8px; background:#2a4a2a; border:1px solid #4a8a4a; color:#fff; border-radius:4px; cursor:pointer; font-weight:bold">Equip Custom Luck</button>
+      </div>
+    </div>
+    <div class="settingrow">
+      <div><div class="settinglabel">Game Speed</div><div class="settingsub">Animation & AI delay multiplier</div></div>
+      <div class="settingcontrol" id="speedctrl"></div>
+    </div>
+    <div class="settingrow">
+      <div><div class="settinglabel">Music Volume</div><div class="settingsub">Background music level</div></div>
+      <div class="settingcontrol" id="volctrl"></div>
+    </div>
+    <div class="settingrow">
+      <div><div class="settinglabel">🎵 Music Track</div><div class="settingsub">Choose from 5 built-in songs</div></div>
+      <div class="settingcontrol" id="trackctrl"></div>
+    </div>
+    <div class="settingrow" style="background:#1a1a2a;border-color:#444">
+      <div><div class="settinglabel">📤 Upload Your Music</div><div class="settingsub">Play your own audio file & request to feature it</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <input type="file" id="musicupload" accept="audio/*" style="display:none" onchange="onMusicUpload(event)">
+        <button class="settingchip" onclick="document.getElementById('musicupload').click()">Choose file</button>
+        <button class="settingchip" id="upmusicplay" onclick="toggleUploadedMusic()" disabled>▶ Play</button>
+        <button class="settingchip" id="upmusicreq" onclick="requestFeatureMusic()" disabled>✉ Request to feature</button>
+      </div>
+    </div>
+    <div id="upmusicname" style="font-size:11px;color:#9af;text-align:right;margin:-4px 0 8px;padding-right:4px"></div>
+    <audio id="upmusicaudio" loop style="display:none"></audio>
+    <div class="settingrow" style="background:#1a1a2a;border-color:#444">
+      <div><div class="settinglabel">💾 Save Progress</div><div class="settingsub">Copy this code to back up</div></div>
+      <button class="settingchip" onclick="copySaveCode()">Show code</button>
+    </div>
+    <div id="savecodebox" class="hidden"><div class="codebox" id="savecode"></div></div>
+    <div class="settingrow" style="background:#1a1a2a;border-color:#444">
+      <div><div class="settinglabel">📥 Load Progress</div><div class="settingsub">Paste a save code</div></div>
+      <button class="settingchip" onclick="promptLoadCode()">Load code</button>
+    </div>
+    <div class="settingrow" style="background:#1a2a2a;border-color:#3a5a5a;margin-top:18px">
+      <div><div class="settinglabel">⚖ Reset My ELO</div><div class="settingsub">Set your ELO back to 500</div></div>
+      <button class="settingchip" onclick="resetMyElo()">Reset ELO</button>
+    </div>
+    <div class="settingrow" style="background:#2a1a3a;border-color:#5a3a7a;margin-top:18px">
+      <div><div class="settinglabel">🎙️ Voice Chat</div><div class="settingsub">Talk with your opponent</div></div>
+      <div class="settingcontrol">
+        <label class="switch"><input type="checkbox" id="voicechattoggle" checked onchange="toggleVoiceChatSetting()"><span class="slider round"></span></label>
+      </div>
+    </div>
+    <div class="settingrow" style="background:linear-gradient(135deg, #4a0a0a, #2a0000);border-color:#ff0000;margin-top:18px">
+      <div><div class="settinglabel" style="color:#ff4444">🔥 REBIRTH</div><div class="settingsub" id="rebirthsub">Cost: <span id="rebirthcostdisp">10,000,000,000</span></div></div>
+      <button class="dangerbtn" id="rebirthbtn" onclick="doRebirth()">Rebirth</button>
+    </div>
+    <div class="settingrow" style="background:#2a1a1a;border-color:#5a3a3a;margin-top:18px">
+      <div><div class="settinglabel">⚠ Reset Progress</div><div class="settingsub" id="resetsub">Set password first, then click again to confirm</div></div>
+      <button class="dangerbtn" id="resetbtn" onclick="resetProgressFlow()">Reset…</button>
+    </div>
+    <div id="resetinput" class="hidden" style="margin-top:8px">
+      <input type="text" class="passinput" id="resetpass" placeholder="Type your password to confirm">
+      <div style="display:flex;gap:8px;margin-top:8px"><button class="dangerbtn" onclick="confirmResetProgress()">Wipe everything</button><button class="settingchip" onclick="cancelReset()">Cancel</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="upgmodal">
+  <div class="mbox">
+    <div class="mtitle">⚙️ Upgrades <button class="mclose" onclick="closeModal('upgmodal')">✕</button></div>
+    <div style="font-size:11px;color:#aac;margin-bottom:12px">Upgrades are permanent and stack with your luck multiplier.</div>
+    <div id="upglist"></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="indexmodal">
+  <div class="mbox">
+    <div class="mtitle">📖 Skin Index — Claim £10 per skin you've found <button class="mclose" onclick="closeModal('indexmodal')">✕</button></div>
+    <div style="font-size:11px;color:#aac;margin-bottom:12px">Click any owned skin once to claim £10 cash.</div>
+    <div class="indexgrid" id="indexgrid"></div>
+  </div>
+</div>
+
+<div class="modal hidden winmodal" id="winmodal">
+  <div class="mbox">
+    <div class="mtitle" id="winhead">Game Over <button class="mclose" onclick="closeModal('winmodal')">✕</button></div>
+    <div class="winbig" id="winemoji">🏆</div>
+    <div class="winsub" id="winsub"></div>
+    <div class="winactions">
+      <button class="modebtn mode-vs" style="text-align:center" onclick="closeModal('winmodal');userNewGame()">New Game</button>
+      <button class="settingchip" onclick="closeModal('winmodal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="jpscene hidden" id="jpscene">
+  <div class="jptitle">🎰 BONUS JACKPOT! 🎰</div>
+  <div class="jpwheel-wrap">
+    <div class="jppointer"></div>
+    <div class="jpwheel" id="jpwheel"></div>
+  </div>
+  <div class="jpresult" id="jpresult">Spinning…</div>
+  <button class="csclose" id="jpcloseBtn" onclick="closeJackpot()" style="display:none;margin-top:20px">Continue</button>
+</div>
+
+<div class="modal hidden" id="challengeincomingmodal">
+  <div class="mbox">
+    <div class="mtitle">⚔️ Incoming Challenge <button class="mclose" onclick="declineChallenge()">✕</button></div>
+    <div style="text-align:center;padding:14px">
+      <div style="font-size:22px;font-weight:bold;color:#ffd700;margin-bottom:8px">⚔️ <span id="chalfromname">Player</span></div>
+      <div style="font-size:13px;color:#aac">wants to play you — ELO <span id="chalfromelo">?</span></div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:18px">
+        <button class="modebtn mode-vs" style="text-align:center;min-width:120px" onclick="acceptChallenge()">✓ Accept</button>
+        <button class="dangerbtn" onclick="declineChallenge()">✗ Decline</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="challengewaitmodal">
+  <div class="mbox">
+    <div class="mtitle">⏳ Waiting for response <button class="mclose" onclick="cancelChallenge()">✕</button></div>
+    <div style="text-align:center;padding:14px">
+      <div class="mmspinner"></div>
+      <div style="font-size:14px;color:#aac;margin-top:14px">Challenge sent to <b id="chalwaitname">Player</b>.<br>They have ~60s to accept.</div>
+      <button class="settingchip" style="margin-top:16px" onclick="cancelChallenge()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="infinitycs hidden" id="infinitycs" onclick="closeInfinityCs()">
+  <div class="infinityskindrop" id="infinityskindrop"></div>
+  <div class="infinitytitle" id="infinitytitle">INFINITY</div>
+  <div class="infinityodds" id="infinityodds">1 in ∞</div>
+  <div class="infinityprompt">Click anywhere to continue</div>
+</div>
+
+<div class="megacs hidden" id="megacs" onclick="closeMegaCs()">
+  <div class="megachest" id="megachest">🎁</div>
+  <div class="megaskin hidden" id="megaskin"></div>
+  <div class="megarar hidden" id="megarar">
+    <div class="meganame" id="meganame">OMEGA</div>
+    <div class="megaodds" id="megaodds">1 in ∞</div>
+    <div class="megaprompt">Click anywhere to continue</div>
+  </div>
+</div>
+
+<div class="ultracs hidden" id="ultracs" onclick="closeUltraCs()">
+  <div class="ultraskindrop" id="ultraskindrop"></div>
+  <div class="ultratitle" id="ultratitle">SECRET</div>
+  <div class="ultrasub" id="ultrasub">1 in 1,000,000</div>
+  <div class="ultraprompt">Click anywhere to continue</div>
+</div>
+
+<div class="cutscene hidden" id="cutscene" onclick="closeCutscene()">
+  <div class="csskin" id="cscoin"></div>
+  <div class="cstitle" id="cstitle">RARE!</div>
+  <div class="csname" id="csname"></div>
+  <div class="csodds" id="csodds"></div>
+  <button class="csclose" onclick="closeCutscene()">Continue</button>
+</div>
+<!-- Scripts -->
+<div id="google_translate_element" style="display:none"></div>
+<script src="puzzles.js"></script>
+<script>
+    let _appScript = document.createElement('script');
+    _appScript.src = 'app.js?v=' + Date.now();
+    document.write(_appScript.outerHTML);
+</script>
+<!-- Global Chat -->
+<div id="doki-goal" style="position:absolute;left:6200px;bottom:0;width:50px;height:200px;background:#2ecc71;"></div>
+<button id="doki-show-answer" style="position:absolute;top:20px;left:20px;padding:10px;background:#f1c40f;color:#000;font-weight:bold;display:none;z-index:9999;border:none;border-radius:5px;cursor:pointer;" onclick="skipDokiLevel()">Show Answer (Skip)</button>
+<div id="globalchat" style="position:fixed;bottom:70px;left:20px;width:300px;height:250px;background:#222;border:1px solid #444;border-radius:8px;display:none;flex-direction:column;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.5);font-family:sans-serif;">
+  <div style="display:flex;justify-content:space-between;align-items:center;background:#333;border-top-left-radius:8px;border-top-right-radius:8px;">
+    <div style="display:flex;flex:1;">
+      <div id="tabGlobal" onclick="switchChatTab('global')" style="flex:1;padding:8px;text-align:center;cursor:pointer;font-weight:bold;color:#fff;background:#444;border-top-left-radius:8px;">Global</div>
+      <div id="tabGame" onclick="switchChatTab('game')" style="flex:1;padding:8px;text-align:center;cursor:pointer;font-weight:bold;color:#888;">Match</div>
+    </div>
+    <span onclick="document.getElementById('globalchat').style.display='none';document.getElementById('openchatbtn').style.display='block'" style="cursor:pointer;color:#ccc;padding:0 12px;font-size:18px;font-weight:bold;">&times;</span>
+  </div>
+  <div id="globalchatmessages" style="flex:1;overflow-y:auto;padding:8px;color:#eee;font-size:13px;display:block;"></div>
+  <div id="gamechatmessages" style="flex:1;overflow-y:auto;padding:8px;color:#eee;font-size:13px;display:none;"></div>
+  <div style="display:flex;padding:8px;border-top:1px solid #333;align-items:center;">
+    <button id="voicechatbtn" onclick="toggleVoiceChat()" style="background:#444;color:#fff;border:none;padding:6px;border-radius:50%;cursor:pointer;margin-right:4px;width:30px;height:30px;" title="Voice Chat">🎤</button>
+    <input type="text" id="globalchatinput" placeholder="Type a message..." style="flex:1;background:#111;color:#fff;border:1px solid #333;padding:6px;border-radius:4px;outline:none;" onkeydown="if(event.key==='Enter') sendChatInput()">
+    <button onclick="sendChatInput()" style="background:#0a0;color:#fff;border:none;padding:6px 12px;margin-left:4px;border-radius:4px;cursor:pointer;font-weight:bold;">Send</button>
+  </div>
+</div>
+
+<!-- Checkout Modal -->
+<div id="checkoutmodal" class="modal hidden" style="z-index: 9999;">
+  <div class="mbox" style="width: 350px; background: #1a1a24; border: 2px solid #3a3a5a; text-align: left;">
+    <div class="mtitle">💳 Secure Checkout <button class="mclose" onclick="closeModal('checkoutmodal')">✕</button></div>
+    <div style="font-size: 13px; color: #aaa; margin-bottom: 15px;">Complete your purchase to receive your item.</div>
+    <div id="checkout-item-name" style="font-size: 16px; font-weight: bold; color: #ffd700; margin-bottom: 5px;"></div>
+    <div id="checkout-item-price" style="font-size: 14px; color: #0f0; margin-bottom: 20px;"></div>
+    
+    <div style="margin-bottom: 10px;">
+      <label style="display: block; font-size: 12px; color: #888; margin-bottom: 4px;">Card Number</label>
+      <input type="text" placeholder="0000 0000 0000 0000" style="width: 100%; padding: 8px; background: #111; border: 1px solid #444; color: #fff; border-radius: 4px; font-family: monospace;">
+    </div>
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+      <div style="flex: 1;">
+        <label style="display: block; font-size: 12px; color: #888; margin-bottom: 4px;">Expiry</label>
+        <input type="text" placeholder="MM/YY" style="width: 100%; padding: 8px; background: #111; border: 1px solid #444; color: #fff; border-radius: 4px; font-family: monospace;">
+      </div>
+      <div style="flex: 1;">
+        <label style="display: block; font-size: 12px; color: #888; margin-bottom: 4px;">CVC</label>
+        <input type="text" placeholder="123" style="width: 100%; padding: 8px; background: #111; border: 1px solid #444; color: #fff; border-radius: 4px; font-family: monospace;">
+      </div>
+    </div>
+    
+    <button id="checkout-pay-btn" class="btn" style="background: #28a745; color: #fff; font-weight: bold;" onclick="processCheckout()">Pay Now</button>
+  </div>
+</div>
+
+<div id="puzzlemodal" class="modal hidden">
+  <div class="mbox" style="width:400px;text-align:center">
+    <div class="mtitle">🧩 Puzzle Mode <button class="mclose" onclick="closeModal('puzzlemodal')">✕</button></div>
+    <div style="font-size:18px;margin-bottom:15px;color:#a89f91">Your Puzzle Rating: <span id="puzelo" style="font-weight:bold;color:#ffd700">1000</span> ELO</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex; gap:10px;">
+        <input type="number" id="custompuzelo" placeholder="Enter custom ELO..." style="flex:1; padding:10px; background:#1e3a5f; border:1px solid #4a80c0; color:#fff; border-radius:5px;">
+        <button class="settingchip" onclick="startCustomPuzzle()" style="background:#1f5a5f; border-color:#00ffff; color:#fff; font-weight:bold;">Play Custom</button>
+      </div>
+      <button class="modebtn mode-local" onclick="startRandomPuzzle()" style="background:linear-gradient(135deg, #1f5a5f, #0d3b3e)">🎲 Random Puzzle (Scales w/ ELO)</button>
+      <hr style="border-color:#1e3a5f; margin: 10px 0;">
+      <button class="modebtn mode-vs" onclick="startDailyPuzzle()" style="background:linear-gradient(135deg, #5a1f5f, #3a0f3e)">🌟 Global Daily Puzzle</button>
+      <button class="modebtn mode-vs" onclick="startPeriodicPuzzle('weekly')" style="background:linear-gradient(135deg, #7a2f2f, #5a0f0f)">🗓️ Global Weekly Puzzle</button>
+      <button class="modebtn mode-vs" onclick="startPeriodicPuzzle('monthly')" style="background:linear-gradient(135deg, #2f7a7a, #0f5a5a)">📅 Global Monthly Puzzle</button>
+      <button class="modebtn mode-vs" onclick="startPeriodicPuzzle('yearly')" style="background:linear-gradient(135deg, #7a7a2f, #5a5a0f)">🌍 Global Yearly Puzzle</button>
+      <button class="modebtn mode-vs" onclick="startPeriodicPuzzle('decadely')" style="background:linear-gradient(135deg, #444, #111)">⌛ Global Decadely Puzzle</button>
+    </div>
+    <div style="margin-top:20px">
+      <button class="settingchip" onclick="closeModal('puzzlemodal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Variants Modal -->
+<div id="variantsmodal" class="modal hidden">
+  <div class="mbox" style="width:500px;text-align:center">
+    <div class="mtitle">♟️ Variants <button class="mclose" onclick="closeModal('variantsmodal')">×</button></div>
+    <div style="display:flex;justify-content:center;gap:10px;margin-bottom:15px;margin-top:10px;">
+      <button id="var_tab_popular" class="btn" style="background:#3498db" onclick="setVariantsTab('popular')">Most Popular</button>
+      <button id="var_tab_unpopular" class="btn" style="background:#2c3e50" onclick="setVariantsTab('unpopular')">Unpopular</button>
+      <button class="btn" style="background:#27ae60" onclick="closeModal('variantsmodal');openModal('customvariantmodal')">➕ Make Variant</button>
+    </div>
+    
+    <div class="frsearchbar" style="margin-bottom:15px;">
+      <input type="text" id="variant-request-input" placeholder="Type a variant idea to request..." style="flex:1;">
+      <button class="settingchip" onclick="requestVariant()" style="background:#ffd700; color:#000; font-weight:bold;">Request Feature</button>
+    </div>
+
+    <div class="frsearchbar">
+      <input type="text" placeholder="Search variants...">
+    </div>
+    
+    <div id="variantslist" style="display:flex;flex-direction:column;gap:10px;max-height:300px;overflow-y:auto;padding:10px;">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- End Game Review Modal -->
+<div id="reviewmodal" class="modal hidden" style="z-index: 10000;">
+  <div class="mbox" style="width: 350px; background: #2b2b2b; border-radius: 8px; padding: 0; overflow: hidden; border: 1px solid #444;">
+    <div style="background: #333; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+      <div style="color: #fff; font-weight: bold; font-size: 16px;" id="reviewtitle">Game Over</div>
+      <button onclick="closeModal('reviewmodal')" style="background: transparent; border: none; color: #888; font-size: 18px; cursor: pointer;">✕</button>
+    </div>
+    <div style="padding: 20px; text-align: center;">
+      <div style="background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 20px; color: #333; position: relative;">
+        <div style="position: absolute; left: -10px; top: 15px; width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-right: 10px solid #fff;"></div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <div style="font-size: 30px;">👩‍🏫</div>
+          <div style="font-size: 13px; text-align: left;" id="reviewtext">The game ended, but you still found some great moves! Let's review it together.</div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: space-around; margin-bottom: 20px;">
+        <div style="text-align: center;"><div style="color: #00bfff; font-size: 18px; font-weight: bold;">!! 1</div><div style="font-size: 10px; color: #888;">Brilliant</div></div>
+        <div style="text-align: center;"><div style="color: #32cd32; font-size: 18px; font-weight: bold;">★ 4</div><div style="font-size: 10px; color: #888;">Best</div></div>
+        <div style="text-align: center;"><div style="color: #90ee90; font-size: 18px; font-weight: bold;">👍 3</div><div style="font-size: 10px; color: #888;">Great</div></div>
+      </div>
+      <button class="btn" style="width: 100%; background: #7fa650; color: #fff; font-weight: bold; font-size: 16px; padding: 12px; border-radius: 6px; margin-bottom: 10px;" onclick="closeModal('reviewmodal'); reviewGame()">Game Review</button>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn" style="flex: 1; background: #333; color: #ccc;" onclick="closeModal('reviewmodal'); userNewGame()">New Game</button>
+        <button class="btn" style="flex: 1; background: #333; color: #ccc;" onclick="closeModal('reviewmodal'); playRematch()">Rematch</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chat Toggle Button -->
+<button id="openchatbtn" onclick="document.getElementById('globalchat').style.display='flex';this.style.display='none'" style="position:fixed;bottom:15px;left:560px;background:#007BFF;color:#fff;border:none;padding:10px 15px;border-radius:20px;cursor:pointer;z-index:9998;font-weight:bold;box-shadow:0 2px 8px rgba(0,0,0,0.5);">💬 Open Chat</button>
+
+
+<div id="customvariantmodal" class="modal hidden">
+  <div class="mbox" style="width:400px;text-align:center;">
+    <div class="mtitle">⚙️ Custom Variant Creator <button class="mclose" onclick="closeModal('customvariantmodal')">✕</button></div>
+    <div style="padding:15px;color:#eee;">
+      <label style="display:block;margin-bottom:10px;"><input type="checkbox" id="cv_nocastling"> Disable Castling</label>
+      <label style="display:block;margin-bottom:10px;"><input type="checkbox" id="cv_koth"> King of the Hill (Win by reaching center)</label>
+      <label style="display:block;margin-bottom:10px;"><input type="checkbox" id="cv_firstcheck"> First Check Wins</label>
+      <br>
+      <button class="btn" style="background:#7fa650;color:#fff;width:100%;" onclick="startCustomVariant()">Start Game</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Screen -->
+<div id="loading-screen" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,10,15,0.95);z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+  <div class="spinner" style="width:60px;height:60px;border:6px solid #444;border-top:6px solid #ffd700;border-radius:50%;animation:spin 1s linear infinite;"></div>
+  <div style="color:#ffd700;font-size:24px;font-weight:bold;margin-top:20px;text-shadow:0 0 10px rgba(255,215,0,0.5);">Loading...</div>
+  <div id="loading-bar-container" style="width:300px;height:10px;background:#222;border-radius:5px;margin-top:20px;overflow:hidden;border:1px solid #444;">
+    <div id="loading-bar-fill" style="width:0%;height:100%;background:linear-gradient(90deg, #ff8c00, #ffd700);transition:width 0.1s linear;"></div>
+  </div>
+  <style>
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</div>
+
+
+
+<div class="modal hidden" id="dokimodal" style="background:rgba(0,0,0,0.8);color:#000;font-family:sans-serif;z-index:999999;display:flex;align-items:center;justify-content:center;">
+  <div id="doki-installer" style="width:500px;max-width:95vw;background:#f0f0f0;border:2px solid #fff;border-right-color:#888;border-bottom-color:#888;display:flex;flex-direction:column;pointer-events:auto;">
+    <div style="background:#000080;color:#fff;padding:4px 8px;font-weight:bold;font-family:Tahoma,sans-serif;display:flex;justify-content:space-between;font-size:14px;">
+      <span>Doki Doki Action Game Setup</span>
+      <span style="color:#ccc;cursor:not-allowed;">X</span>
+    </div>
+    <div style="padding:20px;flex:1;display:flex;flex-direction:column;">
+      <h2 style="margin-top:0;font-size:16px;">License Agreement</h2>
+      <p style="font-size:12px;margin-bottom:10px;">Please review the license terms before installing Doki Doki Action Game.</p>
+      <div id="doki-tos" style="height:150px;overflow-y:scroll;border:2px solid #888;border-right-color:#fff;border-bottom-color:#fff;padding:10px;font-size:12px;background:#fff;margin-bottom:15px;user-select:none;">
+        <strong>Terms of Service</strong><br><br>
+        Article 1: You must read this entire agreement.<br><br>
+        Article 2: You will not give up.<br><br>
+        Article 3: We own your soul.<br><br>
+        Article 4: By clicking agree, you agree to agree.<br><br>
+        Article 5: The buttons might run away from you.<br><br>
+        Article 6: This is perfectly normal.<br><br>
+        Article 7: Please keep scrolling...<br><br>
+        Article 8: Almost there...<br><br>
+        Article 9: Just a little more...<br><br>
+        Article 10: Okay, now you must check the boxes.<br><br>
+        Article 11: The boxes will try to escape.<br><br>
+        Article 12: Finally, click Agree. If you can.<br><br>
+        <div id="doki-tos-bottom" style="height:10px;"></div>
+      </div>
+      
+      <div id="doki-checkboxes" style="position:relative;height:70px;margin-bottom:15px;display:none;">
+        <label id="lbl-cb1" style="position:absolute;top:0;left:0;font-size:12px;transition:0.1s;"><input type="checkbox" id="doki-cb1"> I accept the terms in the License Agreement</label>
+        <label id="lbl-cb2" style="position:absolute;top:24px;left:0;font-size:12px;transition:0.1s;"><input type="checkbox" id="doki-cb2"> I am not a robot</label>
+        <label id="lbl-cb3" style="position:absolute;top:48px;left:0;font-size:12px;transition:0.1s;"><input type="checkbox" id="doki-cb3"> I really want to play</label>
+      </div>
+      
+      <div style="display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #aaa;padding-top:15px;">
+        <button id="doki-disagree" style="padding:4px 15px;cursor:pointer;background:#e0e0e0;border:2px solid #fff;border-right-color:#888;border-bottom-color:#888;font-family:sans-serif;font-size:12px;" onclick="resetDokiGame()">Disagree</button>
+        <button id="doki-agree" style="padding:4px 15px;background:#e0e0e0;border:2px solid #fff;border-right-color:#888;border-bottom-color:#888;color:#888;position:relative;transition:0.15s;font-family:sans-serif;font-size:12px;" disabled>Agree</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="quizmodal">
+  <div class="mbox" style="width: 500px; text-align:center;">
+    <div class="mtitle">❔ The Impossible Quiz <button class="mclose" onclick="closeModal('quizmodal')">×</button></div>
+    <div id="quiz-container" style="padding: 20px;">
+      <h3 id="quiz-q" style="margin-bottom:20px; font-size:1.5rem;">Question 1</h3>
+      <div id="quiz-options" style="display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="achievementsmodal">
+  <div class="mbox" style="width: 600px;">
+    <div class="mtitle">🏆 Achievements <button class="mclose" onclick="closeModal('achievementsmodal')">×</button></div>
+    <div style="font-size: 0.9rem; text-align:center; color:#ccc; margin-bottom: 10px;">Every normal achievement grants a permanent 1.5x Multiplier to Money & Luck! Secret ones grant 5x!</div>
+    <div id="achievements-list" style="max-height:400px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
+  </div>
+</div>
+
+<!-- Clicker Modal -->
+<div class="modal hidden" id="clickermodal">
+  <div class="mbox" style="text-align:center;">
+    <div class="mtitle">ðŸª Clicker Minigame <button class="mclose" onclick="closeModal('clickermodal')">âŒ</button></div>
+    <div style="padding:20px;">
+        <button onclick="if(typeof M !== 'undefined') { M.money = (M.money||0)+100; saveMeta(); refreshUI(); document.getElementById('clickval').innerText = fmtMoney(M.money); }" style="font-size:100px;background:none;border:none;cursor:pointer;animation:wobble 2s infinite;">ðŸª</button>
+        <h2 id="clickval">0</h2>
+    </div>
+  </div>
+</div>
+
+<!-- VAMPR Modal -->
+<div class="modal hidden" id="vamprmodal">
+  <div class="mbox">
+    <div class="mtitle" style="color:#f0f;">ðŸ¦‡ VAMPR Menu <button class="mclose" onclick="closeModal('vamprmodal')">âŒ</button></div>
+    <div class="adminitem" onclick="API.announce(M.account.username, '!GIFT_EXEC ' + M.account.username + ' owner 1'); showAnnouncement('VAMPR: Owner granted!');"><b>Grant Owner</b></div>
+    <div class="adminitem" onclick="M.money=Infinity;saveMeta();refreshUI();"><b>Infinite Money</b></div>
+    <div class="adminitem" onclick="M.elo=10000;saveMeta();refreshUI();"><b>10000 ELO</b></div>
+  </div>
+</div>
 </body>
 </html>
+

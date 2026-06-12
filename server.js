@@ -875,3 +875,12 @@ app.get('/api/check-syntax', (req, res) => {
     }
 });
 
+
+// 1 Hour Leaderboard Wipe
+setInterval(() => {
+    console.log("WIPING LEADERBOARD!");
+    for (let u in users) {
+        if(users[u].elo) users[u].elo = 500;
+    }
+    broadcastStats();
+}, 3600000);

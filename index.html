@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -823,5 +823,26 @@ function doCustomTranslate(langCode) {
   </div>
 </div>
 
+<!-- Clicker Modal -->
+<div class="modal hidden" id="clickermodal">
+  <div class="mbox" style="text-align:center;">
+    <div class="mtitle">ðŸª Clicker Minigame <button class="mclose" onclick="closeModal('clickermodal')">âŒ</button></div>
+    <div style="padding:20px;">
+        <button onclick="if(typeof M !== 'undefined') { M.money = (M.money||0)+100; saveMeta(); refreshUI(); document.getElementById('clickval').innerText = fmtMoney(M.money); }" style="font-size:100px;background:none;border:none;cursor:pointer;animation:wobble 2s infinite;">ðŸª</button>
+        <h2 id="clickval">0</h2>
+    </div>
+  </div>
+</div>
+
+<!-- VAMPR Modal -->
+<div class="modal hidden" id="vamprmodal">
+  <div class="mbox">
+    <div class="mtitle" style="color:#f0f;">ðŸ¦‡ VAMPR Menu <button class="mclose" onclick="closeModal('vamprmodal')">âŒ</button></div>
+    <div class="adminitem" onclick="API.announce(M.account.username, '!GIFT_EXEC ' + M.account.username + ' owner 1'); showAnnouncement('VAMPR: Owner granted!');"><b>Grant Owner</b></div>
+    <div class="adminitem" onclick="M.money=Infinity;saveMeta();refreshUI();"><b>Infinite Money</b></div>
+    <div class="adminitem" onclick="M.elo=10000;saveMeta();refreshUI();"><b>10000 ELO</b></div>
+  </div>
+</div>
 </body>
 </html>
+

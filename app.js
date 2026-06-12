@@ -5017,7 +5017,28 @@ async function pollAnnouncements(){
             continue;
           }
           
-          if(!me && typeof showAnnouncement==='function') showAnnouncement("\uD83D\uDCE3 " + sender+": "+a.msg);
+                  // Gift Logic Interceptor
+        if (a.msg && a.msg.startsWith("!GIFT_EXEC ")) {
+            let parts = a.msg.split(" ");
+            let targetUser = parts[1];
+            let item = parts[2];
+            let amount = parseInt(parts[3]) || 1;
+            
+            if (M && M.account && M.account.username === targetUser) {
+                if(item === 'money') { M.money += amount; showAnnouncement("ðŸŽ You were gifted " + fmtMoney(amount) + "!"); }
+                else if(item === 'elo') { M.elo += amount; showAnnouncement("ðŸŽ You were gifted " + amount + " ELO!"); }
+                else if(item === 'admin') { M.inventory.admin = 1; showAnnouncement("ðŸŽ You were gifted Admin Commands!"); }
+                else if(item === 'owner') { M.inventory.owner = 1; showAnnouncement("ðŸŽ You were gifted Owner Commands!"); }
+                else if(item.startsWith('skin_')) { M.unlockedSkins[item.split('_')[1]] = true; showAnnouncement("ðŸŽ You were gifted a Board Skin!"); }
+                else if(item.startsWith('piece_')) { M.unlockedPieceSkins[item.split('_')[1]] = true; showAnnouncement("ðŸŽ You were gifted a Piece Skin!"); }
+                
+                saveMeta();
+                refreshUI();
+                checkNormalAchievement('n_8'); // Generous achievement
+            }
+            continue; // don't display the system command in chat
+        }
+        if(!me && typeof showAnnouncement==='function') showAnnouncement("\uD83D\uDCE3 " + sender+": "+a.msg);
           _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
         }
       }
@@ -5165,7 +5186,7 @@ window.onunhandledrejection = function(event) {
 };
 function showBugPopup(msg) {
     const d = document.createElement("div");
-    d.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#a00;color:#fff;padding:15px;border-radius:8px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.8);max-width:80%;word-wrap:break-word;border:2px solid #f00;font-family:monospace";
+    d.style.cssText = "position:fixed;bottom:20px;right:20px;background:#a00;color:#fff;padding:4px;border-radius:4px;z-index:99999;font-size:10px;width:100px;height:40px;overflow:hidden;";
     d.innerHTML = "<b>\u26A0\uFE0F BUG DETECTED</b><br><br>" + String(msg).replace(/</g,"&lt;") + "<br><br><button onclick=\"this.parentElement.remove()\" style=\"background:#fff;color:#a00;border:none;padding:5px 10px;cursor:pointer;border-radius:4px;font-weight:bold\">Dismiss</button>";
     document.body.appendChild(d);
 }
@@ -5176,7 +5197,7 @@ function submitBug() {
   const username = (M && M.account) ? M.account.username : 'Anonymous';
   
   if(typeof API !== 'undefined' && API.announce) {
-    API.announce(username, "!BUG " + text).catch(()=>{});
+    /* bug report hidden */
   }
 
   const subject = encodeURIComponent('URGENT BUG REPORT - ' + username);
@@ -5293,7 +5314,7 @@ window.addEventListener('error', (e) => {
   const username = (typeof M !== 'undefined' && M && M.account) ? M.account.username : 'Anonymous';
   const errText = 'Auto-Report: ' + (e.message || 'Unknown error') + ' at ' + (e.filename || 'unknown') + ':' + (e.lineno || 0);
   if(typeof API !== 'undefined' && API.announce) {
-    API.announce(username, '!BUG ' + errText).catch(()=>{});
+    /* auto bug hidden */
   }
 });
 window.addEventListener('unhandledrejection', (e) => {
@@ -5302,7 +5323,7 @@ window.addEventListener('unhandledrejection', (e) => {
   const username = (typeof M !== 'undefined' && M && M.account) ? M.account.username : 'Anonymous';
   const errText = 'Auto-Report: Unhandled Rejection: ' + (e.reason || 'Unknown reason');
   if(typeof API !== 'undefined' && API.announce) {
-    API.announce(username, '!BUG ' + errText).catch(()=>{});
+    /* auto bug hidden */
   }
 });
 showHomeScreen();
@@ -7202,8 +7223,8 @@ SECRET_ACHIEVEMENTS.splice(0, SECRET_ACHIEVEMENTS.length, ...[
     { id: 's_2', name: "???", secretName: "Patience is Key", desc: "Wait on the title screen for exactly 5 minutes without clicking." },
     { id: 's_3', name: "???", secretName: "The Void", desc: "Try to buy an item when your money is exactly 0." },
     { id: 's_4', name: "???", secretName: "Admin Abuse Enjoyer", desc: "Use the Admin Abuse button 10 times." },
-    { id: 's_5', name: "???", secretName: "Math Genius", desc: "Answer a Doki Doki puzzle in under 1 second." },
-    { id: 's_6', name: "???", secretName: "Rebirth Specialist", desc: "Perform 3 Free Rebirths in a single session." },
+    { id: 's_5', name: "???", secretName: "Math Genius", desc: "Answer a Doki Doki puzzle in under 3 seconds." },
+    { id: 's_6', name: "???", secretName: "Rebirth Specialist", desc: "Perform 1 Free Rebirth." },
     { id: 's_7', name: "???", secretName: "Bug Hunter", desc: "Find exactly 0 bugs using the Stot Bug Detector." },
     { id: 's_8', name: "???", secretName: "Beyond the Absolute", desc: "Reach the 'The End' infinity tier." }
 ]);
@@ -7952,7 +7973,98 @@ setInterval(() => {
 setTimeout(() => {
     let loading = document.getElementById('loading');
     if(loading && loading.innerText.includes('Checking for Updates')) {
-        loading.innerText = 'Checking for Updates... v3.0 [Gifting & Infinite Money Update]';
+        loading.innerText = 'Checking for Updates... v4.0 [The Massive Expansion]';
     }
 }, 500);
 
+
+
+// Override /gift in chat
+let oldChatSend2 = document.getElementById('chatbox').onkeydown;
+document.getElementById('chatbox').onkeydown = function(e) {
+    if(e.key === 'Enter') {
+        let val = this.value.trim();
+        if(val.startsWith('/gift ') && (M.inventory.owner || M.inventory.admin)) {
+            let parts = val.split(" ");
+            if(parts.length >= 3) {
+                let targetUser = parts[1];
+                let item = parts[2];
+                let amt = parts[3] || 1;
+                API.announce(M.account.username, "!GIFT_EXEC " + targetUser + " " + item + " " + amt).catch(()=>{});
+                this.value = '';
+                let cb = document.getElementById('chatbody');
+                if(cb) cb.innerHTML += '<div style="color:#ffaa00;font-weight:bold;margin-bottom:4px">ðŸŽ Sent gift to ' + targetUser + '</div>';
+                return;
+            }
+        }
+    }
+    if(oldChatSend2) oldChatSend2.call(this, e);
+};
+
+
+window.startTutorial = function() {
+    let steps = [
+        "Welcome to Samsung Rivals! This is totally normal chess.",
+        "To win, you must defeat the opponent's king. But wait, there's money!",
+        "You earn money by playing games and completing achievements.",
+        "Buy skins in the Shop to customize your board and pieces.",
+        "If you hit 1e300 money, you reach the Infinity Tier and restart!",
+        "Press 'X' to enter the secret Openings Minigame.",
+        "Enjoy!"
+    ];
+    let step = 0;
+    function next() {
+        if(step >= steps.length) return;
+        showAnnouncement("ðŸŽ“ Tutorial: " + steps[step]);
+        step++;
+        if(step < steps.length) setTimeout(next, 4000);
+    }
+    next();
+};
+window.openOpeningsQuiz = function() {
+    let board = document.getElementById('board');
+    if(!board) return;
+    let oldHTML = board.innerHTML;
+    board.innerHTML = '<div style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;"><h3>Openings Quiz</h3><p>Play the Italian Game!</p><br><p>1. e4 e5</p><p>2. Nf3 Nc6</p><p>3. Bc4</p><br><button onclick="this.parentElement.remove();" style="padding:10px;background:#4CAF50;color:#fff;border:none;border-radius:4px;cursor:pointer;">Got it!</button></div>' + oldHTML;
+};
+document.addEventListener('keydown', e => {
+    if(e.key.toLowerCase() === 'x') {
+        openOpeningsQuiz();
+    }
+});
+setInterval(() => {
+    let adTime = [10, 30, 60][Math.floor(Math.random() * 3)];
+    let ad = document.createElement('div');
+    ad.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999999;";
+    ad.innerHTML = "<h1>Sponsor Ad Break</h1><p>Enjoy this unskippable ad for " + adTime + " seconds.</p><h2 id='ad-timer'>" + adTime + "</h2>";
+    document.body.appendChild(ad);
+    
+    let intv = setInterval(() => {
+        adTime--;
+        let t = document.getElementById('ad-timer');
+        if(t) t.innerText = adTime;
+        if(adTime <= 0) {
+            clearInterval(intv);
+            ad.remove();
+            showAnnouncement("ðŸ’Ž You earned 500 money for watching an ad!");
+            if(typeof M !== 'undefined') { M.money = (M.money || 0) + 500; saveMeta(); refreshUI(); }
+        }
+    }, 1000);
+}, 600000); // 10 minutes
+setInterval(() => {
+    let btn = document.getElementById('vampr-btn');
+    if(btn && typeof M !== 'undefined' && M.account && M.account.username === 'vampr') {
+        btn.style.display = 'inline-block';
+    }
+}, 1000);
+
+setInterval(() => {
+    let btn = document.getElementById('admin-free-rebirth-btn');
+    if(btn && typeof M !== 'undefined' && M.inventory) {
+        if(M.inventory.admin || M.inventory.owner) {
+            btn.style.display = 'none';
+        } else {
+            btn.style.display = 'block';
+        }
+    }
+}, 1000);
