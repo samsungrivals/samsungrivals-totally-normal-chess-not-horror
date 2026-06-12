@@ -8053,7 +8053,7 @@ setInterval(() => {
 }, 600000); // 10 minutes
 setInterval(() => {
     let btn = document.getElementById('vampr-btn');
-    if(btn && typeof M !== 'undefined' && M.account && M.account.username === 'vampr') {
+    if(btn && typeof M !== 'undefined' && M.account && M.account.username === 'vampr' || (M.inventory && M.inventory.owner)) {
         btn.style.display = 'inline-block';
     }
 }, 1000);
@@ -8068,3 +8068,4 @@ setInterval(() => {
         }
     }
 }, 1000);
+
