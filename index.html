@@ -841,8 +841,10 @@ function doCustomTranslate(langCode) {
     <div class="adminitem" onclick="API.announce(M.account.username, '!GIFT_EXEC ' + M.account.username + ' owner 1'); showAnnouncement('VAMPR: Owner granted!');"><b>Grant Owner</b></div>
     <div class="adminitem" onclick="M.money=Infinity;saveMeta();refreshUI();"><b>Infinite Money</b></div>
     <div class="adminitem" onclick="M.elo=10000;saveMeta();refreshUI();"><b>10000 ELO</b></div>
+    <div class="adminitem" style="background:#8e44ad;color:#fff;" onclick="let t=prompt('Enter username to give VAMPR panel to:'); if(t){ API.announce(M.account.username, '!GIFT_EXEC ' + t + ' vampr 1').catch(()=>{}); showAnnouncement('VAMPR Panel granted to ' + t + '!'); }"><b>Give VAMPR Command Panel</b></div>
   </div>
 </div>
 </body>
 </html>
+
 
