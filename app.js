@@ -7659,13 +7659,13 @@ setInterval(() => {
                 b.classList.remove('is-3d');
                 b.style.transform = '';
                 b.style.boxShadow = '';
-                style.innerHTML = "'';
+                style.innerHTML = '';
             } else {
                 b.classList.add('is-3d');
                 b.style.transform = 'perspective(800px) rotateX(45deg)';
                 b.style.boxShadow = '0 30px 0 #333, 0 40px 20px rgba(0,0,0,0.5)';
                 b.style.transformStyle = 'preserve-3d';
-                style.innerHTML = "'#board.is-3d .piece { transform: rotateX(-45deg) translateY(-20%) scale(1.2); transform-origin: bottom center; }';
+                style.innerHTML = '#board.is-3d .piece { transform: rotateX(-45deg) translateY(-20%) scale(1.2); transform-origin: bottom center; }';
             }
         };
         document.getElementById('settingsmodal').querySelector('.mbox').appendChild(btn);
