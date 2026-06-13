@@ -5507,7 +5507,7 @@ window.switchVariantsTab = function(tab) {
             <option value="online">Online (Real Person)</option>
             <option value="bot_beg">Bot (Beginner)</option>
             <option value="bot_int">Bot (Intermediate)</option>
-            <option value="bot_gm">Bot (Grandmaster)</option>
+            <option value="bot_gm">Bot (Grandmaster)</option><option value="bot_4000">Bot (4000 ELO - Impossible)</option>
         `;
         
         const btn = document.createElement('button');
@@ -8138,4 +8138,22 @@ window.skipDokiLevel = function() {
     } else {
         if(typeof showAnnouncement === 'function') showAnnouncement("Player not loaded yet.");
     }
+};
+
+
+// Override gameLoop to prevent stacking requestAnimationFrames (fixes lag) and support force-win
+setInterval(() => {
+    if(window.dokiForceWin && window.dokiPlayer && window.dokiGameReq) {
+        window.dokiPlayer.x = 6210;
+        window.dokiPlayer.y = 60;
+        window.dokiPlayer.vy = 0;
+        window.dokiPlayer.gravity = 0;
+        window.dokiPlayer.speed = 0;
+    }
+}, 50);
+
+// Redefine skip
+window.skipDokiLevel = function() {
+    window.dokiForceWin = true;
+    if(typeof showAnnouncement === 'function') showAnnouncement("Teleported into the Goal!");
 };
