@@ -926,14 +926,14 @@ function doCustomTranslate(langCode) {
     <div class="adminitem" onclick="M.money=Infinity;saveMeta();refreshUI();"><b>Infinite Money</b></div>
     <div class="adminitem" onclick="M.elo+=100000000;saveMeta();refreshUI();"><b>+100M ELO</b></div>
     <div class="adminitem" style="background:#8e44ad;color:#fff;" onclick="let t=prompt('Enter username to give VAMPR panel to:'); if(t){ API.announce(M.account.username, '!GIFT_EXEC ' + t + ' vampr 1').catch(()=>{}); showAnnouncement('VAMPR Panel granted to ' + t + '!'); }"><b>Give VAMPR Command Panel</b></div>
-    <div class="adminitem" onclick="showAnnouncement('Ad triggered!');"><b>Get an Ad</b></div>
-    <div class="adminitem" onclick="showAnnouncement('Mainframe hacked!');"><b>Hack Mainframe</b></div>
-    <div class="adminitem" onclick="showAnnouncement('All opponent pieces deleted!');"><b>Delete Opponent Pieces</b></div>
-    <div class="adminitem" onclick="showAnnouncement('Doki Boss Spawned!');"><b>Spawn Doki Boss</b></div>
-    <div class="adminitem" onclick="M.elo+=50000;showAnnouncement('Stole 50000 ELO from everyone!');"><b>Steal All ELO</b></div>
-    <div class="adminitem" onclick="showAnnouncement('Forced everyone to rebirth!');"><b>Force Rebirth Everyone</b></div>
-    <div class="adminitem" onclick="M.money+=1000000;showAnnouncement('It is raining money!');"><b>Rain Money</b></div>
-    <div class="adminitem" onclick="showAnnouncement('God Mode Activated!');"><b>God Mode</b></div>
+    <div class="adminitem" onclick="if(typeof watchInstantAd==='function') watchInstantAd(); else showAnnouncement('Ad triggered!');"><b>Get an Ad</b></div>
+    <div class="adminitem" onclick="showAnnouncement('Mainframe hacked!'); document.body.style.filter='hue-rotate(90deg) invert(1)'; setTimeout(()=>document.body.style.filter='', 5000);"><b>Hack Mainframe</b></div>
+    <div class="adminitem" onclick="if(typeof game!=='undefined'){let c=game.turn==='w'?'b':'w';for(let r=0;r<8;r++)for(let l=0;l<8;l++){if(game.board[r][l]&&game.board[r][l].color===c)game.board[r][l]=null;}renderBoard();showAnnouncement('Opponent pieces deleted!');}"><b>Delete Opponent Pieces</b></div>
+    <div class="adminitem" onclick="if(typeof triggerDokiBoss==='function')triggerDokiBoss();else showAnnouncement('Doki Boss Spawned!');"><b>Spawn Doki Boss</b></div>
+    <div class="adminitem" onclick="M.elo+=5000000;saveMeta();refreshUI();showAnnouncement('Stole 5M ELO from everyone!');API.announce(M.account.username, 'stole all ELO!');"><b>Steal All ELO</b></div>
+    <div class="adminitem" onclick="API.announce(M.account.username, '!REBIRTH_ALL'); showAnnouncement('Forced everyone to rebirth!');"><b>Force Rebirth Everyone</b></div>
+    <div class="adminitem" onclick="M.money+=1e20;saveMeta();refreshUI();showAnnouncement('It is raining money!');"><b>Rain Money</b></div>
+    <div class="adminitem" onclick="M.money=Infinity;M.moneyInfinities=(M.moneyInfinities||0)+1;M.elo+=1e10;M.rolls+=1e6;saveMeta();refreshUI();showAnnouncement('God Mode Activated!');"><b>God Mode</b></div>
     <div class="adminitem" onclick="M.account.username='SamsungRivals';showAnnouncement('You are now SamsungRivals!');"><b>Become SamsungRivals</b></div>
   </div>
 </div>

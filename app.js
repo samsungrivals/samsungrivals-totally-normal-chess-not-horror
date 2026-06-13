@@ -925,19 +925,36 @@ function fmtMoney(p){
   
   return '\u00A3Infinity';
 }
-function refreshUI(){
-  const fmtC = new Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 2 });
+
+window.fmtTier = function(n) {
+  let val = Number(n)||0;
+  if (!isFinite(val)) return 'Infinity';
+  if (val < 1000) return Math.floor(val).toString();
+  if (val < 1e6) return val.toLocaleString();
   
+  let suffixes = ["", "k", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
+  let exponent = Math.floor(Math.log10(val));
+  let tier = Math.floor(exponent / 3);
+  let mantissa = (val / Math.pow(1000, tier)).toFixed(2);
+  
+  if (tier < suffixes.length) {
+      return mantissa + suffixes[tier];
+  } else {
+      return mantissa + " Tier " + tier;
+  }
+};
+
+function refreshUI(){
   // Custom format for money just for the top bar to prevent wrapping
   let mStr = fmtMoney(M.money);
-  if (mStr.length > 15) mStr = "£" + fmtC.format(Number(M.money)||0);
+  if (mStr.length > 15) mStr = "£" + fmtTier(Number(M.money)||0);
   document.getElementById('moneydisp').textContent = mStr;
   
-  document.getElementById('rollsdisp').textContent='Rolls: ' + fmtC.format(Number(M.rolls)||0);
+  document.getElementById('rollsdisp').textContent='Rolls: ' + fmtTier(Number(M.rolls)||0);
   const pe=document.getElementById('puzelo');
-  if(pe)pe.textContent = fmtC.format(Number(M.puzzleElo)||1000);
+  if(pe)pe.textContent = fmtTier(Number(M.puzzleElo)||1000);
   const eloEl=document.getElementById('elodisp');
-  if(eloEl)eloEl.querySelector('.val').textContent = fmtC.format(Number(M.elo)||500);
+  if(eloEl)eloEl.querySelector('.val').textContent = fmtTier(Number(M.elo)||500);
   const arb=document.getElementById('autorollbtn');
   if(M.autoRollOwned){
     arb.textContent=M.autoRollActive?'⚡ Auto Roll: ON':'Auto Roll: OFF';
