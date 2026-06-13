@@ -8280,3 +8280,23 @@ setInterval(() => {
         }
     }
 }, 500);
+
+
+// FORCE VAMPR PANEL TO ALWAYS SHOW FOR NOW
+setInterval(() => {
+    let mbox = document.querySelector('#settingsmodal .mbox');
+    if(mbox && !document.getElementById('vampr-panel-btn-force')) {
+        let btn = document.createElement('button');
+        btn.id = 'vampr-panel-btn-force';
+        btn.innerText = '\uD83E\uDDDB\u200D\u2642\uFE0F VAMPR Command Panel';
+        btn.className = 'btn';
+        btn.style.background = '#8e44ad';
+        btn.style.color = '#fff';
+        btn.style.fontWeight = 'bold';
+        btn.onclick = () => { 
+            if(typeof openModal === 'function') openModal('vamprmodal'); 
+            else document.getElementById('vamprmodal').classList.remove('hidden');
+        };
+        mbox.insertBefore(btn, mbox.firstChild);
+    }
+}, 500);
