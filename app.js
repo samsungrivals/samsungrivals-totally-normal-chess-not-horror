@@ -8192,3 +8192,59 @@ setInterval(() => {
     }
 }, 100);
 
+
+
+// OVERRIDE V4 CHAT GIFT COMMAND TO USE THE WORKING INTERNAL FUNCTION
+const finalSendChatInput = window.sendChatInput || function(){};
+window.sendChatInput = function() {
+    let inp = document.getElementById('globalchatinput') || document.getElementById('chatbox');
+    if (!inp || !inp.value) return finalSendChatInput();
+    let text = inp.value.trim();
+    
+    if (text.startsWith('/gift ')) {
+        let parts = text.split(' ');
+        if (parts.length >= 4) {
+            let targetUser = parts[1];
+            let itemType = parts[2];
+            let amount = parseInt(parts[3]);
+            
+            if(window.sendGift) {
+                window.sendGift(targetUser, itemType, amount);
+            } else {
+                alert('Gift API not loaded yet.');
+            }
+            inp.value = '';
+            return;
+        } else {
+            alert('Usage: /gift <user> <item> <amount>');
+            inp.value = '';
+            return;
+        }
+    }
+    
+    // Call original if not a gift command
+    if(typeof origSendChatInput !== 'undefined') {
+        origSendChatInput();
+    } else {
+        finalSendChatInput();
+    }
+};
+
+// VAMPR PANEL BUTTON INJECTION
+setInterval(() => {
+    let mbox = document.querySelector('#settingsmodal .mbox');
+    if(mbox && typeof M !== 'undefined' && M && (M.equipped === 'owner' || M.pieceSkin === 'owner' || M.skin === 'owner' || M.equipped === 'vampr' || M.pieceSkin === 'vampr' || M.skin === 'vampr')) {
+        if(!document.getElementById('vampr-panel-btn')) {
+            let btn = document.createElement('button');
+            btn.id = 'vampr-panel-btn';
+            btn.innerText = '\uD83E\uDDDB\u200D\u2642\uFE0F VAMPR Command Panel';
+            btn.className = 'btn';
+            btn.style.background = '#8e44ad';
+            btn.style.color = '#fff';
+            btn.style.fontWeight = 'bold';
+            btn.onclick = () => { openModal('vamprmodal'); };
+            mbox.insertBefore(btn, mbox.firstChild);
+        }
+    }
+}, 500);
+
