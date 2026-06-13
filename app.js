@@ -8330,38 +8330,70 @@ setInterval(() => {
 
 
 
+
 // INFINITY MONEY BUG FIX
 setInterval(() => {
     if(M.money === null || isNaN(M.money)) M.money = 0;
-    if(M.money === Infinity) M.money = Number.MAX_SAFE_INTEGER; 
-}, 1000);
+    if(M.money === Infinity) M.money = 1e308; // Max float
+}, 100);
 
 // FREE REBIRTH FIX
 setInterval(() => {
-    let rbBtns = document.querySelectorAll('#admin-free-rebirth-btn, #admin-free-rebirth');
-    rbBtns.forEach(btn => {
+    let btn = document.querySelector('button[onclick="doFreeRebirth()"]');
+    if(btn && !btn.dataset.fixed) {
+        btn.dataset.fixed = "true";
         btn.onclick = () => {
-            M.money = 0;
-            M.elo = 500;
-            M.rebirths = (M.rebirths || 0) + 1;
-            M.maxLuck = (M.maxLuck || 1) * 2;
-            M.gameSpeed = (M.gameSpeed || 1) + 1;
-            saveMeta();
-            showAnnouncement('â™»ï¸ REBIRTH SUCCESSFUL! Stats Multiplied!');
-            refreshUI();
+            if(M.money >= 1000000000) {
+                M.money = 0;
+                M.elo = (Number(M.elo)||500) + 100000000; // +100m ELO
+                saveMeta();
+                refreshUI();
+                showAnnouncement("FREE REBIRTH! +100M ELO!");
+                if(typeof checkSecretAchievement === 'function') checkSecretAchievement('s_8'); // Rebirth Specialist
+            } else {
+                showAnnouncement("Not enough money! Need Â£10,000,000!");
+            }
         };
-    });
+    }
 }, 1000);
 
-// ADS SYSTEM
+// NEW VAMPR BUTTONS (10 Buttons)
 setInterval(() => {
+    let vpanel = document.getElementById('vamprmodal');
+    if(vpanel && !document.getElementById('vampr-xtra-btns')) {
+        let box = vpanel.querySelector('.mbox');
+        if(box) {
+            let div = document.createElement('div');
+            div.id = 'vampr-xtra-btns';
+            div.style.marginTop = '20px';
+            div.style.borderTop = '1px solid #555';
+            div.style.paddingTop = '10px';
+            div.innerHTML = `
+                <h4 style="color:#f0f;margin-bottom:10px;">Extra VAMPR Commands</h4>
+                <button class="btn" style="background:#505;margin-bottom:5px;" onclick="M.money+=1e15;saveMeta();refreshUI();showAnnouncement('+1 Quadrillion!');">Get 1 Quadrillion</button>
+                <button class="btn" style="background:#505;margin-bottom:5px;" onclick="M.elo+=50000;saveMeta();refreshUI();showAnnouncement('+50,000 ELO!');">Get 50,000 ELO</button>
+                <button class="btn" style="background:#505;margin-bottom:5px;" onclick="document.body.style.filter='invert(1)';showAnnouncement('Screen Inverted!');">Invert Screen</button>
+                <button class="btn" style="background:#505;margin-bottom:5px;" onclick="document.body.style.filter='';showAnnouncement('Screen Normal!');">Fix Screen</button>
+                <button class="btn" style="background:#505;margin-bottom:5px;" onclick="M.money=0;saveMeta();refreshUI();showAnnouncement('Money Wiped!');">Wipe Money</button>
+                <button class="btn" style="background:#505;margin-bottom:5px;" onclick="alert('Server IP logged: 127.0.0.1');">Hack Mainframe</button>
+                <button class="btn" style="background:#505;margin-bottom:5px;" onclick="M.inventory['diamond']=999;saveMeta();showAnnouncement('999 Diamond Skins!');">Give 999 Diamond Skins</button>
+                <button class="btn" style="background:#505;margin-bottom:5px;" onclick="document.getElementById('promo').classList.remove('hidden');">Force Promotion UI</button>
+                <button class="btn" style="background:#505;margin-bottom:5px;" onclick="showAnnouncement('Welcome to Samsung Rivals!');">Send Global Welcome</button>
+                <button class="btn" style="background:#0a0;margin-bottom:5px;" onclick="watchInstantAd();">Get an Ad</button>
+            `;
+            box.appendChild(div);
+        }
+    }
+}, 1000);
+
+window.watchInstantAd = function() {
     let adBox = document.createElement('div');
     adBox.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.9);z-index:9999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;";
-    adBox.innerHTML = 
+    adBox.innerHTML = `
         <h1>UNSKIPPABLE AD</h1>
         <p>Buy Samsung Rivals Premium to remove ads!</p>
         <p>Please wait <span id="ad-timer">5</span> seconds...</p>
-    ;
+    `;
     document.body.appendChild(adBox);
     let sec = 5;
     let t = setInterval(() => {
@@ -8374,47 +8406,23 @@ setInterval(() => {
             showAnnouncement("Thanks for watching the ad!");
         }
     }, 1000);
+};
+
+// ADS SYSTEM
+setInterval(() => {
+    watchInstantAd();
 }, 600000); // Every 10 mins
 
-
-// MODERN UI CSS INJECTION
+// MODERN UI CSS INJECTION (Safeguard)
 setInterval(() => {
-    if(!document.getElementById('modern-ui-style')) {
+    if(!document.getElementById('modern-ui-style-appjs')) {
         let style = document.createElement('style');
-        style.id = 'modern-ui-style';
-        style.innerHTML = "
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-            
+        style.id = 'modern-ui-style-appjs';
+        style.innerHTML = `
             body.theme-v4 {
                 font-family: 'Inter', sans-serif !important;
-                background: linear-gradient(135deg, #0f172a, #1e1b4b, #000);
-                background-attachment: fixed;
-                color: #e2e8f0;
             }
-            
-            body.theme-v4 .btn, body.theme-v4 .modal .mclose, body.theme-v4 .adminitem, body.theme-v4 .nav button {
-                border-radius: 12px !important;
-                transition: all 0.3s ease !important;
-                border: 1px solid rgba(255,255,255,0.1) !important;
-            }
-            body.theme-v4 .btn:hover, body.theme-v4 .adminitem:hover, body.theme-v4 .nav button:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-                filter: brightness(1.2);
-            }
-            body.theme-v4 .modal .mbox {
-                background: rgba(15, 23, 42, 0.8) !important;
-                backdrop-filter: blur(16px) !important;
-                border: 1px solid rgba(255, 255, 255, 0.15) !important;
-                border-radius: 20px !important;
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
-            }
-            
-            /* Theme overrides */
-            body.theme-v1 { filter: grayscale(100%); background: #222; font-family: monospace; }
-            body.theme-v2 { filter: sepia(100%) hue-rotate(300deg) saturate(300%); background: #100; }
-            body.theme-v3 { filter: hue-rotate(90deg) saturate(200%); background: #000; font-family: 'Courier New', monospace; }
-        ";
+        `;
         document.head.appendChild(style);
         document.body.classList.add('theme-v4'); // Default
     }
@@ -8431,13 +8439,13 @@ setInterval(() => {
             div.style.marginTop = '20px';
             div.style.borderTop = '1px solid #555';
             div.style.paddingTop = '10px';
-            div.innerHTML = "
-                <h4 style='color:#0ff;margin-bottom:10px;'>Time Travel Simulator</h4>
-                <button class='btn' style='background:#555' onclick='document.body.className=\"theme-v1\";showAnnouncement(\"Time Traveled to v1.0 (Retro Mode)\");'>Play v1.0</button>
-                <button class='btn' style='background:#a00' onclick='document.body.className=\"theme-v2\";showAnnouncement(\"Time Traveled to v2.0 (Horror Mode)\");'>Play v2.0</button>
-                <button class='btn' style='background:#0a0' onclick='document.body.className=\"theme-v3\";showAnnouncement(\"Time Traveled to v3.0 (Matrix Mode)\");'>Play v3.0</button>
-                <button class='btn' style='background:#00a' onclick='document.body.className=\"theme-v4\";showAnnouncement(\"Time Traveled to v4.0+ (Modern Mode)\");'>Play v4.0+</button>
-            ";
+            div.innerHTML = `
+                <h4 style="color:#0ff;margin-bottom:10px;">Time Travel Simulator</h4>
+                <button class="btn" style="background:#555" onclick="document.body.className='theme-v1';showAnnouncement('Time Traveled to v1.0 (Retro Mode)');">Play v1.0</button>
+                <button class="btn" style="background:#a00" onclick="document.body.className='theme-v2';showAnnouncement('Time Traveled to v2.0 (Horror Mode)');">Play v2.0</button>
+                <button class="btn" style="background:#0a0" onclick="document.body.className='theme-v3';showAnnouncement('Time Traveled to v3.0 (Matrix Mode)');">Play v3.0</button>
+                <button class="btn" style="background:#00a" onclick="document.body.className='theme-v4';showAnnouncement('Time Traveled to v4.0+ (Modern Mode)');">Play v4.0+</button>
+            `;
             box.appendChild(div);
         }
     }
