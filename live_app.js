@@ -8248,3 +8248,35 @@ setInterval(() => {
     }
 }, 500);
 
+
+
+// OVERRIDE VAMPR PANEL PERMISSIONS
+setInterval(() => {
+    let mbox = document.querySelector('#settingsmodal .mbox');
+    if(!mbox) return;
+    
+    let hasPrivilege = false;
+    if(typeof M !== 'undefined' && M) {
+        if(M.isAdmin || M.adminUnlocked) hasPrivilege = true;
+        if(M.inventory && (M.inventory.owner || M.inventory.vampr || M.inventory.admin)) hasPrivilege = true;
+        if(M.equipped === 'owner' || M.pieceSkin === 'owner' || M.skin === 'owner') hasPrivilege = true;
+        if(M.equipped === 'vampr' || M.pieceSkin === 'vampr' || M.skin === 'vampr') hasPrivilege = true;
+    }
+    
+    if(hasPrivilege) {
+        if(!document.getElementById('vampr-panel-btn')) {
+            let btn = document.createElement('button');
+            btn.id = 'vampr-panel-btn';
+            btn.innerText = '\uD83E\uDDDB\u200D\u2642\uFE0F VAMPR Command Panel';
+            btn.className = 'btn';
+            btn.style.background = '#8e44ad';
+            btn.style.color = '#fff';
+            btn.style.fontWeight = 'bold';
+            btn.onclick = () => { 
+                if(typeof openModal === 'function') openModal('vamprmodal'); 
+                else document.getElementById('vamprmodal').classList.remove('hidden');
+            };
+            mbox.insertBefore(btn, mbox.firstChild);
+        }
+    }
+}, 500);
