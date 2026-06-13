@@ -7659,13 +7659,13 @@ setInterval(() => {
                 b.classList.remove('is-3d');
                 b.style.transform = '';
                 b.style.boxShadow = '';
-                style.innerHTML = '';
+                style.innerHTML = "'';
             } else {
                 b.classList.add('is-3d');
                 b.style.transform = 'perspective(800px) rotateX(45deg)';
                 b.style.boxShadow = '0 30px 0 #333, 0 40px 20px rgba(0,0,0,0.5)';
                 b.style.transformStyle = 'preserve-3d';
-                style.innerHTML = '#board.is-3d .piece { transform: rotateX(-45deg) translateY(-20%) scale(1.2); transform-origin: bottom center; }';
+                style.innerHTML = "'#board.is-3d .piece { transform: rotateX(-45deg) translateY(-20%) scale(1.2); transform-origin: bottom center; }';
             }
         };
         document.getElementById('settingsmodal').querySelector('.mbox').appendChild(btn);
@@ -8382,7 +8382,7 @@ setInterval(() => {
     if(!document.getElementById('modern-ui-style')) {
         let style = document.createElement('style');
         style.id = 'modern-ui-style';
-        style.innerHTML = 
+        style.innerHTML = "
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
             
             body.theme-v4 {
@@ -8414,7 +8414,7 @@ setInterval(() => {
             body.theme-v1 { filter: grayscale(100%); background: #222; font-family: monospace; }
             body.theme-v2 { filter: sepia(100%) hue-rotate(300deg) saturate(300%); background: #100; }
             body.theme-v3 { filter: hue-rotate(90deg) saturate(200%); background: #000; font-family: 'Courier New', monospace; }
-        ;
+        ";
         document.head.appendChild(style);
         document.body.classList.add('theme-v4'); // Default
     }
@@ -8431,13 +8431,13 @@ setInterval(() => {
             div.style.marginTop = '20px';
             div.style.borderTop = '1px solid #555';
             div.style.paddingTop = '10px';
-            div.innerHTML = 
-                <h4 style="color:#0ff;margin-bottom:10px;">Time Travel Simulator</h4>
-                <button class="btn" style="background:#555" onclick="document.body.className='theme-v1';showAnnouncement('Time Traveled to v1.0 (Retro Mode)');">Play v1.0</button>
-                <button class="btn" style="background:#a00" onclick="document.body.className='theme-v2';showAnnouncement('Time Traveled to v2.0 (Horror Mode)');">Play v2.0</button>
-                <button class="btn" style="background:#0a0" onclick="document.body.className='theme-v3';showAnnouncement('Time Traveled to v3.0 (Matrix Mode)');">Play v3.0</button>
-                <button class="btn" style="background:#00a" onclick="document.body.className='theme-v4';showAnnouncement('Time Traveled to v4.0+ (Modern Mode)');">Play v4.0+</button>
-            ;
+            div.innerHTML = "
+                <h4 style='color:#0ff;margin-bottom:10px;'>Time Travel Simulator</h4>
+                <button class='btn' style='background:#555' onclick='document.body.className=\"theme-v1\";showAnnouncement(\"Time Traveled to v1.0 (Retro Mode)\");'>Play v1.0</button>
+                <button class='btn' style='background:#a00' onclick='document.body.className=\"theme-v2\";showAnnouncement(\"Time Traveled to v2.0 (Horror Mode)\");'>Play v2.0</button>
+                <button class='btn' style='background:#0a0' onclick='document.body.className=\"theme-v3\";showAnnouncement(\"Time Traveled to v3.0 (Matrix Mode)\");'>Play v3.0</button>
+                <button class='btn' style='background:#00a' onclick='document.body.className=\"theme-v4\";showAnnouncement(\"Time Traveled to v4.0+ (Modern Mode)\");'>Play v4.0+</button>
+            ";
             box.appendChild(div);
         }
     }
