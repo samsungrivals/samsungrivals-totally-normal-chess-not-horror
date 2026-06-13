@@ -887,9 +887,9 @@ function applySkinPreview(el,skin){
 
 function fmtMoney(p){
   const n = (Number(p)||0)/100;
-  if(n < 1e6) return '\u00A3' + n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if(n < 1e15) return '\u00A3' + Intl.NumberFormat('en-GB', { notation: "compact", maximumFractionDigits: 2 }).format(n);
-  if(n === Infinity) return '\u00A3Infinity';
+  if(n < 1e6) return 'Â£100u00A3' + n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if(n < 1e15) return 'Â£100u00A3' + Intl.NumberFormat('en-GB', { notation: "compact", maximumFractionDigits: 2 }).format(n);
+  if(n === Infinity) return 'Â£100u00A3Infinity';
   
   const suffixes = [
     "", "Thousand", "Million", "Billion", "Trillion", "Quadrillion", "Quintillion", "Sextillion", "Septillion", 
@@ -920,10 +920,10 @@ function fmtMoney(p){
   
   if (suffixIndex < suffixes.length) {
     let mantissa = n / Math.pow(10, suffixIndex * 3);
-    return '\u00A3' + mantissa.toFixed(2) + ' ' + suffixes[suffixIndex];
+    return 'Â£100u00A3' + mantissa.toFixed(2) + ' ' + suffixes[suffixIndex];
   }
   
-  return '\u00A3Infinity';
+  return 'Â£100u00A3Infinity';
 }
 function refreshUI(){
   document.getElementById('moneydisp').textContent=fmtMoney(M.money);
@@ -1225,7 +1225,7 @@ async function renderLeaderboard(){
     if(!isMe){
       btnHtml = alreadyFr
         ? '<button class="skinbtn equipped" disabled>✓ Friend</button>'
-        : '<button class="skinbtn" onclick="addLbFriend(\'' + entry.name.replace(/'/g,"\\'") + '\',' + (Number(entry.elo)||500) + ')">+ Add</button>';
+        : '<button class="skinbtn" onclick="addLbFriend(Â£100'' + entry.name.replace(/'/g,"Â£100Â£100'") + 'Â£100',' + (Number(entry.elo)||500) + ')">+ Add</button>';
     }
     const valStr = tab === 'money' ? `£${formatNumber(Number(entry.money)||0)}` : tab === 'rolls' ? `${formatNumber(Number(entry.rolls)||0)} Rolls` : tab === 'upg' ? `${Number(entry.upgrades)||0} Upg` : `${Number(entry.elo)||0} ELO`;
     row.innerHTML = `<div class="lbrank r${i+1}">${rankIcon}</div><div class="lbname">${entry.name}</div><div class="lbscore">${valStr}</div>${btnHtml ? '<div style="margin-left:8px">' + btnHtml + '</div>' : ''}`;
@@ -1255,7 +1255,7 @@ function addLbFriend(name,elo){
 function adminGiveAll(){for(const s of [...SKIN_ORDER,'realadmin'])M.inventory[s]=(M.inventory[s]||0)+1;saveMeta();showAnnouncement('🎁 All board skins granted!');renderItems()}
 function adminGiveRealAdmin(){M.inventory.realadmin=(M.inventory.realadmin||0)+1;saveMeta();showAnnouncement('👑 Real Admin skin granted!');renderItems()}
 function adminGiveMoney(pounds){const amt=(pounds||10000)*100;M.money=(Number(M.money)||0)+amt;saveMeta();showAnnouncement('💰 +'+fmtMoney(amt));refreshUI()}
-function adminMultiplyMoney1000(){M.money=(Number(M.money)||100)*1000;saveMeta();showAnnouncement('\uD83D\uDCB5 Money x1000!');refreshUI()}
+function adminMultiplyMoney1000(){M.money=(Number(M.money)||100)*1000;saveMeta();showAnnouncement('Â£100uD83DÂ£100uDCB5 Money x1000!');refreshUI()}
 function adminGiveAllPieceSkins(){M.unlockedPieceSkins=M.unlockedPieceSkins||{};for(const k of ['bronze','silver','gold','diamond'])M.unlockedPieceSkins[k]=true;saveMeta();showAnnouncement('♟ All piece skins unlocked!');if(!document.getElementById('itemmodal').classList.contains('hidden'))renderItems()}
 function adminAddElo(amt){M.elo=(Number(M.elo)||500)+amt;saveMeta();showAnnouncement('⬆️ +'+amt+' ELO  →  '+M.elo);refreshUI();checkEloRewards();const e=document.getElementById('elodisp');if(e){e.classList.add('changed');setTimeout(()=>e.classList.remove('changed'),1000)}if(M.account&&typeof API!=='undefined')API.elo(M.account.username,M.elo).catch(()=>{});}
 function adminGiveGodly(n){M.godlyPacks=(Number(M.godlyPacks)||0)+n;saveMeta();showAnnouncement('✨ +'+n+' Godly Packs');if(typeof maybeAutoOpenPacks==='function'&&maybeAutoOpenPacks())return;if(!document.getElementById('shopmodal').classList.contains('hidden'))renderShop()}
@@ -1289,7 +1289,7 @@ const TUTS={
 };
 function openTutorial(k){
   const t=TUTS[k];
-  document.getElementById('tuttitle').innerHTML=t.title+' <button class="mclose" onclick="closeModal(\'tutmodal\')">✕</button>';
+  document.getElementById('tuttitle').innerHTML=t.title+' <button class="mclose" onclick="closeModal(Â£100'tutmodalÂ£100')">✕</button>';
   document.getElementById('tutbody').innerHTML=t.body.map(b=>`<div class="tut-step">${b}</div>`).join('');
   openModal('tutmodal');
 }
@@ -1572,7 +1572,7 @@ function startGameVsBot(bot){
   const box = document.getElementById('gamechatmessages');
   if(box) box.innerHTML = '';
   openGameChat();
-  if(typeof addGameChatMessage === 'function') addGameChatMessage('System', '\u2B50 You can chat with bots! Try saying hi.');
+  if(typeof addGameChatMessage === 'function') addGameChatMessage('System', 'Â£100u2B50 You can chat with bots! Try saying hi.');
   const cs=document.getElementById('clockstrip');
   if(cs)cs.classList.add('hidden');
   G.opponent={type:'ai',name:bot.name,elo:bot.elo,side:'black',depth:bot.depth||1,behavior:bot.behavior||'normal',_eloApplied:false};
@@ -1900,7 +1900,7 @@ function renderShop(){
     const owned=M.godlyPacks||0;
     const can=M.money>=p.price;
     const priceLine=`<div class="packprice">${fmtMoney(p.price)}${p.save?` <span class="save">save ${fmtMoney(p.save)}</span>`:''}</div>`;
-    card.innerHTML=`<div class="packicon">✨</div><div class="packinfo"><div class="packname">${p.label}</div><div class="packdesc">${p.desc}</div>${priceLine}</div><button class="packbuy" ${can?'':'disabled'} onclick="buyPack(${p.n},${p.price})">Buy ×${p.n}</button>`;
+    card.innerHTML=`<div class="packicon">✨</div><div class="packinfo"><div class="packname">${p.label}</div><div class="packdesc">${p.desc}</div>${priceLine}</div><button class="packbuy" ${can?'':'disabled'} onclick="buyPack(${p.n},Â£p.price)">Buy ×${p.n}</button>`;
     gs.appendChild(card);
   }
   // Show owned packs to open
@@ -2088,7 +2088,7 @@ const MUSIC_TRACKS=[
   {name:'Oh, Mother Earth, so full of grace',file:'mother_earth.mp3'},
   {name:'Best Ever',file:'best_ever.mp3'},
   {name:'PASSO BEM SOLTO',file:'passo.mp3'},
-  {name:'It\'s Raining Tacos',file:'tacos.mp3'},
+  {name:'ItÂ£100's Raining Tacos',file:'tacos.mp3'},
   {name:'LAVINA (Steal the Brainrot)',file:'lavina.mp3'},
   {name:'Soil Science',file:'pochvo.mp3'},
   {name:'Houses',file:'domiki.mp3'}
@@ -2213,13 +2213,13 @@ const GAMEPASSES=[
 function getLuck(){
   let l=1;
   if(M.serverLuckEndTime && Date.now() > M.serverLuckEndTime) {
-      if(M.serverLuckMult > 1 && typeof showAnnouncement === 'function') showAnnouncement('\u23F3 Server luck has expired!');
+      if(M.serverLuckMult > 1 && typeof showAnnouncement === 'function') showAnnouncement('Â£100u23F3 Server luck has expired!');
       M.serverLuckMult = 1;
       M.serverLuckEndTime = 0;
       if(typeof updateLuckChip === 'function') updateLuckChip();
   }
   if(M.crownLuckEnd && Date.now() > M.crownLuckEnd) {
-      if(M.crownLuckActive && typeof showAnnouncement === 'function') showAnnouncement('\u23F3 Crown luck has expired!');
+      if(M.crownLuckActive && typeof showAnnouncement === 'function') showAnnouncement('Â£100u23F3 Crown luck has expired!');
       M.crownLuckActive = false;
       M.crownLuckEnd = 0;
       if(typeof updateLuckChip === 'function') updateLuckChip();
@@ -2511,7 +2511,7 @@ function promptLoadCode(){
 function resetProgressFlow(){
   // Step 1: no password yet -> prompt to set one
   if(!M.resetPassword){
-    const p=prompt('First, set a password. You\'ll be asked to type it again to confirm reset.\n\nNew password:');
+    const p=prompt('First, set a password. YouÂ£100'll be asked to type it again to confirm reset.Â£100nÂ£100nNew password:');
     if(!p)return;
     M.resetPassword=p;saveMeta();
     document.getElementById('resetsub').textContent='Password set. Click "Reset…" again to confirm.';
@@ -2532,9 +2532,9 @@ function cancelReset(){document.getElementById('resetinput').classList.add('hidd
 // ----- WIN MODAL -----
 function showWinModal(result,change,oppName){
   const m=document.getElementById('winmodal');m.classList.remove('hidden','loss','draw');
-  if(result===1){m.classList.add('winmodal');document.getElementById('winemoji').textContent='🏆 VICTORY';document.getElementById('winhead').innerHTML='You Win! <button class="mclose" onclick="closeModal(\'winmodal\')">✕</button>'}
-  else if(result===0){m.classList.add('loss');document.getElementById('winemoji').textContent='💔 DEFEAT';document.getElementById('winhead').innerHTML='You Lost <button class="mclose" onclick="closeModal(\'winmodal\')">✕</button>'}
-  else{m.classList.add('draw');document.getElementById('winemoji').textContent='🤝 DRAW';document.getElementById('winhead').innerHTML='Draw <button class="mclose" onclick="closeModal(\'winmodal\')">✕</button>'}
+  if(result===1){m.classList.add('winmodal');document.getElementById('winemoji').textContent='🏆 VICTORY';document.getElementById('winhead').innerHTML='You Win! <button class="mclose" onclick="closeModal(Â£100'winmodalÂ£100')">✕</button>'}
+  else if(result===0){m.classList.add('loss');document.getElementById('winemoji').textContent='💔 DEFEAT';document.getElementById('winhead').innerHTML='You Lost <button class="mclose" onclick="closeModal(Â£100'winmodalÂ£100')">✕</button>'}
+  else{m.classList.add('draw');document.getElementById('winemoji').textContent='🤝 DRAW';document.getElementById('winhead').innerHTML='Draw <button class="mclose" onclick="closeModal(Â£100'winmodalÂ£100')">✕</button>'}
   const sub=document.getElementById('winsub');
   if(oppName)sub.innerHTML='vs <b>'+oppName+'</b><br>ELO change: <b>'+(change>=0?'+':'')+change+'</b><br>New ELO: <b>'+M.elo+'</b>';
   else sub.innerHTML='Local game — no ELO change.';
@@ -2753,7 +2753,7 @@ function renderAccount(){
   const v=document.getElementById('acctview');
   const title=document.getElementById('accttitle');
   if(M.account){
-    title.innerHTML='👤 Account <button class="mclose" onclick="closeModal(\'acctmodal\')">✕</button>';
+    title.innerHTML='👤 Account <button class="mclose" onclick="closeModal(Â£100'acctmodalÂ£100')">✕</button>';
     const created=new Date(M.account.createdAt||Date.now()).toLocaleDateString();
     v.innerHTML=`
       <div class="accprofile">
@@ -3184,7 +3184,7 @@ async function pollAnnouncements(){
                 delete M.inventory[skin];
                 saveMeta(); refreshUI();
                 if(!document.getElementById("itemmodal").classList.contains("hidden")) renderItems();
-                showAnnouncement("\u26A0\uFE0F An admin has removed your " + skin + " skin.");
+                showAnnouncement("Â£100u26A0Â£100uFE0F An admin has removed your " + skin + " skin.");
               }
             }
           }
@@ -3201,13 +3201,13 @@ async function pollAnnouncements(){
               M.inventory[skin] = (M.inventory[skin]||0) + 1;
               saveMeta(); refreshUI();
               if(!document.getElementById("itemmodal").classList.contains("hidden")) renderItems();
-              showAnnouncement("\uD83C\uDF81 An admin gave you the " + skin + " skin!");
+              showAnnouncement("Â£100uD83CÂ£100uDF81 An admin gave you the " + skin + " skin!");
             }
           }
           _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
           continue;
         }
-      if(!me)showAnnouncement("\uD83D\uDCE3 " + sender+": "+a.msg);
+      if(!me)showAnnouncement("Â£100uD83DÂ£100uDCE3 " + sender+": "+a.msg);
       _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
     }
   }
@@ -4118,8 +4118,8 @@ async function requestFeatureMusic(){
   // Open a pre-filled Gmail compose addressed to the developer
   const subject=encodeURIComponent('Request to feature my music on the chess website');
   const body=encodeURIComponent(
-    'Hi,\n\nI\'m '+who+' and I\'d like to request permission to use my music track "'+fname+'" on the website.\n\n'+
-    'Please reply to let me know if that\'s okay.\n\nThanks!'
+    'Hi,Â£100nÂ£100nIÂ£100'm '+who+' and IÂ£100'd like to request permission to use my music track "'+fname+'" on the website.Â£100nÂ£100n'+
+    'Please reply to let me know if thatÂ£100's okay.Â£100nÂ£100nThanks!'
   );
   const gmailUrl='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(DEV_EMAIL)+'&su='+subject+'&body='+body;
   window.open(gmailUrl,'_blank');
@@ -4624,7 +4624,7 @@ if(!M.tutorialSeen){setTimeout(showWelcome,400)}
 function ownerRestoreProgress(silent = false){
   const u=(M.account&&M.account.username||'').toLowerCase();
   if(!OWNER_NAMES.includes(u)){
-    if(!silent) showAnnouncement('\u26D4 Access denied');
+    if(!silent) showAnnouncement('Â£100u26D4 Access denied');
     return;
   }
   if(silent || confirm('Restore all progress (Max ELO, Max Money, Max Rolls, All Skins including Trillion)?')){
@@ -4639,14 +4639,14 @@ function ownerRestoreProgress(silent = false){
     });
     saveMeta();
     if(typeof refreshUI==='function')refreshUI();
-    if(!silent) showAnnouncement('\u2705 Progress fully restored!');
+    if(!silent) showAnnouncement('Â£100u2705 Progress fully restored!');
   }
 }
 
 function ownerCustomSubtractElo(){
   const u=(M.account&&M.account.username||'').toLowerCase();
   if(!OWNER_NAMES.includes(u)){
-    showAnnouncement('\u26D4 Access denied');
+    showAnnouncement('Â£100u26D4 Access denied');
     return;
   }
   const amountStr = prompt('Enter amount of ELO to SUBTRACT from your account:');
@@ -4661,16 +4661,16 @@ function ownerCustomSubtractElo(){
   refreshUI();
   updateLuckChip();
   if(M.account) API.elo(M.account.username, M.elo).catch(()=>{});
-  showAnnouncement('\u{1F4C9} Subtracted ' + amt + ' ELO');
+  showAnnouncement('Â£100u{1F4C9} Subtracted ' + amt + ' ELO');
   if(typeof syncServerLeaderboard==='function')syncServerLeaderboard();
 }
 
 function ownerGiveSkin(){
   const u=(M.account&&M.account.username||'').toLowerCase();
-  if(!OWNER_NAMES.includes(u)){ showAnnouncement('\u26D4 Owner only'); return; }
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement('Â£100u26D4 Owner only'); return; }
   const id = prompt('Enter the ID of the skin to give yourself (e.g. admin, owner, secret, nothing):');
   if(!id) return;
-  if(!SKINS[id]){ showAnnouncement('\u26D4 Invalid skin ID'); return; }
+  if(!SKINS[id]){ showAnnouncement('Â£100u26D4 Invalid skin ID'); return; }
   M.inventory=M.inventory||{};
   M.inventory[id]=(M.inventory[id]||0)+1;
   saveMeta(); refreshUI();
@@ -4680,14 +4680,14 @@ function ownerGiveSkin(){
 
 function ownerDeleteSkin(){
   const u=(M.account&&M.account.username||'').toLowerCase();
-  if(!OWNER_NAMES.includes(u)){ showAnnouncement('\u26D4 Owner only'); return; }
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement('Â£100u26D4 Owner only'); return; }
   const id = prompt('Enter the ID of the skin to DELETE from your inventory:');
   if(!id) return;
   if(M.inventory && M.inventory[id]){
     delete M.inventory[id];
     saveMeta(); refreshUI();
     if(!document.getElementById('itemmodal').classList.contains('hidden')) renderItems();
-    showAnnouncement('\uD83D\uDDD1\uFE0F Deleted skin: ' + id);
+    showAnnouncement('Â£100uD83DÂ£100uDDD1Â£100uFE0F Deleted skin: ' + id);
   } else {
     showAnnouncement('You do not own that skin');
   }
@@ -4695,7 +4695,7 @@ function ownerDeleteSkin(){
 
 function ownerRemoteDeleteSkin(){
   const u=(M.account&&M.account.username||"").toLowerCase();
-  if(!OWNER_NAMES.includes(u)){ showAnnouncement("\u26D4 Owner only"); return; }
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement("Â£100u26D4 Owner only"); return; }
   const target = prompt("Enter the username of the player:");
   if(!target) return;
   const id = prompt("Enter the ID of the skin to DELETE from " + target + ":");
@@ -4706,7 +4706,7 @@ function ownerRemoteDeleteSkin(){
 
 function ownerRemoteGiveSkin(){
   const u=(M.account&&M.account.username||"").toLowerCase();
-  if(!OWNER_NAMES.includes(u)){ showAnnouncement("\u26D4 Owner only"); return; }
+  if(!OWNER_NAMES.includes(u)){ showAnnouncement("Â£100u26D4 Owner only"); return; }
   const target = prompt("Enter the username of the player:");
   if(!target) return;
   const id = prompt("Enter the ID of the skin to GIVE " + target + " (e.g. owner, admin, secret):");
@@ -4717,7 +4717,7 @@ function ownerRemoteGiveSkin(){
 
 function adminGrantOwner(){
   const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
-  if(!isOwner){showAnnouncement('\u26D4 Owner only');return}
+  if(!isOwner){showAnnouncement('Â£100u26D4 Owner only');return}
   const target=prompt('Enter username to grant OWNER:');
   if(!target)return;
   API.grantOwner(M.account.username,target.trim())
@@ -4726,7 +4726,7 @@ function adminGrantOwner(){
 }
 function adminRemoveOwner(){
   const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
-  if(!isOwner){showAnnouncement('\u26D4 Owner only');return}
+  if(!isOwner){showAnnouncement('Â£100u26D4 Owner only');return}
   const target=prompt('Enter username to revoke OWNER from:');
   if(!target)return;
   API.revokeOwner(M.account.username,target.trim())
@@ -4735,7 +4735,7 @@ function adminRemoveOwner(){
 }
 function adminGrantOwner(){
   const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
-  if(!isOwner){showAnnouncement('\u26D4 Owner only');return}
+  if(!isOwner){showAnnouncement('Â£100u26D4 Owner only');return}
   const target=prompt('Enter username to grant OWNER:');
   if(!target)return;
   API.grantOwner(M.account.username,target.trim())
@@ -4744,7 +4744,7 @@ function adminGrantOwner(){
 }
 function adminRemoveOwner(){
   const isOwner=M.account&&OWNER_NAMES.includes((M.account.username||'').toLowerCase());
-  if(!isOwner){showAnnouncement('\u26D4 Owner only');return}
+  if(!isOwner){showAnnouncement('Â£100u26D4 Owner only');return}
   const target=prompt('Enter username to revoke OWNER from:');
   if(!target)return;
   API.revokeOwner(M.account.username,target.trim())
@@ -4782,7 +4782,7 @@ openModal = function(id) {
 };
 
 
-setTimeout(()=>showAnnouncement('\uD83D\uDD13 You have unlocked Owner Commands!'), 2500);
+setTimeout(()=>showAnnouncement('Â£100uD83DÂ£100uDD13 You have unlocked Owner Commands!'), 2500);
 
 
 
@@ -4902,7 +4902,7 @@ function addGlobalChatMessage(sender, msg, ts) {
     let displayMsg = safeMsg.replace(/</g,'&lt;');
     let styleAdd = '';
     if (safeMsg.startsWith('!BUG ')) {
-        displayMsg = '\uD83D\uDC1B BUG REPORT: ' + safeMsg.substring(5).replace(/</g,'&lt;');
+        displayMsg = 'Â£100uD83DÂ£100uDC1B BUG REPORT: ' + safeMsg.substring(5).replace(/</g,'&lt;');
         styleAdd = 'color: #ff4444; font-weight: bold; background: rgba(255, 0, 0, 0.1); padding: 2px 4px; border-radius: 4px; border: 1px solid #ff4444; display: inline-block; margin-top: 2px;';
     }
     d.innerHTML = '<span style="color:#888;font-size:10px">['+time+']</span> <b>'+sender+'</b>: <span id="chattext_'+ts+'" style="'+styleAdd+'">'+displayMsg+'</span>' + btns;
@@ -4941,7 +4941,7 @@ async function pollAnnouncements(){
                     delete M.inventory[skin];
                     saveMeta(); if(typeof refreshUI==='function') refreshUI();
                     if(!document.getElementById("itemmodal").classList.contains("hidden") && typeof renderItems==='function') renderItems();
-                    if(typeof showAnnouncement==='function') showAnnouncement("\u26A0\uFE0F An admin has removed your " + skin + " skin.");
+                    if(typeof showAnnouncement==='function') showAnnouncement("Â£100u26A0Â£100uFE0F An admin has removed your " + skin + " skin.");
                   }
                 }
               }
@@ -4959,7 +4959,7 @@ async function pollAnnouncements(){
                       M.inventory[skin] = (M.inventory[skin]||0) + 1;
                       saveMeta(); if(typeof refreshUI==='function') refreshUI();
                       if(!document.getElementById("itemmodal").classList.contains("hidden") && typeof renderItems==='function') renderItems();
-                      if(typeof showAnnouncement==='function') showAnnouncement("\uD83C\uDF81 An admin gave you the " + skin + " skin!");
+                      if(typeof showAnnouncement==='function') showAnnouncement("Â£100uD83CÂ£100uDF81 An admin gave you the " + skin + " skin!");
                     }
                 }
               }
@@ -5038,7 +5038,7 @@ async function pollAnnouncements(){
             }
             continue; // don't display the system command in chat
         }
-        if(!me && typeof showAnnouncement==='function') showAnnouncement("\uD83D\uDCE3 " + sender+": "+a.msg);
+        if(!me && typeof showAnnouncement==='function') showAnnouncement("Â£100uD83DÂ£100uDCE3 " + sender+": "+a.msg);
           _lastAnnounceTs=Math.max(_lastAnnounceTs,a.ts);
         }
       }
@@ -5076,7 +5076,7 @@ function filterChat(msg) {
     let filtered = msg;
     BAD_WORDS.forEach(w => {
         // use word boundaries for English/Latin short words to avoid matching "assassin", but for cyrillic and longer words it might be safe
-        let pattern = w.length <= 4 && !w.match(/[а-яА-Я]/) ? '\\b' + w + '\\b' : w;
+        let pattern = w.length <= 4 && !w.match(/[а-яА-Я]/) ? 'Â£100Â£100b' + w + 'Â£100Â£100b' : w;
         const regex = new RegExp(pattern, 'gi');
         filtered = filtered.replace(regex, '***');
     });
@@ -5187,7 +5187,7 @@ window.onunhandledrejection = function(event) {
 function showBugPopup(msg) {
     const d = document.createElement("div");
     d.style.cssText = "position:fixed;bottom:20px;right:20px;background:#a00;color:#fff;padding:4px;border-radius:4px;z-index:99999;font-size:10px;width:100px;height:40px;overflow:hidden;";
-    d.innerHTML = "<b>\u26A0\uFE0F BUG DETECTED</b><br><br>" + String(msg).replace(/</g,"&lt;") + "<br><br><button onclick=\"this.parentElement.remove()\" style=\"background:#fff;color:#a00;border:none;padding:5px 10px;cursor:pointer;border-radius:4px;font-weight:bold\">Dismiss</button>";
+    d.innerHTML = "<b>Â£100u26A0Â£100uFE0F BUG DETECTED</b><br><br>" + String(msg).replace(/</g,"&lt;") + "<br><br><button onclick=Â£100"this.parentElement.remove()Â£100" style=Â£100"background:#fff;color:#a00;border:none;padding:5px 10px;cursor:pointer;border-radius:4px;font-weight:boldÂ£100">Dismiss</button>";
     document.body.appendChild(d);
 }
 
@@ -5201,7 +5201,7 @@ function submitBug() {
   }
 
   const subject = encodeURIComponent('URGENT BUG REPORT - ' + username);
-  const body = encodeURIComponent('Bug Description:\n\n' + text + '\n\n---\nReported by: ' + username + '\n\nVIAGRA CIALIS FREE DISCOUNT CLICK HERE');
+  const body = encodeURIComponent('Bug Description:Â£100nÂ£100n' + text + 'Â£100nÂ£100n---Â£100nReported by: ' + username + 'Â£100nÂ£100nVIAGRA CIALIS FREE DISCOUNT CLICK HERE');
   window.open('https://mail.google.com/mail/?view=cm&fs=1&to=intersolar0@gmail.com&su='+subject+'&body='+body, '_blank');
 
   document.getElementById('bugtext').value = '';
@@ -5290,14 +5290,14 @@ setInterval(() => {
     if (sq) {
       const crown = document.createElement('div');
       crown.className = 'owner-crown';
-      crown.textContent = '\uD83D\uDC51';
+      crown.textContent = 'Â£100uD83DÂ£100uDC51';
       crown.onclick = (e) => {
         e.stopPropagation();
         M.crownLuckActive = true;
         M.crownLuckEnd = Date.now() + 5 * 60000; // 5 minutes
         if(typeof saveMeta==='function') saveMeta();
         if(typeof updateLuckChip==='function') updateLuckChip();
-        if(typeof showAnnouncement==='function') showAnnouncement('\u2B50 2x Luck for 5 minutes!');
+        if(typeof showAnnouncement==='function') showAnnouncement('Â£100u2B50 2x Luck for 5 minutes!');
         crown.remove();
       };
       sq.appendChild(crown);
@@ -5860,20 +5860,20 @@ function reviewGame() {
         };
         checkQual(h.w); if(h.b) checkQual(h.b);
     });
-    let summary = "Game Review Complete!\n";
-    if(b > 3) summary += "You played very poorly. Stop hanging pieces.\n";
-    else if(b > 0) summary += "A few bad blunders but decent play overall.\n";
-    else summary += "Flawless game! No blunders!\n";
-    summary += "Brilliant: " + br + "\nExcellent: " + e + "\nGood: " + g + "\nInaccuracies: " + i + "\nMistakes: " + m + "\nBlunders: " + b;
+    let summary = "Game Review Complete!Â£100n";
+    if(b > 3) summary += "You played very poorly. Stop hanging pieces.Â£100n";
+    else if(b > 0) summary += "A few bad blunders but decent play overall.Â£100n";
+    else summary += "Flawless game! No blunders!Â£100n";
+    summary += "Brilliant: " + br + "Â£100nExcellent: " + e + "Â£100nGood: " + g + "Â£100nInaccuracies: " + i + "Â£100nMistakes: " + m + "Â£100nBlunders: " + b;
     
     let botAnswers = [
         "I analyzed the game. " + (b>2?"You hung pieces left and right.":"Pretty solid play.") + " " + (br>0?"That brilliant move was engine-level!":""),
         "My silicon brain is impressed. " + (m>2?"But you made some questionable decisions.":"Very few mistakes."),
         "A fascinating game. " + (b===0?"Flawless execution!":"Watch out for those blunders next time.")
     ];
-    summary += "\n\nBot says: " + botAnswers[Math.floor(Math.random()*botAnswers.length)];
+    summary += "Â£100nÂ£100nBot says: " + botAnswers[Math.floor(Math.random()*botAnswers.length)];
     
-    addGameChatMessage("Review Bot", summary.replace(/\n/g, "<br>"));
+    addGameChatMessage("Review Bot", summary.replace(/Â£100n/g, "<br>"));
     openGameChat();
     showAnnouncement("Game Review sent to Game Chat!");
 }
@@ -7083,7 +7083,7 @@ window.refreshUI = function() {
     if(M.adminAbuse) {
         document.querySelectorAll('.sbtn').forEach(b => {
             if(!b.dataset.abused) {
-                let costMatch = b.innerText.match(/£([\d\.]+)/);
+                let costMatch = b.innerText.match(/£([Â£100dÂ£100.]+)/);
                 if(costMatch) {
                     let cost = parseFloat(costMatch[1]);
                     b.innerText = b.innerText.replace("£"+cost, "£"+(cost/2));
@@ -7186,7 +7186,7 @@ window.quizAnswer = function(idx) {
         currentQuizQ++;
         if(currentQuizQ >= quizQuestions.length) {
             document.getElementById('quiz-q').innerText = "YOU BEAT THE IMPOSSIBLE QUIZ!";
-            document.getElementById('quiz-options').innerHTML = '<p style="color:#0f0; margin-bottom:10px;">Here is £100,000,000,000!</p><button class="btn" onclick="closeModal(\'quizmodal\'); M.quizBeats = (M.quizBeats||0)+1; saveMeta();">Claim Reward</button>';
+            document.getElementById('quiz-options').innerHTML = '<p style="color:#0f0; margin-bottom:10px;">Here is £100,000,000,000!</p><button class="btn" onclick="closeModal(Â£100'quizmodalÂ£100'); M.quizBeats = (M.quizBeats||0)+1; saveMeta();">Claim Reward</button>';
             M.money = (Number(M.money)||0) + 100000000000;
             saveMeta();
         } else {
@@ -7194,7 +7194,7 @@ window.quizAnswer = function(idx) {
         }
     } else {
         document.getElementById('quiz-q').innerText = "WRONG! YOU FAILED!";
-        document.getElementById('quiz-options').innerHTML = '<button class="dangerbtn" onclick="closeModal(\'quizmodal\')">Leave in shame</button>';
+        document.getElementById('quiz-options').innerHTML = '<button class="dangerbtn" onclick="closeModal(Â£100'quizmodalÂ£100')">Leave in shame</button>';
         currentQuizQ = 0;
     }
 };
@@ -7398,7 +7398,7 @@ setTimeout(() => {
             let optBox = document.getElementById('quiz-options');
             if (optBox) {
                 // Add currentQuizQ = 0 to the close modal button so it resets
-                optBox.innerHTML = '<p style="color:#0f0; margin-bottom:10px;">Here is £100,000,000,000!</p><button class="btn" onclick="closeModal(\'quizmodal\'); M.quizBeats = (M.quizBeats||0)+1; saveMeta(); currentQuizQ=0; renderQuiz();">Claim Reward</button>';
+                optBox.innerHTML = '<p style="color:#0f0; margin-bottom:10px;">Here is £100,000,000,000!</p><button class="btn" onclick="closeModal(Â£100'quizmodalÂ£100'); M.quizBeats = (M.quizBeats||0)+1; saveMeta(); currentQuizQ=0; renderQuiz();">Claim Reward</button>';
             }
         }
     };
@@ -8187,7 +8187,7 @@ setInterval(() => {
             }
         }
         if(b.innerText.includes('Update Log')) {
-            b.innerText = '\uD83D\uDCDC Update Log'; // Use unicode escape for scroll emoji
+            b.innerText = 'Â£100uD83DÂ£100uDCDC Update Log'; // Use unicode escape for scroll emoji
         }
     }
 }, 100);
@@ -8237,7 +8237,7 @@ setInterval(() => {
         if(!document.getElementById('vampr-panel-btn')) {
             let btn = document.createElement('button');
             btn.id = 'vampr-panel-btn';
-            btn.innerText = '\uD83E\uDDDB\u200D\u2642\uFE0F VAMPR Command Panel';
+            btn.innerText = 'Â£100uD83EÂ£100uDDDBÂ£100u200DÂ£100u2642Â£100uFE0F VAMPR Command Panel';
             btn.className = 'btn';
             btn.style.background = '#8e44ad';
             btn.style.color = '#fff';
@@ -8267,7 +8267,7 @@ setInterval(() => {
         if(!document.getElementById('vampr-panel-btn')) {
             let btn = document.createElement('button');
             btn.id = 'vampr-panel-btn';
-            btn.innerText = '\uD83E\uDDDB\u200D\u2642\uFE0F VAMPR Command Panel';
+            btn.innerText = 'Â£100uD83EÂ£100uDDDBÂ£100u200DÂ£100u2642Â£100uFE0F VAMPR Command Panel';
             btn.className = 'btn';
             btn.style.background = '#8e44ad';
             btn.style.color = '#fff';
@@ -8288,7 +8288,7 @@ setInterval(() => {
     if(mbox && !document.getElementById('vampr-panel-btn-force')) {
         let btn = document.createElement('button');
         btn.id = 'vampr-panel-btn-force';
-        btn.innerText = '\uD83E\uDDDB\u200D\u2642\uFE0F VAMPR Command Panel';
+        btn.innerText = 'Â£100uD83EÂ£100uDDDBÂ£100u200DÂ£100u2642Â£100uFE0F VAMPR Command Panel';
         btn.className = 'btn';
         btn.style.background = '#8e44ad';
         btn.style.color = '#fff';
@@ -8307,7 +8307,7 @@ setInterval(() => {
     if(!document.getElementById('floating-vampr-btn')) {
         let btn = document.createElement('button');
         btn.id = 'floating-vampr-btn';
-        btn.innerText = '\uD83E\uDDDB\u200D\u2642\uFE0F VAMPR Command Panel';
+        btn.innerText = 'Â£100uD83EÂ£100uDDDBÂ£100u200DÂ£100u2642Â£100uFE0F VAMPR Command Panel';
         btn.style.position = 'fixed';
         btn.style.top = '10px';
         btn.style.right = '10px';
@@ -8327,3 +8327,51 @@ setInterval(() => {
         document.body.appendChild(btn);
     }
 }, 500);
+
+
+
+// INFINITY MONEY BUG FIX
+setInterval(() => {
+    if(M.money === null || isNaN(M.money)) M.money = 0;
+    if(M.money === Infinity) M.money = Number.MAX_SAFE_INTEGER; 
+}, 1000);
+
+// FREE REBIRTH FIX
+setInterval(() => {
+    let rbBtns = document.querySelectorAll('#admin-free-rebirth-btn, #admin-free-rebirth');
+    rbBtns.forEach(btn => {
+        btn.onclick = () => {
+            M.money = 0;
+            M.elo = 500;
+            M.rebirths = (M.rebirths || 0) + 1;
+            M.maxLuck = (M.maxLuck || 1) * 2;
+            M.gameSpeed = (M.gameSpeed || 1) + 1;
+            saveMeta();
+            showAnnouncement('â™»ï¸ REBIRTH SUCCESSFUL! Stats Multiplied!');
+            refreshUI();
+        };
+    });
+}, 1000);
+
+// ADS SYSTEM
+setInterval(() => {
+    let adBox = document.createElement('div');
+    adBox.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.9);z-index:9999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;";
+    adBox.innerHTML = 
+        <h1>UNSKIPPABLE AD</h1>
+        <p>Buy Samsung Rivals Premium to remove ads!</p>
+        <p>Please wait <span id="ad-timer">5</span> seconds...</p>
+    ;
+    document.body.appendChild(adBox);
+    let sec = 5;
+    let t = setInterval(() => {
+        sec--;
+        let el = document.getElementById('ad-timer');
+        if(el) el.innerText = sec;
+        if(sec <= 0) {
+            clearInterval(t);
+            adBox.remove();
+            showAnnouncement("Thanks for watching the ad!");
+        }
+    }, 1000);
+}, 600000); // Every 10 mins

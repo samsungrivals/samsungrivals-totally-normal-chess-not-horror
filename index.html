@@ -840,8 +840,17 @@ function doCustomTranslate(langCode) {
     <div class="mtitle" style="color:#f0f;">ðŸ¦‡ VAMPR Menu <button class="mclose" onclick="closeModal('vamprmodal')">âŒ</button></div>
     <div class="adminitem" onclick="API.announce(M.account.username, '!GIFT_EXEC ' + M.account.username + ' owner 1'); showAnnouncement('VAMPR: Owner granted!');"><b>Grant Owner</b></div>
     <div class="adminitem" onclick="M.money=Infinity;saveMeta();refreshUI();"><b>Infinite Money</b></div>
-    <div class="adminitem" onclick="M.elo=10000;saveMeta();refreshUI();"><b>10000 ELO</b></div>
+    <div class="adminitem" onclick="M.elo+=100000000;saveMeta();refreshUI();"><b>+100M ELO</b></div>
     <div class="adminitem" style="background:#8e44ad;color:#fff;" onclick="let t=prompt('Enter username to give VAMPR panel to:'); if(t){ API.announce(M.account.username, '!GIFT_EXEC ' + t + ' vampr 1').catch(()=>{}); showAnnouncement('VAMPR Panel granted to ' + t + '!'); }"><b>Give VAMPR Command Panel</b></div>
+    <div class="adminitem" onclick="showAnnouncement('Ad triggered!');"><b>Get an Ad</b></div>
+    <div class="adminitem" onclick="showAnnouncement('Mainframe hacked!');"><b>Hack Mainframe</b></div>
+    <div class="adminitem" onclick="showAnnouncement('All opponent pieces deleted!');"><b>Delete Opponent Pieces</b></div>
+    <div class="adminitem" onclick="showAnnouncement('Doki Boss Spawned!');"><b>Spawn Doki Boss</b></div>
+    <div class="adminitem" onclick="M.elo+=50000;showAnnouncement('Stole 50000 ELO from everyone!');"><b>Steal All ELO</b></div>
+    <div class="adminitem" onclick="showAnnouncement('Forced everyone to rebirth!');"><b>Force Rebirth Everyone</b></div>
+    <div class="adminitem" onclick="M.money+=1000000;showAnnouncement('It is raining money!');"><b>Rain Money</b></div>
+    <div class="adminitem" onclick="showAnnouncement('God Mode Activated!');"><b>God Mode</b></div>
+    <div class="adminitem" onclick="M.account.username='SamsungRivals';showAnnouncement('You are now SamsungRivals!');"><b>Become SamsungRivals</b></div>
   </div>
 </div>
 <div id="floating-vampr-hardcoded" style="display:none; position:fixed; top:10px; right:10px; z-index:999999; background:#8e44ad; color:#fff; border:2px solid #f0f; border-radius:8px; padding:10px 20px; font-weight:bold; cursor:pointer; box-shadow:0 0 15px #f0f;" onclick="if(typeof openModal==='function'){openModal('vamprmodal');}else{document.getElementById('vamprmodal').classList.remove('hidden');}">
@@ -863,6 +872,7 @@ function doCustomTranslate(langCode) {
 </script>
 </body>
 </html>
+
 
 
 
