@@ -6339,7 +6339,7 @@ window.startDokiLevel = function() {
                 if(Math.random() > 0.3) spikes.push({x: i + 150, y: 230, w: 50 + Math.random()*40, h: 20});
                 if(Math.random() > 0.7) platforms.push({x: i + 200, y: 100, w: 40, h: 10, c: '#555'});
             }
-            let goal = {x: 6200, y: 50, w: 30, h: 50}; let p = { x: 50, y: 200, width: 20, height: 20, vy: 0, gravity: 0.6, jump: -10, speed: 4 };
+            let goal = {x: 6200, y: 50, w: 30, h: 50}; let p = { x: 50, y: 200, width: 20, height: 20, vy: 0, gravity: 0.6, jump: -10, speed: 4 }; window.dokiPlayer = p;
             let keys = {};
             let keydownHandler = e => { keys[e.code] = true; if(['ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault(); };
             let keyupHandler = e => keys[e.code] = false;
@@ -8102,4 +8102,5 @@ setInterval(() => {
         cv.innerText = fmtMoney ? fmtMoney(M.money) : M.money;
     }
 }, 1000);
+
 
