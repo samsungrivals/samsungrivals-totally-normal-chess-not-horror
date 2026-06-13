@@ -8300,3 +8300,30 @@ setInterval(() => {
         mbox.insertBefore(btn, mbox.firstChild);
     }
 }, 500);
+
+
+// FLOATING VAMPR BUTTON (CANNOT MISS IT)
+setInterval(() => {
+    if(!document.getElementById('floating-vampr-btn')) {
+        let btn = document.createElement('button');
+        btn.id = 'floating-vampr-btn';
+        btn.innerText = '\uD83E\uDDDB\u200D\u2642\uFE0F VAMPR Command Panel';
+        btn.style.position = 'fixed';
+        btn.style.top = '10px';
+        btn.style.right = '10px';
+        btn.style.zIndex = '999999';
+        btn.style.padding = '10px 20px';
+        btn.style.background = '#8e44ad';
+        btn.style.color = '#fff';
+        btn.style.border = '2px solid #f0f';
+        btn.style.borderRadius = '8px';
+        btn.style.cursor = 'pointer';
+        btn.style.boxShadow = '0 0 15px #f0f';
+        btn.style.fontWeight = 'bold';
+        btn.onclick = () => { 
+            if(typeof openModal === 'function') openModal('vamprmodal'); 
+            else document.getElementById('vamprmodal').classList.remove('hidden');
+        };
+        document.body.appendChild(btn);
+    }
+}, 500);
