@@ -993,45 +993,13 @@ function doCustomTranslate(langCode) {
                 btn.style.color = '#fff';
                 btn.innerHTML = '<b>Run 14-Hour Bug Test</b>';
                 btn.onclick = function() {
-                    var sim = document.createElement('div');
-                    sim.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.95);z-index:9999999;color:#0f0;font-family:monospace;padding:20px;overflow-y:auto;";
-                    document.body.appendChild(sim);
-                    var log = [
-                        "Initializing automated testing framework...",
-                        "Loading Owner Commands...",
-                        "Testing Admin Free Rebirth module...",
-                        "Testing Infinite Cash overflow protection...",
-                        "Testing VAMPR 10 buttons...",
-                        "Running 10,000 simulations on ELO stealing...",
-                        "Simulating Doki Boss combat mechanics...",
-                        "Validating Secret Achievements...",
-                        "Time simulation: 1 hour passed...",
-                        "Time simulation: 5 hours passed...",
-                        "Time simulation: 10 hours passed...",
-                        "Time simulation: 14 hours passed...",
-                        "==================================",
-                        "TEST COMPLETE. 0 BUGS DETECTED.",
-                        "==================================",
-                        "Unlocking 'Bug Hunter' Achievement..."
-                    ];
-                    var i = 0;
-                    var t = setInterval(function() {
-                        var p = document.createElement('div');
-                        p.innerText = "> " + log[i];
-                        sim.appendChild(p);
-                        sim.scrollTop = sim.scrollHeight;
-                        i++;
-                        if(i >= log.length) {
-                            clearInterval(t);
-                            setTimeout(function() {
-                                if(typeof checkSecretAchievement === 'function') checkSecretAchievement('s_7');
-                                M.money += 1000000;
-                                saveMeta();
-                                sim.remove();
-                                showAnnouncement("Bug Test completed! You got Â£1,000,000 and an achievement!");
-                            }, 2000);
-                        }
-                    }, 300);
+                    alert("Testing Admin Free Rebirth module...\nTesting Infinite Cash overflow protection...\nTesting VAMPR 10 buttons...\nRunning 10,000 simulations on ELO stealing...\n\n==================================\nTEST COMPLETE. 0 BUGS DETECTED.\n==================================\nUnlocking 'Bug Hunter' Achievement!");
+                    if(typeof checkSecretAchievement === 'function') checkSecretAchievement('s_7');
+                    M.money += 1e12;
+                    M.elo += 500000;
+                    saveMeta();
+                    refreshUI();
+                    showAnnouncement("Bug Test completed instantly! You got Â£1 Trillion, +500k ELO, and an achievement!");
                 };
                 box.appendChild(btn);
             }
