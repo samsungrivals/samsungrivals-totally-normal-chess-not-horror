@@ -844,18 +844,26 @@ function doCustomTranslate(langCode) {
     <div class="adminitem" style="background:#8e44ad;color:#fff;" onclick="let t=prompt('Enter username to give VAMPR panel to:'); if(t){ API.announce(M.account.username, '!GIFT_EXEC ' + t + ' vampr 1').catch(()=>{}); showAnnouncement('VAMPR Panel granted to ' + t + '!'); }"><b>Give VAMPR Command Panel</b></div>
   </div>
 </div>
-<div id="floating-vampr-hardcoded" style="position:fixed; top:10px; right:10px; z-index:999999; background:#8e44ad; color:#fff; border:2px solid #f0f; border-radius:8px; padding:10px 20px; font-weight:bold; cursor:pointer; box-shadow:0 0 15px #f0f;" onclick="if(typeof openModal==='function'){openModal('vamprmodal');}else{document.getElementById('vamprmodal').classList.remove('hidden');}">
+<div id="floating-vampr-hardcoded" style="display:none; position:fixed; top:10px; right:10px; z-index:999999; background:#8e44ad; color:#fff; border:2px solid #f0f; border-radius:8px; padding:10px 20px; font-weight:bold; cursor:pointer; box-shadow:0 0 15px #f0f;" onclick="if(typeof openModal==='function'){openModal('vamprmodal');}else{document.getElementById('vamprmodal').classList.remove('hidden');}">
     ðŸ§›â€â™‚ï¸ VAMPR Command Panel
 </div>
 <script>
-    // Just in case the main app.js is cached, we inject a force-show script inline
     setInterval(function(){
         var btn = document.getElementById('floating-vampr-hardcoded');
-        if(btn) btn.style.display = 'block';
+        if(btn) {
+            var show = false;
+            if(typeof M !== 'undefined' && M && M.account) {
+                if(M.account.username === 'samsungrivals_owner_' || M.account.username === 'vampr') {
+                    show = true;
+                }
+            }
+            btn.style.display = show ? 'block' : 'none';
+        }
     }, 500);
 </script>
 </body>
 </html>
+
 
 
 
