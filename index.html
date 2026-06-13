@@ -875,7 +875,8 @@ function doCustomTranslate(langCode) {
     
     body.theme-v4 {
         font-family: 'Inter', sans-serif !important;
-        background: linear-gradient(135deg, #0f172a, #1e1b4b, #000) !important;
+        background: url('bg.png') no-repeat center center fixed, linear-gradient(135deg, #0f172a, #1e1b4b, #000) !important;
+        background-size: cover !important;
         background-attachment: fixed !important;
         color: #e2e8f0 !important;
     }
@@ -883,14 +884,14 @@ function doCustomTranslate(langCode) {
     /* OVERRIDE MAIN MENU (HOME SCREEN) */
     body.theme-v4 .home-screen {
         background: transparent !important;
-        backdrop-filter: none !important;
+        pointer-events: none; /* fix backdrop bug */
     }
     body.theme-v4 .hs-content {
-        background: rgba(15, 23, 42, 0.6) !important;
-        backdrop-filter: blur(20px) !important;
+        background: rgba(15, 23, 42, 0.85) !important;
         border: 1px solid rgba(255,255,255,0.2) !important;
         border-radius: 24px !important;
         box-shadow: 0 30px 60px rgba(0,0,0,0.6) !important;
+        pointer-events: auto; /* restore click on content */
     }
     body.theme-v4 .hs-btn, body.theme-v4 .nav {
         background: rgba(255,255,255,0.05) !important;
@@ -898,7 +899,6 @@ function doCustomTranslate(langCode) {
         border-radius: 16px !important;
         font-family: 'Inter', sans-serif !important;
         transition: all 0.3s ease !important;
-        backdrop-filter: blur(10px) !important;
     }
     body.theme-v4 .hs-btn:hover {
         background: rgba(255,255,255,0.15) !important;
@@ -918,8 +918,7 @@ function doCustomTranslate(langCode) {
         filter: brightness(1.2);
     }
     body.theme-v4 .modal .mbox {
-        background: rgba(15, 23, 42, 0.8) !important;
-        backdrop-filter: blur(16px) !important;
+        background: rgba(15, 23, 42, 0.85) !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
         border-radius: 20px !important;
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
