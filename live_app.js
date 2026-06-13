@@ -7836,8 +7836,19 @@ setInterval(() => {
         btn.onclick = () => {
             let logHtml = `<div style="background:#222; padding:20px; color:#fff; max-width:500px; margin:0 auto; max-height:80vh; overflow-y:auto; border:2px solid #aaa; text-align:left;">
                     <h2 style="text-align:center;">Update Log</h2>
-                    <div style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">
-                        <h3 style="color:#0ff;">v3.0 - The Massive Feature Drop</h3>
+                                        <div style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">
+                        <h3 style="color:#ff0;">v4.0 - The VAMPR Expansion & Mechanics Polish</h3>
+                        <ul style="list-style:circle; padding-left:20px;">
+                            <li>VAMPR Role Integration & Exclusive Perks</li>
+                            <li>100x Stats Boost upon Doki Doki Completion</li>
+                            <li>Massive Expansion to the Openings Quiz</li>
+                            <li>Implementation of 4000 ELO Bot (Impossible Mode)</li>
+                            <li>Doki Doki Level 20 Fixes (Spike Size, Skip Button Override, Lag Fixed)</li>
+                            <li>UI Cleanup, Duplicate Button Fix, and Bug Detector Tool</li>
+                            <li>Hourly Server Leaderboard Reset Automation</li>
+                        </ul>
+                    </div>
+                    <div style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">                        <h3 style="color:#0ff;">v3.0 - The Massive Feature Drop</h3>
                         <ul style="list-style:circle; padding-left:20px;">
                             <li>Gifting System (Pieces, Boards, Money, Admin)</li>
                             <li>Update Log / Time Travel</li>
@@ -8180,3 +8191,4 @@ setInterval(() => {
         }
     }
 }, 100);
+
