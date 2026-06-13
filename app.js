@@ -8127,3 +8127,15 @@ window.skipDokiLevel = function() {
     }
 };
 
+
+
+// OVERRIDE DOKI SKIP AGAIN
+window.skipDokiLevel = function() {
+    if(window.dokiPlayer) {
+        window.dokiPlayer.x = 6205;
+        window.dokiPlayer.y = 60;
+        if(typeof showAnnouncement === 'function') showAnnouncement("Skipped to Goal!");
+    } else {
+        if(typeof showAnnouncement === 'function') showAnnouncement("Player not loaded yet.");
+    }
+};
