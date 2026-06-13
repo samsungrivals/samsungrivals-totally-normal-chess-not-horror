@@ -6336,7 +6336,7 @@ window.startDokiLevel = function() {
             let spikes = [];
             for(let i=300; i<6000; i+=400) {
                 platforms.push({x: i, y: 150 + (Math.random()*50 - 25), w: 60, h: 10, c: '#8B4513'});
-                if(Math.random() > 0.3) spikes.push({x: i + 150, y: 230, w: 100 + Math.random()*100, h: 20});
+                if(Math.random() > 0.3) spikes.push({x: i + 150, y: 230, w: 50 + Math.random()*40, h: 20});
                 if(Math.random() > 0.7) platforms.push({x: i + 200, y: 100, w: 40, h: 10, c: '#555'});
             }
             let goal = {x: 6200, y: 50, w: 30, h: 50}; let p = { x: 50, y: 200, width: 20, height: 20, vy: 0, gravity: 0.6, jump: -10, speed: 4 };
@@ -6472,9 +6472,9 @@ window.startDokiLevel = function() {
     }
     
     // --- DISTINCT AGREEEE TERMS MECHANICS (LEVELS 1-19) ---
-    window.dokiCbMovement = lvl >= 2 ? (20 + (lvl * 15)) : 0;
+    window.dokiCbMovement = lvl >= 2 ? Math.min(100, 20 + (lvl * 15)) : 0;
     window.dokiAgreeJumps = lvl >= 3 ? true : false;
-    window.dokiUncheckSpeed = lvl >= 4 ? Math.max(200, 2000 - (lvl * 100)) : 0;
+    window.dokiUncheckSpeed = lvl >= 4 ? Math.max(800, 2000 - (lvl * 100)) : 0;
     window.dokiObstacles = lvl >= 5 ? true : false;
     
     let instTransform = '';
@@ -8102,3 +8102,4 @@ setInterval(() => {
         cv.innerText = fmtMoney ? fmtMoney(M.money) : M.money;
     }
 }, 1000);
+
