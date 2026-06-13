@@ -1050,12 +1050,13 @@ function doCustomTranslate(langCode) {
                 div.style.paddingTop = '10px';
                 div.innerHTML = `
                     <h4 style="color:#f0f;margin-bottom:10px;">Hidden Admin Commands</h4>
-                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminGiveAll();">Give All Board Skins</button>
-                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminGiveRealAdmin();">Give Real Admin Skin</button>
-                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminGiveAllPieceSkins();">Unlock All Piece Skins</button>
-                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminMultiplyMoney1000();">Multiply Money x1000</button>
-                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminGiveGodly(100);">Give 100 Godly Packs</button>
+                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminGiveAll(); alert('All Board Skins Granted!');">Give All Board Skins</button>
+                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminGiveRealAdmin(); alert('Real Admin Skin Granted!');">Give Real Admin Skin</button>
+                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminGiveAllPieceSkins(); alert('All Piece Skins Unlocked!');">Unlock All Piece Skins</button>
+                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminMultiplyMoney1000(); alert('Money Multiplied by x1000!');">Multiply Money x1000</button>
+                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminGiveGodly(100); alert('100 Godly Packs Granted!');">Give 100 Godly Packs</button>
                     <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminAnnounce();">Global Admin Announce</button>
+                    <button class="btn" style="background:#800;margin-bottom:5px;color:#0ff;border:2px solid #0ff;" onclick="API.announce(M.account.username, '!REBIRTH_ALL'); showAnnouncement('Forced everyone to rebirth!'); alert('EVERYONE HAS BEEN FORCED TO REBIRTH!');">Force Rebirth Everyone</button>
                 `;
                 box.appendChild(div);
             }
