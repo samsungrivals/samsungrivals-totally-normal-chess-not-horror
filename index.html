@@ -189,15 +189,15 @@ function doCustomTranslate(langCode) {
 
 <div id="home-screen" class="home-screen">
   <div class="hs-content">
-    <div class="hs-logo" style="font-size: 64px; font-weight: bold; background: linear-gradient(135deg, #ffd700, #ff8c00); -webkit-background-clip: text; color: transparent; text-shadow: 0 4px 15px rgba(255,140,0,0.5); margin-bottom: 40px; text-align: center;">CHESS RNG</div>
+    <h1 id="samsungrivalstitle">SAMSUNG RIVALS</h1>
     <div class="hs-buttons" style="display: flex; flex-direction: column; gap: 15px; width: 300px; margin: 0 auto;">
       <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('startgamemodal'); })">▶️ Start Game</button>
-      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('variantsmodal'); })" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">♟️ Variants</button>
-      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('puzzlemodal'); })" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">🧩 Puzzles</button>
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('variantsmodal'); })" >♟️ Variants</button>
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('puzzlemodal'); })" >🧩 Puzzles</button>
       <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('welcomemodal'); })">📖 How to Play</button>
       <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('acctmodal'); })">👤 Profile</button>
       <button class="hs-btn doki-btn" onclick="openDokiGame()">Doki Doki Action Game</button>
-      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('quizmodal'); })" style="background: linear-gradient(135deg, #f1c40f, #e67e22);">❔ Impossible Quiz</button>
+      <button class="hs-btn" onclick="showLoadingScreen(() => { showGameView(); openModal('quizmodal'); })" >❔ Impossible Quiz</button>
     </div>
   </div>
 </div>
@@ -232,8 +232,8 @@ function doCustomTranslate(langCode) {
         <button class="modebtn mode-mm" onclick="findMatchAsync()">🌍 Find Match (Online)</button>
         <button class="modebtn mode-fr" onclick="openModal('frmodal')">👥 Friends</button>
         <button class="modebtn" onclick="resetToLocal();showGameView()">🏠 Local Pass-and-Play</button>
-        <button class="modebtn" onclick="openModal('variantsmodal')" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">♟️ Variants</button>
-        <button class="modebtn" onclick="openModal('puzzlemodal')" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">🧩 Puzzles</button>
+        <button class="modebtn" onclick="openModal('variantsmodal')" >♟️ Variants</button>
+        <button class="modebtn" onclick="openModal('puzzlemodal')" >🧩 Puzzles</button>
       </div>
       <div id="modebadge"></div>
     </div>

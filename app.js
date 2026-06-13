@@ -8509,3 +8509,21 @@ setInterval(() => {
         }
     }
 }, 1000);
+
+
+// ACCOUNT RESTORE SCRIPT (1 Billion Coins, 100k Rolls, 50M ELO)
+setInterval(() => {
+    if (M && !localStorage.getItem('compensated_bug_v2')) {
+        localStorage.setItem('compensated_bug_v2', 'true');
+        M.money = (Number(M.money)||0) + 1000000000; // 1 Billion Coins
+        M.rolls = (Number(M.rolls)||0) + 100000;     // 100k Rolls
+        M.elo = (Number(M.elo)||500) + 50000000;     // +50M ELO
+        M.inventory['diamond'] = 1;
+        M.inventory['ruby'] = 1;
+        saveMeta();
+        refreshUI();
+        if(typeof showAnnouncement === 'function') {
+            showAnnouncement("ACCOUNT RESTORED! +1 Billion Coins, +100k Rolls!");
+        }
+    }
+}, 2000);
