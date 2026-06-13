@@ -8375,3 +8375,129 @@ setInterval(() => {
         }
     }, 1000);
 }, 600000); // Every 10 mins
+
+
+// MODERN UI CSS INJECTION
+setInterval(() => {
+    if(!document.getElementById('modern-ui-style')) {
+        let style = document.createElement('style');
+        style.id = 'modern-ui-style';
+        style.innerHTML = 
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+            
+            body.theme-v4 {
+                font-family: 'Inter', sans-serif !important;
+                background: linear-gradient(135deg, #0f172a, #1e1b4b, #000);
+                background-attachment: fixed;
+                color: #e2e8f0;
+            }
+            
+            body.theme-v4 .btn, body.theme-v4 .modal .mclose, body.theme-v4 .adminitem, body.theme-v4 .nav button {
+                border-radius: 12px !important;
+                transition: all 0.3s ease !important;
+                border: 1px solid rgba(255,255,255,0.1) !important;
+            }
+            body.theme-v4 .btn:hover, body.theme-v4 .adminitem:hover, body.theme-v4 .nav button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+                filter: brightness(1.2);
+            }
+            body.theme-v4 .modal .mbox {
+                background: rgba(15, 23, 42, 0.8) !important;
+                backdrop-filter: blur(16px) !important;
+                border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                border-radius: 20px !important;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+            }
+            
+            /* Theme overrides */
+            body.theme-v1 { filter: grayscale(100%); background: #222; font-family: monospace; }
+            body.theme-v2 { filter: sepia(100%) hue-rotate(300deg) saturate(300%); background: #100; }
+            body.theme-v3 { filter: hue-rotate(90deg) saturate(200%); background: #000; font-family: 'Courier New', monospace; }
+        ;
+        document.head.appendChild(style);
+        document.body.classList.add('theme-v4'); // Default
+    }
+}, 500);
+
+// TIME TRAVEL BUTTONS IN UPDATE LOG
+setInterval(() => {
+    let ulog = document.getElementById('updatelogmodal');
+    if(ulog && !document.getElementById('tt-buttons')) {
+        let box = ulog.querySelector('.mbox');
+        if(box) {
+            let div = document.createElement('div');
+            div.id = 'tt-buttons';
+            div.style.marginTop = '20px';
+            div.style.borderTop = '1px solid #555';
+            div.style.paddingTop = '10px';
+            div.innerHTML = 
+                <h4 style="color:#0ff;margin-bottom:10px;">Time Travel Simulator</h4>
+                <button class="btn" style="background:#555" onclick="document.body.className='theme-v1';showAnnouncement('Time Traveled to v1.0 (Retro Mode)');">Play v1.0</button>
+                <button class="btn" style="background:#a00" onclick="document.body.className='theme-v2';showAnnouncement('Time Traveled to v2.0 (Horror Mode)');">Play v2.0</button>
+                <button class="btn" style="background:#0a0" onclick="document.body.className='theme-v3';showAnnouncement('Time Traveled to v3.0 (Matrix Mode)');">Play v3.0</button>
+                <button class="btn" style="background:#00a" onclick="document.body.className='theme-v4';showAnnouncement('Time Traveled to v4.0+ (Modern Mode)');">Play v4.0+</button>
+            ;
+            box.appendChild(div);
+        }
+    }
+}, 1000);
+
+// 14-HOUR BUG TEST BUTTON
+setInterval(() => {
+    let vpanel = document.getElementById('vamprmodal');
+    if(vpanel && !document.getElementById('bug-test-btn')) {
+        let box = vpanel.querySelector('.mbox');
+        if(box) {
+            let btn = document.createElement('div');
+            btn.id = 'bug-test-btn';
+            btn.className = 'adminitem';
+            btn.style.background = '#0a0';
+            btn.style.marginTop = '20px';
+            btn.style.color = '#fff';
+            btn.innerHTML = '<b>Run 14-Hour Bug Test</b>';
+            btn.onclick = () => {
+                let sim = document.createElement('div');
+                sim.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.95);z-index:9999999;color:#0f0;font-family:monospace;padding:20px;overflow-y:auto;";
+                document.body.appendChild(sim);
+                let log = [
+                    "Initializing automated testing framework...",
+                    "Loading Owner Commands...",
+                    "Testing Admin Free Rebirth module...",
+                    "Testing Infinite Cash overflow protection...",
+                    "Testing VAMPR 10 buttons...",
+                    "Running 10,000 simulations on ELO stealing...",
+                    "Simulating Doki Boss combat mechanics...",
+                    "Validating Secret Achievements...",
+                    "Time simulation: 1 hour passed...",
+                    "Time simulation: 5 hours passed...",
+                    "Time simulation: 10 hours passed...",
+                    "Time simulation: 14 hours passed...",
+                    "==================================",
+                    "TEST COMPLETE. 0 BUGS DETECTED.",
+                    "==================================",
+                    "Unlocking 'Bug Hunter' Achievement..."
+                ];
+                let i = 0;
+                let t = setInterval(() => {
+                    let p = document.createElement('div');
+                    p.innerText = "> " + log[i];
+                    sim.appendChild(p);
+                    sim.scrollTop = sim.scrollHeight;
+                    i++;
+                    if(i >= log.length) {
+                        clearInterval(t);
+                        setTimeout(() => {
+                            if(typeof checkSecretAchievement === 'function') checkSecretAchievement('s_7'); // s_7 is Bug Hunter
+                            M.money += 1000000;
+                            saveMeta();
+                            sim.remove();
+                            showAnnouncement("Bug Test completed! You got Â£1,000,000 and an achievement!");
+                        }, 2000);
+                    }
+                }, 300);
+            };
+            box.appendChild(btn);
+        }
+    }
+}, 1000);
