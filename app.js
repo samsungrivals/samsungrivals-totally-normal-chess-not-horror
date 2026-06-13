@@ -1,4 +1,4 @@
-﻿function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
+function formatNumber(n) { return (Number(n)||0).toLocaleString(); }
 
 const SYM={'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟','D':'🦆','M':'🫅'};
 const VAL={'p':1,'n':3,'b':3,'r':5,'q':9,'k':0,'m':12,'d':0};
@@ -926,12 +926,18 @@ function fmtMoney(p){
   return '\u00A3Infinity';
 }
 function refreshUI(){
-  document.getElementById('moneydisp').textContent=fmtMoney(M.money);
-  document.getElementById('rollsdisp').textContent='Rolls: '+M.rolls;
+  const fmtC = new Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 2 });
+  
+  // Custom format for money just for the top bar to prevent wrapping
+  let mStr = fmtMoney(M.money);
+  if (mStr.length > 15) mStr = "£" + fmtC.format(Number(M.money)||0);
+  document.getElementById('moneydisp').textContent = mStr;
+  
+  document.getElementById('rollsdisp').textContent='Rolls: ' + fmtC.format(Number(M.rolls)||0);
   const pe=document.getElementById('puzelo');
-  if(pe)pe.textContent=M.puzzleElo||1000;
+  if(pe)pe.textContent = fmtC.format(Number(M.puzzleElo)||1000);
   const eloEl=document.getElementById('elodisp');
-  if(eloEl)eloEl.querySelector('.val').textContent=M.elo||500;
+  if(eloEl)eloEl.querySelector('.val').textContent = fmtC.format(Number(M.elo)||500);
   const arb=document.getElementById('autorollbtn');
   if(M.autoRollOwned){
     arb.textContent=M.autoRollActive?'⚡ Auto Roll: ON':'Auto Roll: OFF';
