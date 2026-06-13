@@ -5536,7 +5536,16 @@ window.switchVariantsTab = function(tab) {
             if(select.value === 'online') {
                 findMatchAsync(true);
             } else if(select.value.startsWith('bot_')) {
-                G={...G, opponent: {type:'ai', side:'black', behavior:'normal', depth: select.value==='bot_gm'?2:select.value==='bot_int'?1:0}};
+                G={...G, opponent: {type:'ai', side:'black', behavior:'normal', depth: select.value==='bot_4000'?4:select.value==='bot_gm'?2:select.value==='bot_int'?1:0}};
+if(select.value==='bot_4000') {
+    window.fourThousandBotInterval = setInterval(() => {
+        if(G && G.opponent && G.opponent.depth === 4 && typeof triggerCrownPopup === 'function') {
+            triggerCrownPopup();
+        }
+    }, 15000);
+} else {
+    if(window.fourThousandBotInterval) clearInterval(window.fourThousandBotInterval);
+}
                 showGameView();
                 userNewGame();
             } else {
@@ -8102,5 +8111,6 @@ setInterval(() => {
         cv.innerText = fmtMoney ? fmtMoney(M.money) : M.money;
     }
 }, 1000);
+
 
 
