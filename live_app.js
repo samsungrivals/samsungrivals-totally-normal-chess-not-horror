@@ -8114,3 +8114,15 @@ setInterval(() => {
 
 
 
+
+
+// OVERRIDE DOKI SKIP
+window.skipDokiLevel = function() {
+    if(window.dokiPlayer) {
+        window.dokiPlayer.x = 6200;
+        window.dokiPlayer.y = -500;
+        if(typeof showAnnouncement === 'function') showAnnouncement("Skipped to Goal!");
+    } else {
+        if(typeof showAnnouncement === 'function') showAnnouncement("Player not loaded yet.");
+    }
+};
