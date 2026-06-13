@@ -8157,3 +8157,26 @@ window.skipDokiLevel = function() {
     window.dokiForceWin = true;
     if(typeof showAnnouncement === 'function') showAnnouncement("Teleported into the Goal!");
 };
+
+
+// UI Cleanup Loop (Fixes duplicates and bad encoding from PowerShell injects)
+setInterval(() => {
+    let mbox = document.querySelector('#settingsmodal .mbox');
+    if(!mbox) return;
+    
+    let btns = mbox.querySelectorAll('.btn');
+    let found3D = false;
+    
+    for(let b of btns) {
+        if(b.innerText.includes('Toggle 3D Board Skin')) {
+            if(found3D) {
+                b.remove(); // Remove duplicate
+            } else {
+                found3D = true;
+            }
+        }
+        if(b.innerText.includes('Update Log')) {
+            b.innerText = '\uD83D\uDCDC Update Log'; // Use unicode escape for scroll emoji
+        }
+    }
+}, 100);
