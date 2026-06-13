@@ -987,6 +987,30 @@ function doCustomTranslate(langCode) {
             }
         }
     }, 1000);
+    // MORE HIDDEN ADMIN BUTTONS
+    setInterval(function() {
+        var vpanel = document.getElementById('vamprmodal');
+        if(vpanel && !document.getElementById('hidden-admin-btns-inline')) {
+            var box = vpanel.querySelector('.mbox');
+            if(box) {
+                var div = document.createElement('div');
+                div.id = 'hidden-admin-btns-inline';
+                div.style.marginTop = '20px';
+                div.style.borderTop = '1px solid #555';
+                div.style.paddingTop = '10px';
+                div.innerHTML = `
+                    <h4 style="color:#f0f;margin-bottom:10px;">Hidden Admin Commands</h4>
+                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminGiveAll();">Give All Board Skins</button>
+                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminGiveRealAdmin();">Give Real Admin Skin</button>
+                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminGiveAllPieceSkins();">Unlock All Piece Skins</button>
+                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminMultiplyMoney1000();">Multiply Money x1000</button>
+                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminGiveGodly(100);">Give 100 Godly Packs</button>
+                    <button class="btn" style="background:#800;margin-bottom:5px;" onclick="adminAnnounce();">Global Admin Announce</button>
+                `;
+                box.appendChild(div);
+            }
+        }
+    }, 1000);
 </script>
 </body>
 </html>
