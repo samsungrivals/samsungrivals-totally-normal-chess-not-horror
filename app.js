@@ -1695,7 +1695,11 @@ function maybeAIMove(){
 
 function eloChange(my,opp,result){
   const exp=1/(1+Math.pow(10,(opp-my)/400));
-  return Math.round(32*(result-exp));
+  let change = Math.round(32*(result-exp));
+  if (result === 1 && opp > my + 400) {
+      change = Math.round(change + (opp - my) * 0.1);
+  }
+  return change;
 }
 
 function maybeApplyElo(){
