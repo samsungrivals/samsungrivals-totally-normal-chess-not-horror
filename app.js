@@ -7874,7 +7874,7 @@ setInterval(() => {
         btn.onclick = () => {
             let logHtml = `<div style="background:#222; padding:20px; color:#fff; max-width:500px; margin:0 auto; max-height:80vh; overflow-y:auto; border:2px solid #aaa; text-align:left;">
                     <h2 style="text-align:center;">Update Log</h2>
-                                        <div style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">
+                    <div class="ulog-v4" style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">
                         <h3 style="color:#ff0;">v4.0 - The VAMPR Expansion & Mechanics Polish</h3>
                         <ul style="list-style:circle; padding-left:20px;">
                             <li>VAMPR Role Integration & Exclusive Perks</li>
@@ -7886,7 +7886,7 @@ setInterval(() => {
                             <li>Hourly Server Leaderboard Reset Automation</li>
                         </ul>
                     </div>
-                    <div style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">                        <h3 style="color:#0ff;">v3.0 - The Massive Feature Drop</h3>
+                    <div class="ulog-v3" style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">                        <h3 style="color:#0ff;">v3.0 - The Massive Feature Drop</h3>
                         <ul style="list-style:circle; padding-left:20px;">
                             <li>Gifting System (Pieces, Boards, Money, Admin)</li>
                             <li>Update Log / Time Travel</li>
@@ -7895,12 +7895,12 @@ setInterval(() => {
                             <li>3D Board Toggle in Settings</li>
                         </ul>
                     </div>
-                    <div style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">
+                    <div class="ulog-v2" style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">
                         <h3 style="color:#f0f;">v2.0 - Horror Update</h3>
                         <ul style="list-style:circle; padding-left:20px;"><li>Doki Doki Action Game</li><li>Impossible Quiz Admin Skip</li></ul>
                         <button class="btn" style="background:#f0f;color:#000;" onclick="sessionStorage.setItem('testing_update','v2.0'); location.reload();">Play v2.0</button>
                     </div>
-                    <div style="margin-bottom:15px; padding-bottom:10px;">
+                    <div class="ulog-v1" style="margin-bottom:15px; padding-bottom:10px;">
                         <h3 style="color:#ff0;">v1.0 - Classic RNG Chess</h3>
                         <ul style="list-style:circle; padding-left:20px;"><li>Base Game</li><li>Rolls & Money</li></ul>
                         <button class="btn" style="background:#ff0;color:#000;" onclick="sessionStorage.setItem('testing_update','v1.0'); location.reload();">Play v1.0</button>
