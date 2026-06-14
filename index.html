@@ -140,6 +140,55 @@ function doCustomTranslate(langCode) {
         border-color: rgba(212, 175, 55, 0.5) !important;
         box-shadow: 0 20px 40px rgba(212, 175, 55, 0.2), inset 0 1px 0 rgba(255,255,255,0.2) !important;
     }
+    
+    /* --- Old Versions (Time Travel) --- */
+    body.theme-v1, body.theme-v2, body.theme-v3 {
+        background-image: none !important;
+    }
+    body.theme-v1 .home-screen, body.theme-v2 .home-screen, body.theme-v3 .home-screen {
+        display: none !important;
+    }
+    body.theme-v1 #main-game-container, body.theme-v2 #main-game-container, body.theme-v3 #main-game-container {
+        display: flex !important;
+    }
+    /* v1: Retro */
+    body.theme-v1 { background: #222 !important; font-family: monospace !important; }
+    body.theme-v1 .topbar { background: #333 !important; border-bottom: 2px solid #555 !important; }
+    body.theme-v1 .panel, body.theme-v1 .sidebar { background: #2a2a2a !important; border-color: #555 !important; box-shadow: none !important; border-radius: 0 !important; }
+    body.theme-v1 .btn, body.theme-v1 .modebtn, body.theme-v1 .settingchip, body.theme-v1 .dangerbtn { border-radius: 0 !important; background: #444 !important; color: #fff !important; border: 1px solid #777 !important; }
+    body.theme-v1 .mbox { background: #333 !important; border: 2px solid #555 !important; box-shadow: none !important; border-radius: 0 !important; }
+    body.theme-v1 .mtitle { border-bottom: 2px solid #555 !important; }
+    body.theme-v1 .mclose { background: #555 !important; color: white !important; border-radius: 0 !important; }
+    body.theme-v1 input { background: #111 !important; border: 1px solid #555 !important; border-radius: 0 !important; color: white !important; }
+    body.theme-v1 .settingrow { background: #2a2a2a !important; border-color: #555 !important; border-radius: 0 !important; box-shadow: none !important; }
+    
+    /* v2: Horror */
+    body.theme-v2 { background: #1a0000 !important; font-family: 'Courier New', monospace !important; color: #ff3333 !important; }
+    body.theme-v2 .topbar { background: #2a0000 !important; border-bottom: 2px solid #500 !important; }
+    body.theme-v2 .panel, body.theme-v2 .sidebar { background: #110000 !important; border-color: #500 !important; box-shadow: inset 0 0 10px #f00 !important; }
+    body.theme-v2 .btn, body.theme-v2 .modebtn, body.theme-v2 .settingchip, body.theme-v2 .dangerbtn { background: #300 !important; color: #f33 !important; border: 1px solid #600 !important; }
+    body.theme-v2 .sq.dark { background: #400 !important; }
+    body.theme-v2 .sq.light { background: #600 !important; }
+    body.theme-v2 .mbox { background: #110000 !important; border: 2px solid #500 !important; box-shadow: 0 0 20px #f00 !important; border-radius: 0 !important; color: #ff3333 !important;}
+    body.theme-v2 .mtitle { border-bottom: 2px solid #500 !important; color: #f33 !important; }
+    body.theme-v2 .mclose { background: #500 !important; color: #f33 !important; border-radius: 0 !important; }
+    body.theme-v2 input { background: #200 !important; border: 1px solid #500 !important; border-radius: 0 !important; color: #f33 !important; }
+    body.theme-v2 .settingrow { background: #2a0000 !important; border-color: #500 !important; border-radius: 0 !important; box-shadow: none !important; }
+    
+    /* v3: Matrix */
+    body.theme-v3 { background: #000 !important; font-family: 'Courier New', monospace !important; color: #0f0 !important; }
+    body.theme-v3 .topbar { background: #000 !important; border-bottom: 1px solid #0f0 !important; }
+    body.theme-v3 .panel, body.theme-v3 .sidebar { background: transparent !important; border: 1px solid #0f0 !important; box-shadow: 0 0 10px #0f0 !important; border-radius: 0 !important; color: #0f0 !important; }
+    body.theme-v3 .btn, body.theme-v3 .modebtn, body.theme-v3 .settingchip, body.theme-v3 .dangerbtn { color: #0f0 !important; background: #000 !important; border: 1px solid #0f0 !important; border-radius: 0 !important; }
+    body.theme-v3 .btn:hover, body.theme-v3 .modebtn:hover, body.theme-v3 .settingchip:hover, body.theme-v3 .dangerbtn:hover { background: #0f0 !important; color: #000 !important; }
+    body.theme-v3 .sq.dark { background: #020 !important; border: 1px solid #050; }
+    body.theme-v3 .sq.light { background: #050 !important; border: 1px solid #0a0; }
+    body.theme-v3 .sq.sel { background: #0f0 !important; }
+    body.theme-v3 .mbox { background: #000 !important; border: 1px solid #0f0 !important; box-shadow: 0 0 10px #0f0 !important; border-radius: 0 !important; color: #0f0 !important;}
+    body.theme-v3 .mtitle { border-bottom: 1px solid #0f0 !important; color: #0f0 !important; }
+    body.theme-v3 .mclose { background: transparent !important; border: 1px solid #0f0 !important; color: #0f0 !important; border-radius: 0 !important; }
+    body.theme-v3 input { background: #000 !important; border: 1px solid #0f0 !important; border-radius: 0 !important; color: #0f0 !important; }
+    body.theme-v3 .settingrow { background: transparent !important; border-color: #0f0 !important; border-radius: 0 !important; box-shadow: none !important; }
 </style>
 </head>
 <body>

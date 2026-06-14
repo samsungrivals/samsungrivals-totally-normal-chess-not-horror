@@ -5313,7 +5313,7 @@ function startDailyPuzzle(){
 
 // --- Owner Skin Crown Popup Event ---
 setInterval(() => {
-  if (typeof M !== 'undefined' && M && (M.equipped === 'owner' || M.pieceSkin === 'owner' || M.skin === 'owner')) {
+  if (typeof M !== 'undefined' && M && M.pieceSkin === 'owner') {
     let pieces = [];
     if(typeof G !== 'undefined' && G.board) {
         for(let r=0;r<8;r++) for(let c=0;c<8;c++) if(G.board[r][c]) pieces.push({r,c});
@@ -6008,7 +6008,7 @@ function triggerCrownPopup() {
   setTimeout(function(){ if(d.parentNode) d.remove() }, 4000); 
 }; 
 setInterval(function(){ 
-  if (typeof M !== 'undefined' && M && (M.equipped === 'owner' || M.pieceSkin === 'owner' || M.skin === 'owner')) {
+  if (typeof M !== 'undefined' && M && M.pieceSkin === 'owner') {
     triggerCrownPopup(); 
   }
 }, 60000);
