@@ -1557,12 +1557,13 @@ const BOTS={
   stockfish_god:{name:'Stockfish 3400',elo:3400,depth:3,tier:'pro',emoji:'👽',desc:'Beyond human - depth 3, flawless',behavior:'positional',locked:'stockfishMax'},
   stockfish_3600:{name:'Stockfish 3600',elo:3600,depth:4,tier:'pro',emoji:'🌌',desc:'The absolute limit of the engine',behavior:'positional',locked:'stockfishMax'},
   stockfish_3800:{name:'Stockfish 3800',elo:3800,depth:5,tier:'pro',emoji:'👑',desc:'Chess solved - impossible to defeat',behavior:'positional',locked:'stockfishMax'},
-  stockfish_3999:{name:'Stockfish 3999',elo:3999,depth:6,tier:'pro',emoji:'🔱',desc:'The ultimate AI entity',behavior:'positional',locked:'stockfishMax'}
+  stockfish_3999:{name:'Stockfish 3999',elo:3999,depth:6,tier:'pro',emoji:'🔱',desc:'The ultimate AI entity',behavior:'positional',locked:'stockfishMax'},
+  tier17:{name:'Tier 17 Bot',elo:17000000,depth:6,tier:'pro',emoji:'🌟',desc:'The best bot ever. Tier 17 ELO!',behavior:'positional',locked:'stockfishMax'}
 };
 
 function renderBotList(){
   const el=document.getElementById('botlist');el.innerHTML='';
-  const order=['worst','bot1','baby','noob','beginner','casual','skilled','bot1200','bot1300','bot1400','bot1500','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish','stockfish_max','stockfish_god','stockfish_3600','stockfish_3800','stockfish_3999'];
+  const order=['worst','bot1','baby','noob','beginner','casual','skilled','bot1200','bot1300','bot1400','bot1500','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish','stockfish_max','stockfish_god','stockfish_3600','stockfish_3800','stockfish_3999','tier17'];
   for(const k of order){
     const b=BOTS[k];
     // Locked behind an upgrade?
