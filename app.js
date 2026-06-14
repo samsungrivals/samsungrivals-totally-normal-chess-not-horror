@@ -7885,6 +7885,7 @@ setInterval(() => {
                             <li>UI Cleanup, Duplicate Button Fix, and Bug Detector Tool</li>
                             <li>Hourly Server Leaderboard Reset Automation</li>
                         </ul>
+                        <button class="btn" style="background:#00a;color:#fff;" onclick="document.body.className='theme-v4';showAnnouncement('Time Traveled to v4.0+ (Modern Mode)');">Play v4.0+</button>
                     </div>
                     <div class="ulog-v3" style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">                        <h3 style="color:#0ff;">v3.0 - The Massive Feature Drop</h3>
                         <ul style="list-style:circle; padding-left:20px;">
@@ -7894,16 +7895,17 @@ setInterval(() => {
                             <li>Doki Doki Auto-Play Fixes</li>
                             <li>3D Board Toggle in Settings</li>
                         </ul>
+                        <button class="btn" style="background:#0a0;color:#000;" onclick="document.body.className='theme-v3';showAnnouncement('Time Traveled to v3.0 (Matrix Mode)');">Play v3.0</button>
                     </div>
                     <div class="ulog-v2" style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">
                         <h3 style="color:#f0f;">v2.0 - Horror Update</h3>
                         <ul style="list-style:circle; padding-left:20px;"><li>Doki Doki Action Game</li><li>Impossible Quiz Admin Skip</li></ul>
-                        <button class="btn" style="background:#f0f;color:#000;" onclick="sessionStorage.setItem('testing_update','v2.0'); location.reload();">Play v2.0</button>
+                        <button class="btn" style="background:#a00;color:#fff;" onclick="document.body.className='theme-v2';showAnnouncement('Time Traveled to v2.0 (Horror Mode)');">Play v2.0</button>
                     </div>
                     <div class="ulog-v1" style="margin-bottom:15px; padding-bottom:10px;">
                         <h3 style="color:#ff0;">v1.0 - Classic RNG Chess</h3>
                         <ul style="list-style:circle; padding-left:20px;"><li>Base Game</li><li>Rolls & Money</li></ul>
-                        <button class="btn" style="background:#ff0;color:#000;" onclick="sessionStorage.setItem('testing_update','v1.0'); location.reload();">Play v1.0</button>
+                        <button class="btn" style="background:#555;color:#fff;" onclick="document.body.className='theme-v1';showAnnouncement('Time Traveled to v1.0 (Retro Mode)');">Play v1.0</button>
                     </div>
                     <div style="text-align:center;"><button class="btn" onclick="this.parentElement.parentElement.remove()" style="background:red;">Close</button></div>
                 </div>`;
@@ -7916,19 +7918,6 @@ setInterval(() => {
     }
 }, 1000);
 
-if(sessionStorage.getItem('testing_update')) {
-    let ver = sessionStorage.getItem('testing_update');
-    setTimeout(() => {
-        let banner = document.createElement('div');
-        banner.style.cssText = 'position:fixed; top:0; left:0; width:100%; background:red; color:white; text-align:center; padding:10px; font-weight:bold; z-index:99999999; font-size:24px; cursor:pointer;';
-        banner.innerText = "PLAYING OLD VERSION " + ver + " - Click here to return to normal!";
-        banner.onclick = () => { sessionStorage.removeItem('testing_update'); location.reload(); };
-        document.body.appendChild(banner);
-        
-        let sm = document.getElementById('shopmodal');
-        if(sm) sm.innerHTML = '<h2>Shop disabled in old versions!</h2>';
-    }, 500);
-}
 // V4 CHAT GIFTING LOGIC
 const origSendChatInput = window.sendChatInput || function(){};
 window.sendChatInput = function() {
