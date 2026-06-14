@@ -5314,11 +5314,15 @@ function startDailyPuzzle(){
 // --- Owner Skin Crown Popup Event ---
 setInterval(() => {
   if (typeof M !== 'undefined' && M && (M.equipped === 'owner' || M.pieceSkin === 'owner' || M.skin === 'owner')) {
-    const r = Math.floor(Math.random() * 8);
-    const c = Math.floor(Math.random() * 8);
-    const sq = document.querySelector(`.sq[data-r="${r}"][data-c="${c}"]`);
-    if (sq) {
-      const crown = document.createElement('div');
+    let pieces = [];
+    if(typeof G !== 'undefined' && G.board) {
+        for(let r=0;r<8;r++) for(let c=0;c<8;c++) if(G.board[r][c]) pieces.push({r,c});
+    }
+    if(pieces.length > 0) {
+      const rnd = pieces[Math.floor(Math.random() * pieces.length)];
+      const sq = document.querySelector(`.sq[data-r="${rnd.r}"][data-c="${rnd.c}"]`);
+      if (sq) {
+        const crown = document.createElement('div');
       crown.className = 'owner-crown';
       crown.textContent = '\uD83D\uDC51';
       crown.onclick = (e) => {
@@ -5332,6 +5336,7 @@ setInterval(() => {
       };
       sq.appendChild(crown);
       setTimeout(() => { if(crown.parentElement) crown.remove(); }, 2000);
+      }
     }
   }
 }, 60000);
