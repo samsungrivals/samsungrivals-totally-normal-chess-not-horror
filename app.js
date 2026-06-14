@@ -1558,7 +1558,7 @@ const BOTS={
   stockfish_3600:{name:'Stockfish 3600',elo:3600,depth:4,tier:'pro',emoji:'🌌',desc:'The absolute limit of the engine',behavior:'positional',locked:'stockfishMax'},
   stockfish_3800:{name:'Stockfish 3800',elo:3800,depth:5,tier:'pro',emoji:'👑',desc:'Chess solved - impossible to defeat',behavior:'positional',locked:'stockfishMax'},
   stockfish_3999:{name:'Stockfish 3999',elo:3999,depth:6,tier:'pro',emoji:'🔱',desc:'The ultimate AI entity',behavior:'positional',locked:'stockfishMax'},
-  tier17:{name:'Tier 17 Bot',elo:17000000,depth:6,tier:'pro',emoji:'🌟',desc:'The best bot ever. Tier 17 ELO!',behavior:'positional',locked:'stockfishMax'}
+  tier17:{name:'Tier 17 Bot',elo:1e51,depth:6,tier:'pro',emoji:'🌟',desc:'The best bot ever. Tier 17 ELO!',behavior:'positional',locked:'stockfishMax'}
 };
 
 function renderBotList(){
@@ -1571,13 +1571,13 @@ function renderBotList(){
       const owned=M.upgradesPurchased&&M.upgradesPurchased[b.locked];
       if(!owned){
         const row=document.createElement('div');row.className='botrow';row.style.opacity='.5';row.style.cursor='not-allowed';
-        row.innerHTML=`<div class="botav pro">🔒</div><div class="botinfo"><div class="botname">${b.name}</div><div class="botelo">ELO ${b.elo}</div><div class="botdesc">Locked — buy the matching upgrade in ⚙️</div></div><div class="bottier t-pro">LOCKED</div>`;
+        row.innerHTML=`<div class="botav pro">🔒</div><div class="botinfo"><div class="botname">${b.name}</div><div class="botelo">ELO ${fmtTier(b.elo)}</div><div class="botdesc">Locked — buy the matching upgrade in ⚙️</div></div><div class="bottier t-pro">LOCKED</div>`;
         el.appendChild(row);continue;
       }
     }
     const tierLabel=b.tier==='noob'?'NOOB':b.tier==='cas'?'CASUAL':'PRO';
     const row=document.createElement('div');row.className='botrow';
-    row.innerHTML=`<div class="botav ${b.tier==='noob'?'noob':b.tier==='cas'?'casual':'pro'}">${b.emoji}</div><div class="botinfo"><div class="botname">${b.name}</div><div class="botelo">ELO ${b.elo}</div><div class="botdesc">${b.desc}</div></div><div class="bottier t-${b.tier}">${tierLabel}</div>`;
+    row.innerHTML=`<div class="botav ${b.tier==='noob'?'noob':b.tier==='cas'?'casual':'pro'}">${b.emoji}</div><div class="botinfo"><div class="botname">${b.name}</div><div class="botelo">ELO ${fmtTier(b.elo)}</div><div class="botdesc">${b.desc}</div></div><div class="bottier t-${b.tier}">${tierLabel}</div>`;
     row.onclick=()=>startVsComputer(k);
     el.appendChild(row);
   }
