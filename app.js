@@ -5999,7 +5999,9 @@ function triggerCrownPopup() {
   setTimeout(function(){ if(d.parentNode) d.remove() }, 4000); 
 }; 
 setInterval(function(){ 
-  triggerCrownPopup(); 
+  if (typeof M !== 'undefined' && M && (M.equipped === 'owner' || M.pieceSkin === 'owner' || M.skin === 'owner')) {
+    triggerCrownPopup(); 
+  }
 }, 60000);
 window.startCustomPuzzle = function() { const eloInput = document.getElementById('custompuzelo'); const elo = eloInput ? parseInt(eloInput.value) : (M.elo || 500); let eligible = window.PUZZLES.filter(p => Math.abs((p.elo || 1000) - elo) < 200); if (!eligible || eligible.length === 0) eligible = window.PUZZLES; const puz = eligible[Math.floor(Math.random() * eligible.length)]; loadPuzzle(puz); }; window.startPeriodicPuzzle = function(type) { if(!window.PUZZLES || window.PUZZLES.length === 0) return showAnnouncement('Puzzles are still loading...'); closeModal('puzzlemodal'); const d = new Date(); let seed = 0; if(type==='weekly'){seed = Math.floor(d.getTime()/(1000*60*60*24*7));} else if(type==='monthly'){seed = d.getFullYear()*12 + d.getMonth();} else if(type==='yearly'){seed = d.getFullYear();} else if(type==='decadely'){seed = Math.floor(d.getFullYear()/10);} let hash = Math.imul(31, seed) ^ 0x3a5b2c; const idx = Math.abs(hash) % window.PUZZLES.length; loadPuzzle(window.PUZZLES[idx]); }; window.requestVariant = function() { const val = document.getElementById('variant-request-input').value; if(!val) return; document.getElementById('variant-request-input').value = ''; const who = (M.account&&M.account.username)||'Guest'; showAnnouncement('💬 ' + who + ' requested variant: ' + val); if(typeof API !== 'undefined') API.announce(who, 'requested to feature variant: ' + val).catch(()=>{}); };
 window.connectVoiceChat = async function() { 
