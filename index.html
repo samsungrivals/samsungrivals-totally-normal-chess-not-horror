@@ -28,6 +28,35 @@ function doCustomTranslate(langCode) {
   .goog-te-banner-frame.skiptranslate { display: none !important; }
   body { top: 0px !important; position: static !important; }
   /* Style Google Translate to match dark theme */
+  @keyframes profileGlow {
+    0% { box-shadow: 0 0 10px #f0f, 0 0 20px #0ff; border-color: #f0f; }
+    33% { box-shadow: 0 0 10px #ff0, 0 0 20px #f00; border-color: #ff0; }
+    66% { box-shadow: 0 0 10px #0f0, 0 0 20px #00f; border-color: #0f0; }
+    100% { box-shadow: 0 0 10px #f0f, 0 0 20px #0ff; border-color: #f0f; }
+  }
+  .animated-profile {
+    animation: profileGlow 2s infinite linear;
+    border: 2px solid #fff !important;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.8);
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+  .animated-profile .accav {
+    background: linear-gradient(135deg, #f0f, #0ff, #ff0) !important;
+    color: #000 !important;
+    font-weight: 900;
+    text-shadow: 0 0 5px #fff;
+    box-shadow: 0 0 10px #fff;
+    border-radius: 50%;
+  }
+  .animated-profile .accname {
+    color: #fff !important;
+    text-shadow: 0 0 5px #0ff, 0 0 10px #f0f;
+    font-weight: bold;
+    letter-spacing: 1px;
+    font-size: 18px !important;
+  }
   #google_translate_element .goog-te-gadget {
     color: transparent !important;
     font-size: 0;

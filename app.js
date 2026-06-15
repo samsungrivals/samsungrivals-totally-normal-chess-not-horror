@@ -1541,6 +1541,12 @@ const BOTS={
   bot1300:{name:'1300 Bot',elo:1300,depth:2,tier:'cas',emoji:'🤖',desc:'A solid 1300 rated bot',behavior:'positional'},
   bot1400:{name:'1400 Bot',elo:1400,depth:2,tier:'cas',emoji:'🤖',desc:'A solid 1400 rated bot',behavior:'positional'},
   bot1500:{name:'1500 Bot',elo:1500,depth:2,tier:'cas',emoji:'🤖',desc:'A solid 1500 rated bot',behavior:'positional'},
+  bot1600:{name:'1600 Bot',elo:1600,depth:2,tier:'cas',emoji:'🤖',desc:'A solid 1600 rated bot',behavior:'positional'},
+  bot1700:{name:'1700 Bot',elo:1700,depth:2,tier:'cas',emoji:'🤖',desc:'A solid 1700 rated bot',behavior:'positional'},
+  bot1800:{name:'1800 Bot',elo:1800,depth:2,tier:'pro',emoji:'🤖',desc:'A solid 1800 rated bot',behavior:'positional'},
+  bot1900:{name:'1900 Bot',elo:1900,depth:2,tier:'pro',emoji:'🤖',desc:'A solid 1900 rated bot',behavior:'positional'},
+  bot2000:{name:'2000 Bot',elo:2000,depth:2,tier:'pro',emoji:'🧠',desc:'A solid 2000 rated bot',behavior:'positional'},
+  bot2100:{name:'2100 Bot',elo:2100,depth:2,tier:'pro',emoji:'🔥',desc:'A solid 2100 rated bot',behavior:'positional'},
   baby:{name:'Baby Bot',elo:100,depth:0,tier:'noob',emoji:'👶',desc:'Barely knows the rules — totally random',behavior:'random'},
   noob:{name:'Noob Newman',elo:200,depth:0,tier:'noob',emoji:'🤡',desc:'Plays completely random moves',behavior:'random'},
   beginner:{name:'Beginner Bea',elo:400,depth:0,tier:'noob',emoji:'🐣',desc:'Likes grabbing free pieces',behavior:'capture'},
@@ -1563,7 +1569,7 @@ const BOTS={
 
 function renderBotList(){
   const el=document.getElementById('botlist');el.innerHTML='';
-  const order=['worst','bot1','baby','noob','beginner','casual','skilled','bot1200','bot1300','bot1400','bot1500','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish','stockfish_max','stockfish_god','stockfish_3600','stockfish_3800','stockfish_3999','tier17'];
+  const order=['worst','bot1','baby','noob','beginner','casual','skilled','bot1200','bot1300','bot1400','bot1500','bot1600','bot1700','bot1800','bot1900','bot2000','bot2100','intermediate','pro_magnus','pro_hikaru','pro_bobby','pro_garry','pro_fabi','stockfish','stockfish_max','stockfish_god','stockfish_3600','stockfish_3800','stockfish_3999','tier17'];
   for(const k of order){
     const b=BOTS[k];
     // Locked behind an upgrade?
@@ -2568,9 +2574,26 @@ function showWinModal(result,change,oppName){
   else sub.innerHTML='Local game — no ELO change.';
 }
 
-// Hook into existing ELO toast to also show modal
+// Hook into existing ELO toast to also show modal and check for unlocks
 const _origShowEloToast=showEloToast;
-showEloToast=function(change,oppName,result,newElo){_origShowEloToast(change,oppName,result,newElo);showWinModal(result,change,oppName)};
+showEloToast=function(change,oppName,result,newElo){
+    _origShowEloToast(change,oppName,result,newElo);
+    showWinModal(result,change,oppName);
+    
+    if (result === 1 && (oppName === BOTS.bot2000.name || oppName === BOTS.bot2100.name)) {
+        if (!M.profileAnimUnlocked) {
+            M.profileAnimUnlocked = true;
+            saveMeta();
+            setTimeout(() => showAnnouncement("🎉 You unlocked the animated profile!"), 500);
+        }
+    } else if (result === 0 && oppName === BOTS.worst.name) {
+        if (!M.profileAnimUnlocked) {
+            M.profileAnimUnlocked = true;
+            saveMeta();
+            setTimeout(() => showAnnouncement("🤡 You lost to the worst bot... but unlocked the animated profile!"), 500);
+        }
+    }
+};
 
 // ----- DRAW DETECTION (50-move, 3-fold repetition, insufficient material) -----
 function fenLite(b,t){
@@ -2783,8 +2806,9 @@ function renderAccount(){
   if(M.account){
     title.innerHTML='👤 Account <button class="mclose" onclick="closeModal(\'acctmodal\')">✕</button>';
     const created=new Date(M.account.createdAt||Date.now()).toLocaleDateString();
+    let animClass = M.profileAnimUnlocked ? 'animated-profile' : '';
     v.innerHTML=`
-      <div class="accprofile">
+      <div class="accprofile ${animClass}">
         <div class="accav">${M.account.username[0].toUpperCase()}</div>
         <div class="accinfo">
           <div class="accname">${M.account.username}</div>
