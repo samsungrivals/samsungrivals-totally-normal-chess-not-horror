@@ -8222,6 +8222,25 @@ setInterval(() => {
 
 
 // OVERRIDE V4 CHAT GIFT COMMAND TO USE THE WORKING INTERNAL FUNCTION
+window.submitGiftUI = function() {
+    let targetUser = document.getElementById('gift-username').value.trim();
+    let itemType = document.getElementById('gift-item').value.trim();
+    let amount = parseInt(document.getElementById('gift-amount').value);
+    if (!targetUser || !itemType || isNaN(amount) || amount <= 0) {
+        showAnnouncement("Please fill out all fields correctly.");
+        return;
+    }
+    if (window.sendGift) {
+        window.sendGift(targetUser, itemType, amount);
+        closeModal('giftmodal');
+        document.getElementById('gift-username').value = '';
+        document.getElementById('gift-item').value = '';
+        document.getElementById('gift-amount').value = '1';
+    } else {
+        showAnnouncement('Gift API not loaded yet.');
+    }
+};
+
 const finalSendChatInput = window.sendChatInput || function(){};
 window.sendChatInput = function() {
     let inp = document.getElementById('globalchatinput') || document.getElementById('chatbox');
