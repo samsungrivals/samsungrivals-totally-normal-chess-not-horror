@@ -28,19 +28,39 @@ function doCustomTranslate(langCode) {
   .goog-te-banner-frame.skiptranslate { display: none !important; }
   body { top: 0px !important; position: static !important; }
   /* Style Google Translate to match dark theme */
-  @keyframes profileGlow {
-    0% { box-shadow: 0 0 10px #f0f, 0 0 20px #0ff; border-color: #f0f; }
-    33% { box-shadow: 0 0 10px #ff0, 0 0 20px #f00; border-color: #ff0; }
-    66% { box-shadow: 0 0 10px #0f0, 0 0 20px #00f; border-color: #0f0; }
-    100% { box-shadow: 0 0 10px #f0f, 0 0 20px #0ff; border-color: #f0f; }
+  @keyframes rainbowBg { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+  @keyframes superGlow {
+    0% { filter: drop-shadow(0 0 10px #f0f) hue-rotate(0deg); }
+    100% { filter: drop-shadow(0 0 10px #f0f) hue-rotate(360deg); }
   }
   .animated-profile {
-    animation: profileGlow 2s infinite linear;
-    border: 2px solid #fff !important;
-    border-radius: 8px;
-    background: rgba(0,0,0,0.8);
+    position: relative;
     padding: 10px;
     margin-bottom: 12px;
+    background: #000;
+    border-radius: 8px;
+    z-index: 1;
+    animation: superGlow 3s infinite linear;
+    border: 2px solid transparent !important;
+  }
+  .animated-profile::before {
+    content: '';
+    position: absolute;
+    top: -3px; left: -3px; right: -3px; bottom: -3px;
+    background: linear-gradient(45deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+    background-size: 400%;
+    z-index: -1;
+    border-radius: 10px;
+    animation: rainbowBg 5s linear infinite;
+    filter: blur(5px);
+  }
+  .animated-profile::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #111;
+    z-index: -1;
+    border-radius: 8px;
   }
   .animated-profile .accav {
     background: linear-gradient(135deg, #f0f, #0ff, #ff0) !important;
@@ -49,13 +69,17 @@ function doCustomTranslate(langCode) {
     text-shadow: 0 0 5px #fff;
     box-shadow: 0 0 10px #fff;
     border-radius: 50%;
+    position: relative;
+    z-index: 2;
   }
   .animated-profile .accname {
     color: #fff !important;
-    text-shadow: 0 0 5px #0ff, 0 0 10px #f0f;
+    text-shadow: 0 0 5px #0ff, 0 0 15px #f0f;
     font-weight: bold;
     letter-spacing: 1px;
     font-size: 18px !important;
+    position: relative;
+    z-index: 2;
   }
   #board.flipped { transform: rotate(180deg) !important; }
   #board.flipped .pc { transform: rotate(180deg) !important; display: inline-block !important; }
@@ -1098,52 +1122,15 @@ function doCustomTranslate(langCode) {
                 btn.style.color = '#fff';
                 btn.innerHTML = '<b>Run 14-Hour Bug Test</b>';
                 btn.onclick = function() {
-                    var sim = document.createElement('div');
-                    sim.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:9999999;color:#0f0;font-family:monospace;padding:20px;display:flex;flex-direction:column;pointer-events:none;";
-                    document.body.appendChild(sim);
-                    var title = document.createElement('h1');
-                    title.innerText = "⚠️ 14-HOUR AUTOMATED QA BUG TEST ⚠️";
-                    title.style.color = "#f00";
-                    sim.appendChild(title);
-                    var warn = document.createElement('h2');
-                    sim.appendChild(warn);
-                    var logBox = document.createElement('div');
-                    logBox.style.cssText = "margin-top:20px;flex:1;overflow-y:auto;border:1px solid #0f0;padding:10px;background:#000;";
-                    sim.appendChild(logBox);
-
-                    let timeLeft = 14 * 60 * 60;
-                    let clickableElements = [];
-                    
-                    let simTimer = setInterval(() => {
-                        let h = Math.floor(timeLeft / 3600);
-                        let m = Math.floor((timeLeft % 3600) / 60);
-                        let s = timeLeft % 60;
-                        warn.innerText = "Time Remaining: " + h + "h " + m + "m " + s + "s";
-                        
-                        clickableElements = Array.from(document.querySelectorAll('button, .btn, .adminitem, .square, .tab, .mclose'));
-                        if (clickableElements.length > 0) {
-                            let r = clickableElements[Math.floor(Math.random() * clickableElements.length)];
-                            let oldOutline = r.style.outline;
-                            r.style.outline = "3px solid #f00";
-                            setTimeout(() => { if(r) r.style.outline = oldOutline; }, 500);
-                            
-                            let elName = r.tagName + (r.id ? "#"+r.id : "") + (r.className ? "."+r.className.split(" ").join(".") : "");
-                            let p = document.createElement('div');
-                            p.innerText = "> [QA Bot] Simulating click on " + elName + " ... OK";
-                            logBox.appendChild(p);
-                            if(logBox.childNodes.length > 30) logBox.firstChild.remove();
-                            logBox.scrollTop = logBox.scrollHeight;
-                        }
-
-                        timeLeft--;
-                        if(timeLeft <= 0) {
-                            clearInterval(simTimer);
-                            sim.remove();
-                            if(typeof checkSecretAchievement === 'function') checkSecretAchievement('s_7');
-                            M.money += 1e12; M.elo += 500000; saveMeta(); refreshUI();
-                            alert("14-Hour Bug Test completed! You got 1 Trillion Coins, 500k ELO, and an achievement!");
-                        }
-                    }, 1000);
+                    if(M.bugTestStart) {
+                        alert("Bug test is already running!");
+                        return;
+                    }
+                    M.bugTestStart = Date.now();
+                    saveMeta();
+                    if(typeof startOfflineMonkeyTest === 'function') startOfflineMonkeyTest();
+                    else alert("Test started! Refreshing to initialize...");
+                    location.reload();
                 };
                 box.appendChild(btn);
             }

@@ -8616,3 +8616,122 @@ setInterval(() => {
         }
     }
 }, 2000);
+
+// ==========================================
+// 14-HOUR MONKEY TESTER LOGIC
+// ==========================================
+let monkeyTestInterval = null;
+let monkeyTestUIPanel = null;
+
+function checkOfflineMonkeyTest() {
+    if(!M.bugTestStart) return;
+    let now = Date.now();
+    let elapsed = now - M.bugTestStart;
+    let target = 14 * 60 * 60 * 1000;
+    
+    if (elapsed >= target) {
+        // Complete the test
+        M.bugTestStart = 0;
+        M.money += 1e12;
+        M.elo += 500000;
+        if(typeof checkSecretAchievement === 'function') checkSecretAchievement('s_7');
+        saveMeta();
+        refreshUI();
+        showBugReportModal();
+    } else {
+        // Resume test
+        startOfflineMonkeyTest();
+    }
+}
+
+function showBugReportModal() {
+    let m = document.createElement('div');
+    m.style.cssText = "position:fixed;top:10%;left:50%;transform:translateX(-50%);width:90%;max-width:500px;background:#111;border:2px solid #0f0;padding:20px;z-index:9999999;color:#0f0;font-family:monospace;border-radius:8px;max-height:80vh;overflow-y:auto;box-shadow:0 0 20px #0f0;";
+    m.innerHTML = `
+        <h2 style="color:#f00;text-align:center;">🚨 14-HOUR TEST COMPLETE 🚨</h2>
+        <p>Your monkey tester clicked random things for 14 hours while you were gone!</p>
+        <p style="color:#ff0;"><b>Rewards:</b> +1 Trillion Coins, +500k ELO, +Achievement!</p>
+        <hr style="border-color:#0f0">
+        <h3>Generated Bug Report:</h3>
+        <ul style="color:#ddd;padding-left:20px;">
+            <li>Bug: Pawn tried to eat the King.</li>
+            <li>Bug: Shop vendor ran away with my coins.</li>
+            <li>Bug: Found an extra piece hiding under the board.</li>
+            <li>Bug: 404 Elo Not Found.</li>
+            <li>Bug: Doki Boss became friendly for 3 seconds.</li>
+            <li>Bug: Game board flipped upside down.</li>
+        </ul>
+        <button class="btn" style="background:#0a0;width:100%;margin-top:15px;" onclick="this.parentNode.remove()">Awesome!</button>
+    `;
+    document.body.appendChild(m);
+}
+
+function startOfflineMonkeyTest() {
+    if(monkeyTestInterval) return; // Already running
+    
+    // Create UI panel
+    monkeyTestUIPanel = document.createElement('div');
+    monkeyTestUIPanel.style.cssText = "position:fixed;top:20px;left:20px;background:rgba(0,0,0,0.8);border:2px solid #f00;padding:10px;z-index:9999998;color:#0f0;font-family:monospace;border-radius:5px;pointer-events:none;box-shadow:0 0 10px #f00;";
+    document.body.appendChild(monkeyTestUIPanel);
+    
+    monkeyTestInterval = setInterval(() => {
+        if(!M.bugTestStart) {
+            clearInterval(monkeyTestInterval);
+            monkeyTestInterval = null;
+            if(monkeyTestUIPanel) monkeyTestUIPanel.remove();
+            return;
+        }
+        
+        let elapsed = Date.now() - M.bugTestStart;
+        let target = 14 * 60 * 60 * 1000;
+        let timeLeft = target - elapsed;
+        
+        if (timeLeft <= 0) {
+            clearInterval(monkeyTestInterval);
+            monkeyTestInterval = null;
+            if(monkeyTestUIPanel) monkeyTestUIPanel.remove();
+            checkOfflineMonkeyTest(); // Will trigger rewards
+            return;
+        }
+        
+        let h = Math.floor(timeLeft / 3600000);
+        let m = Math.floor((timeLeft % 3600000) / 60000);
+        let s = Math.floor((timeLeft % 60000) / 1000);
+        monkeyTestUIPanel.innerHTML = `<b>🐒 MONKEY TEST ACTIVE 🐒</b><br>Time Left: ${h}h ${m}m ${s}s<br><span style="color:#f00;font-size:10px;">(Automated UI clicks)</span>`;
+        
+        // --- ACTUAL CLICKING BOT ---
+        // Find safe clickable elements
+        let clickables = Array.from(document.querySelectorAll('button, .btn, .adminitem, .square, .tab, .mclose, .sq'));
+        // Filter out dangerous elements
+        clickables = clickables.filter(el => {
+            let text = (el.innerText || '').toLowerCase();
+            let cls = (el.className || '').toLowerCase();
+            let id = (el.id || '').toLowerCase();
+            
+            if (text.includes('reset') || text.includes('delete') || text.includes('clear') || text.includes('recover') || text.includes('wipe')) return false;
+            if (cls.includes('owner-only') || cls.includes('dangerbtn')) return false;
+            if (id.includes('reset') || id.includes('delete')) return false;
+            
+            return true;
+        });
+        
+        if(clickables.length > 0) {
+            let targetEl = clickables[Math.floor(Math.random() * clickables.length)];
+            
+            // Visual highlight
+            let oldOutline = targetEl.style.outline;
+            targetEl.style.outline = "3px solid #f00";
+            setTimeout(() => { if(targetEl) targetEl.style.outline = oldOutline; }, 300);
+            
+            // Actually click it!
+            if(typeof targetEl.click === 'function') {
+                targetEl.click();
+            }
+        }
+    }, 1500); // Click every 1.5s
+}
+
+// Call on startup
+setTimeout(() => {
+    checkOfflineMonkeyTest();
+}, 2000);
