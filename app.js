@@ -8224,14 +8224,23 @@ setInterval(() => {
 // OVERRIDE V4 CHAT GIFT COMMAND TO USE THE WORKING INTERNAL FUNCTION
 window.submitGiftUI = function() {
     let targetUser = document.getElementById('gift-username').value.trim();
-    let itemType = document.getElementById('gift-item').value.trim();
-    let amount = parseInt(document.getElementById('gift-amount').value);
-    if (!targetUser || !itemType || isNaN(amount) || amount <= 0) {
+    let itemType = document.getElementById('gift-item').value.trim().toLowerCase();
+    let amount = parseInt(document.getElementById('gift-amount').value) || 1;
+    
+    if (!targetUser || !itemType) {
         showAnnouncement("Please fill out all fields correctly.");
         return;
     }
     if (window.sendGift) {
-        window.sendGift(targetUser, itemType, amount);
+        // If they are gifting a board or piece skin
+        if (itemType.startsWith('board_')) {
+            window.sendGift(targetUser, 'board', itemType);
+        } else if (itemType.startsWith('skin_') || itemType === 'owner' || itemType === 'vampr') {
+            window.sendGift(targetUser, 'piece', itemType);
+            window.sendGift(targetUser, 'board', itemType); // give them both just in case
+        } else {
+            window.sendGift(targetUser, itemType, amount);
+        }
         closeModal('giftmodal');
         document.getElementById('gift-username').value = '';
         document.getElementById('gift-item').value = '';
