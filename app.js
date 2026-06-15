@@ -1616,6 +1616,7 @@ function startGameVsBot(bot){
   let side = bot.side || 'black';
   G.opponent={type:'ai',name:bot.name,elo:bot.elo,side:side,depth:bot.depth||1,behavior:bot.behavior||'normal',_eloApplied:false};
   render();
+  if(G.turn===G.opponent.side) maybeAIMove();
 }
 
 function resetToLocal(){
