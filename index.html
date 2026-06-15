@@ -1128,9 +1128,12 @@ function doCustomTranslate(langCode) {
                     }
                     M.bugTestStart = Date.now();
                     saveMeta();
-                    if(typeof startOfflineMonkeyTest === 'function') startOfflineMonkeyTest();
-                    else alert("Test started! Refreshing to initialize...");
-                    location.reload();
+                    if(typeof startOfflineMonkeyTest === 'function') {
+                        startOfflineMonkeyTest();
+                    } else {
+                        alert("Test started! Refreshing to initialize...");
+                        location.reload();
+                    }
                 };
                 box.appendChild(btn);
             }
