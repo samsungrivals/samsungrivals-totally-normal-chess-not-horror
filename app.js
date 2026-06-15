@@ -424,6 +424,10 @@ function renderBoard(){
   const ckp=(s.status==='check'||s.status==='checkmate')?kingPos(s.board,w):null;
   const selMoves=s.sel?new Set(legal(s.board,s.sel[0],s.sel[1],s.ep,s.cr,s.turn).map(([r,c])=>`${r},${c}`)):new Set();
   
+  const mySide = typeof _premoveMySide === 'function' ? _premoveMySide() : 'white';
+  if (mySide === 'black') el.classList.add('flipped');
+  else el.classList.remove('flipped');
+  
   const fog = (typeof M !== 'undefined' && M && M.currentVariant && M.currentVariant.fogOfWar) ? new Set() : null;
   if(fog && !over) {
       for(let r=0;r<8;r++)for(let c=0;c<8;c++){
@@ -1592,7 +1596,11 @@ function renderBotList(){
 function startVsComputer(key){
   closeModal('vsmodal');
   const b=BOTS[key];
-  startGameVsBot({name:b.name,elo:b.elo,depth:b.depth,behavior:b.behavior});
+  const colorSel = document.getElementById('botcolorselect');
+  let chosen = colorSel ? colorSel.value : 'white';
+  if(chosen === 'random') chosen = Math.random() < 0.5 ? 'white' : 'black';
+  let botSide = chosen === 'white' ? 'black' : 'white';
+  startGameVsBot({name:b.name,elo:b.elo,depth:b.depth,behavior:b.behavior,side:botSide});
 }
 
 function startGameVsBot(bot){
@@ -1605,7 +1613,8 @@ function startGameVsBot(bot){
   if(typeof addGameChatMessage === 'function') addGameChatMessage('System', '\u2B50 You can chat with bots! Try saying hi.');
   const cs=document.getElementById('clockstrip');
   if(cs)cs.classList.add('hidden');
-  G.opponent={type:'ai',name:bot.name,elo:bot.elo,side:'black',depth:bot.depth||1,behavior:bot.behavior||'normal',_eloApplied:false};
+  let side = bot.side || 'black';
+  G.opponent={type:'ai',name:bot.name,elo:bot.elo,side:side,depth:bot.depth||1,behavior:bot.behavior||'normal',_eloApplied:false};
   render();
 }
 

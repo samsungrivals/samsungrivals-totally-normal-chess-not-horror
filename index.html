@@ -57,6 +57,8 @@ function doCustomTranslate(langCode) {
     letter-spacing: 1px;
     font-size: 18px !important;
   }
+  #board.flipped { transform: rotate(180deg); }
+  #board.flipped .piece { transform: rotate(180deg); }
   #google_translate_element .goog-te-gadget {
     color: transparent !important;
     font-size: 0;
@@ -446,8 +448,16 @@ function doCustomTranslate(langCode) {
 
 <div class="modal hidden" id="vsmodal">
   <div class="mbox">
-    <div class="mtitle">🤖 Play vs Computer <button class="mclose" onclick="closeModal('vsmodal')">✕</button></div>
-    <div style="font-size:12px;color:#888;margin-bottom:12px">You play <b style="color:#fff">White</b>. Pick your opponent:</div>
+    <div class="mtitle">🤖 Play vs Computer <button class="mclose" onclick="closeModal('vsmodal')">×</button></div>
+    <div style="font-size:12px;color:#888;margin-bottom:12px">
+      Play as: 
+      <select id="botcolorselect" style="background:#2a3a50;color:#fff;border:1px solid #4a80c0;border-radius:4px;padding:2px 4px;">
+        <option value="white">White</option>
+        <option value="random">Random</option>
+        <option value="black">Black</option>
+      </select>
+      <br><br>Pick your opponent:
+    </div>
     <div class="botlist" id="botlist"></div>
   </div>
 </div>
