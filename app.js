@@ -7941,7 +7941,7 @@ setInterval(() => {
                         <ul style="list-style:circle; padding-left:20px;"><li>Base Game</li><li>Rolls & Money</li></ul>
                         <button class="btn" style="background:#555;color:#fff;" onclick="document.body.className='theme-v1';showAnnouncement('Time Traveled to v1.0 (Retro Mode)');">Play v1.0</button>
                     </div>
-                    <div style="text-align:center;"><button class="btn" onclick="this.parentElement.parentElement.remove()" style="background:red;">Close</button></div>
+                    <div style="text-align:center;"><button class="btn" onclick="this.parentElement.parentElement.parentElement.remove()" style="background:red;">Close</button></div>
                 </div>`;
             let div = document.createElement('div');
             div.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999999; background:rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center;';
@@ -8624,7 +8624,7 @@ let monkeyTestInterval = null;
 let monkeyTestUIPanel = null;
 
 function checkOfflineMonkeyTest() {
-    if(!M.bugTestStart) return;
+    if(!window.M || !M.bugTestStart) return;
     let now = Date.now();
     let elapsed = now - M.bugTestStart;
     let target = 14 * 60 * 60 * 1000;
@@ -8705,7 +8705,7 @@ function startOfflineMonkeyTest() {
         // Filter out dangerous elements
         clickables = clickables.filter(el => {
             let text = (el.innerText || '').toLowerCase();
-            let cls = (el.className || '').toLowerCase();
+            let cls = (el.getAttribute('class') || '').toLowerCase();
             let id = (el.id || '').toLowerCase();
             
             if (text.includes('reset') || text.includes('delete') || text.includes('clear') || text.includes('recover') || text.includes('wipe')) return false;
