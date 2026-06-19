@@ -751,6 +751,7 @@ const SKINS={
   gy:{name:'Green & Yellow',odds:10},
   rainbow:{name:'Rainbow',odds:100},
   nothing:{name:'Nothing',odds:500},
+  trash:{name:'Trash Bag',odds:null},
   admin:{name:'Admin Skin',odds:5000},
   realadmin:{name:'Real Admin',odds:null,adminOnly:true}
 };
@@ -761,6 +762,7 @@ const SKIN_COLORS={
   gy:['#fff176','#2e7d32'],
   rainbow:['linear-gradient(135deg,#ff5252,#ffeb3b,#69f0ae)','linear-gradient(135deg,#40c4ff,#7c4dff,#ff4081)'],
   nothing:['#0d0d18','#0d0d18'],
+  trash:['#4f5b66','#343d46'],
   admin:['#ffd700','#1a1a1a'],
   realadmin:['linear-gradient(135deg,#42a5f5,#1976d2)','linear-gradient(135deg,#ef5350,#c62828)']
 };

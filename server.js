@@ -1,4 +1,4 @@
-﻿// Tiny multiplayer backend for the chess app.
+// Tiny multiplayer backend for the chess app.
 // In-memory + JSON file. Endpoints power leaderboard, friends, announcements, matchmaking.
 
 const express = require('express');
@@ -632,9 +632,12 @@ function setupWebSockets() {
 
     if (msg.type === 'queue') {
       ws.elo = Number(msg.elo) || ws.elo || 500;
+      let variant = msg.variant || 'standard';
+      if (typeof waiting !== 'object' || waiting === null || waiting.ws) waiting = {}; // Reset old buggy structure
+
       // Already someone waiting and it's not us? Make a match.
-      if (waiting && waiting.ws !== ws && waiting.ws.readyState === WebSocket.OPEN) {
-        const opp = waiting; waiting = null;
+      if (waiting[variant] && waiting[variant].ws !== ws && waiting[variant].ws.readyState === WebSocket.OPEN) {
+        const opp = waiting[variant]; waiting[variant] = null;
         const matchId = 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
         const whiteIsMe = Math.random() < 0.5;
         const meName = ws.displayName, oppName = opp.ws.displayName;
@@ -644,20 +647,21 @@ function setupWebSockets() {
         ws.matchId = matchId; opp.ws.matchId = matchId;
         wsSend(ws, { type: 'matched', matchId, opponent: { name: oppName, elo: opp.elo }, side: white === meName ? 'white' : 'black' });
         wsSend(opp.ws, { type: 'matched', matchId, opponent: { name: meName, elo: ws.elo }, side: white === oppName ? 'white' : 'black' });
-        console.log('[ws] matched ' + meName + ' vs ' + oppName + ' (' + matchId + ')');
+        console.log('[ws] matched ' + meName + ' vs ' + oppName + ' (' + matchId + ') [' + variant + ']');
       } else {
-        waiting = { user: ws.displayName, elo: ws.elo, ws };
+        waiting[variant] = { user: ws.displayName, elo: ws.elo, ws };
         wsSend(ws, { type: 'queued' });
       }
       return;
     }
 
     if (msg.type === 'leaveQueue') {
+      if (typeof waiting !== 'object' || waiting === null || waiting.ws) waiting = {};
       for(let key in waiting) {
-      if(waiting[key] && waiting[key].ws === ws) {
-        waiting[key] = null;
+        if(waiting[key] && waiting[key].ws === ws) {
+          waiting[key] = null;
+        }
       }
-    }
       wsSend(ws, { type: 'queueLeft' });
       return;
     }
