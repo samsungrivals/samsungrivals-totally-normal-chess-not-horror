@@ -2599,10 +2599,11 @@ showEloToast=function(change,oppName,result,newElo){
             setTimeout(() => showAnnouncement("🎉 You unlocked the animated profile!"), 500);
         }
     } else if (result === 0 && oppName === BOTS.worst.name) {
-        if (!M.profileAnimUnlocked) {
-            M.profileAnimUnlocked = true;
+        if (!M.dragonProfileUnlocked) {
+            M.dragonProfileUnlocked = true;
+            M.equippedProfileSkin = 'dragon-profile';
             saveMeta();
-            setTimeout(() => showAnnouncement("🤡 You lost to the worst bot... but unlocked the animated profile!"), 500);
+            setTimeout(() => showAnnouncement("🐉 You lost to the worst bot... but unlocked the Discord Dragon Profile Skin!"), 500);
         }
     }
 };
@@ -2812,13 +2813,19 @@ function v3MigrateMeta(){
 // ACCOUNTS (local — username + password stored in browser)
 // ============================================================
 let _acctTab='signup';
+function equipProfileSkin(skin){
+  M.equippedProfileSkin = skin;
+  saveMeta();
+  renderAccount();
+}
 function renderAccount(){
   const v=document.getElementById('acctview');
   const title=document.getElementById('accttitle');
   if(M.account){
     title.innerHTML='👤 Account <button class="mclose" onclick="closeModal(\'acctmodal\')">✕</button>';
     const created=new Date(M.account.createdAt||Date.now()).toLocaleDateString();
-    let animClass = M.profileAnimUnlocked ? 'animated-profile' : '';
+    let animClass = M.equippedProfileSkin || (M.dragonProfileUnlocked ? 'dragon-profile' : (M.profileAnimUnlocked ? 'animated-profile' : ''));
+    if (animClass === 'classic') animClass = '';
     v.innerHTML=`
       <div class="accprofile ${animClass}">
         <div class="accav">${M.account.username[0].toUpperCase()}</div>
@@ -2828,6 +2835,15 @@ function renderAccount(){
         </div>
       </div>
       <div style="font-size:12px;color:#aac;margin-bottom:12px">Your username shows up on the leaderboard.</div>
+      ${(M.profileAnimUnlocked || M.dragonProfileUnlocked) ? `
+      <div style="margin-bottom:12px;background:#111823;padding:10px;border-radius:8px;border:1px solid #1e3a5f;">
+        <div style="font-size:12px;color:#aaccff;margin-bottom:6px;font-weight:bold;">✨ Equipped Profile Decoration:</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="modebtn" style="padding:4px 8px;font-size:11px;background:${(!M.equippedProfileSkin||M.equippedProfileSkin==='classic')?'#4a80c0':'#222'}" onclick="equipProfileSkin('classic')">Classic</button>
+          ${M.profileAnimUnlocked ? `<button class="modebtn" style="padding:4px 8px;font-size:11px;background:${M.equippedProfileSkin==='animated-profile'?'#4a80c0':'#222'}" onclick="equipProfileSkin('animated-profile')">🌈 Rainbow</button>` : ''}
+          ${M.dragonProfileUnlocked ? `<button class="modebtn" style="padding:4px 8px;font-size:11px;background:${(M.equippedProfileSkin==='dragon-profile'||(!M.equippedProfileSkin&&M.dragonProfileUnlocked))?'#4a80c0':'#222'}" onclick="equipProfileSkin('dragon-profile')">🐉 Discord Dragon</button>` : ''}
+        </div>
+      </div>` : ''}
       <div style="background:#1a2a40;border-left:3px solid #4a80c0;padding:10px 12px;border-radius:0 6px 6px 0;font-size:12px;color:#aaccff;margin-bottom:12px;line-height:1.5">
         🌐 <b>Multiplayer sync:</b> if you signed up before the multiplayer server was deployed, your account exists only in this browser.
         Click below to register it on the server so friends & matchmaking work.
